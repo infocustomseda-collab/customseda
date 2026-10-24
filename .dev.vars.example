@@ -1,0 +1,3 @@
+# Copy to .dev.vars; generate a local key with: openssl rand -hex 32
+# Set remote secrets separately with wrangler secret put --env staging|production.
+EMDASH_ENCRYPTION_KEY=replace-with-a-generated-local-key

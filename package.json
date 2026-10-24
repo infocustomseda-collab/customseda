@@ -1,0 +1,46 @@
+{
+  "name": "custom-seda",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "emdash": {
+    "label": "Starter",
+    "seed": "seed/seed.json"
+  },
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1",
+    "build": "astro build",
+    "preview": "astro preview --host 127.0.0.1",
+    "typecheck": "wrangler types && astro check",
+    "cf:types": "wrangler types",
+    "cf:whoami": "wrangler whoami",
+    "test": "node --test tests/*.test.mjs",
+    "deploy:staging": "node scripts/deploy/run.mjs staging",
+    "deploy:production": "node scripts/deploy/run.mjs production",
+    "build:staging": "CLOUDFLARE_ENV=staging astro build",
+    "build:production": "CLOUDFLARE_ENV=production astro build"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "14.4.2",
+    "@astrojs/react": "7.1.1",
+    "@emdash-cms/cloudflare": "1.3.1",
+    "astro": "7.4.2",
+    "emdash": "1.3.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@cloudflare/workers-types": "5.20261022.1",
+    "wrangler": "4.152.0",
+    "typescript": "5.9.3",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.23.4 <27",
+    "pnpm": ">=11.9.0 <12"
+  }
+}
