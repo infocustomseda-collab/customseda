@@ -3,7 +3,184 @@
 
 /// <reference types="emdash/locals" />
 
-import type { BylineSummary, ContentBylineCredit, TaxonomyTerm, PortableTextBlock } from "emdash";
+import type { BylineSummary, ContentBylineCredit, TaxonomyTerm, PortableTextBlock, ReferencePage } from "emdash";
+
+export interface Product {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  description?: PortableTextBlock[];
+  summary?: string;
+  gallery?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "focal_x"?: number | null; "focal_y"?: number | null }[];
+  price_cents: number;
+  available?: boolean;
+  shopify_id?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Conjunto {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  description?: PortableTextBlock[];
+  summary?: string;
+  gallery?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "focal_x"?: number | null; "focal_y"?: number | null }[];
+  price_cents: number;
+  available?: boolean;
+  shopify_id?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Category {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  code: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Collection {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  code: string;
+  description?: PortableTextBlock[];
+  image?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } };
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Size {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  code: string;
+  sort_order?: number;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Color {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  code: string;
+  hex?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface SizeGuide {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  content?: PortableTextBlock[];
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface SiteSetting {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  announcement_enabled?: boolean;
+  announcement_text?: string;
+  announcement_url?: string;
+  hero_title?: string;
+  hero_text?: string;
+  hero_image?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } };
+  hero_link?: string;
+  contact_email?: string;
+  instagram_url?: string;
+  production_text?: PortableTextBlock[];
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Popup {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  enabled?: boolean;
+  content?: PortableTextBlock[];
+  image?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } };
+  button_text?: string;
+  button_url?: string;
+  starts_at?: string;
+  ends_at?: string;
+  delay_seconds?: number;
+  dismiss_days?: number;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface ShippingRule {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  enabled?: boolean;
+  zone: "canarias" | "peninsula_baleares" | "international" | "pickup";
+  country_codes?: string;
+  postal_prefixes?: string;
+  price_cents: number;
+  free_above_cents?: number;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
 
 export interface Page {
   id: string;
@@ -35,9 +212,36 @@ export interface Post {
   terms?: Record<string, TaxonomyTerm[]>;
 }
 
+export interface ProductReferences {
+  category: ReferencePage<Category>;
+  collection: ReferencePage<Collection>;
+  color: ReferencePage<Color>;
+  sizes: ReferencePage<Size>;
+  size_guide: ReferencePage<SizeGuide>;
+}
+
+export interface ConjuntoReferences {
+  top: ReferencePage<Product>;
+  bottom: ReferencePage<Product>;
+}
+
 declare module "emdash" {
   interface EmDashCollections {
+    products: Product;
+    conjuntos: Conjunto;
+    categories: Category;
+    collections: Collection;
+    sizes: Size;
+    colors: Color;
+    size_guides: SizeGuide;
+    site_settings: SiteSetting;
+    popups: Popup;
+    shipping_rules: ShippingRule;
     pages: Page;
     posts: Post;
+  }
+  interface EmDashCollectionReferences {
+    products: ProductReferences;
+    conjuntos: ConjuntoReferences;
   }
 }

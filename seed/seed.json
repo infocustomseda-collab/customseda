@@ -2,50 +2,411 @@
   "$schema": "https://emdashcms.com/seed.schema.json",
   "version": "1",
   "meta": {
-    "name": "Custom Seda foundation",
-    "description": "Temporary minimal schema for deployment verification; shop model follows in phase 2."
-  },
-  "settings": {
-    "title": "Custom Seda",
-    "tagline": "Made-to-order swimwear"
+    "name": "Custom Seda catalog v1",
+    "description": "Made-to-order Products and Conjuntos. No inventory."
   },
   "collections": [
     {
-      "slug": "posts",
-      "label": "Posts",
-      "labelSingular": "Post",
-      "urlPattern": "/posts/{slug}",
+      "slug": "products",
+      "label": "Productos",
+      "labelSingular": "Producto",
+      "routable": true,
+      "sortOrder": 10,
+      "group": "Catálogo",
       "supports": [
         "drafts",
         "revisions",
-        "preview",
         "scheduling",
-        "search",
         "seo"
       ],
+      "urlPattern": "/products/{slug}",
       "fields": [
         {
           "slug": "title",
-          "label": "Title",
+          "label": "Título",
           "type": "string",
           "required": true,
           "searchable": true
         },
         {
-          "slug": "featured_image",
-          "label": "Featured Image",
-          "type": "image"
-        },
-        {
-          "slug": "content",
-          "label": "Content",
+          "slug": "description",
+          "label": "Descripción",
           "type": "portableText",
           "searchable": true
         },
         {
-          "slug": "excerpt",
-          "label": "Excerpt",
+          "slug": "summary",
+          "label": "Descripción breve",
           "type": "text"
+        },
+        {
+          "slug": "gallery",
+          "label": "Imágenes — arrastra para ordenar; la primera es la principal",
+          "type": "repeater",
+          "validation": {
+            "maxItems": 24,
+            "subFields": [
+              {
+                "slug": "image",
+                "label": "Imagen",
+                "type": "image",
+                "required": true
+              },
+              {
+                "slug": "alt",
+                "label": "Texto alternativo",
+                "type": "string",
+                "required": true
+              },
+              {
+                "slug": "focal_x",
+                "label": "Punto focal horizontal (0–1)",
+                "type": "number",
+                "validation": {
+                  "min": 0,
+                  "max": 1
+                }
+              },
+              {
+                "slug": "focal_y",
+                "label": "Punto focal vertical (0–1)",
+                "type": "number",
+                "validation": {
+                  "min": 0,
+                  "max": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "slug": "price_cents",
+          "label": "Precio en céntimos EUR (ej. 5900 = 59 €)",
+          "type": "integer",
+          "required": true,
+          "validation": {
+            "min": 0
+          }
+        },
+        {
+          "slug": "available",
+          "label": "Disponible",
+          "type": "boolean",
+          "defaultValue": true
+        },
+        {
+          "slug": "shopify_id",
+          "label": "ID original de Shopify",
+          "type": "string",
+          "unique": true
+        },
+        {
+          "slug": "category",
+          "label": "Categoría",
+          "type": "reference",
+          "required": true,
+          "validation": {
+            "targetCollection": "categories",
+            "multiple": false
+          }
+        },
+        {
+          "slug": "collection",
+          "label": "Colección",
+          "type": "reference",
+          "required": true,
+          "validation": {
+            "targetCollection": "collections",
+            "multiple": false
+          }
+        },
+        {
+          "slug": "color",
+          "label": "Color",
+          "type": "reference",
+          "required": true,
+          "validation": {
+            "targetCollection": "colors",
+            "multiple": false
+          }
+        },
+        {
+          "slug": "sizes",
+          "label": "Tallas disponibles",
+          "type": "reference",
+          "required": true,
+          "validation": {
+            "targetCollection": "sizes",
+            "multiple": true
+          }
+        },
+        {
+          "slug": "size_guide",
+          "label": "Guía de tallas",
+          "type": "reference",
+          "required": false,
+          "validation": {
+            "targetCollection": "size_guides",
+            "multiple": false
+          }
+        }
+      ]
+    },
+    {
+      "slug": "conjuntos",
+      "label": "Conjuntos",
+      "labelSingular": "Conjunto",
+      "routable": true,
+      "sortOrder": 20,
+      "group": "Catálogo",
+      "supports": [
+        "drafts",
+        "revisions",
+        "scheduling",
+        "seo"
+      ],
+      "urlPattern": "/conjuntos/{slug}",
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "description",
+          "label": "Descripción",
+          "type": "portableText",
+          "searchable": true
+        },
+        {
+          "slug": "summary",
+          "label": "Descripción breve",
+          "type": "text"
+        },
+        {
+          "slug": "gallery",
+          "label": "Imágenes — arrastra para ordenar; la primera es la principal",
+          "type": "repeater",
+          "validation": {
+            "maxItems": 24,
+            "subFields": [
+              {
+                "slug": "image",
+                "label": "Imagen",
+                "type": "image",
+                "required": true
+              },
+              {
+                "slug": "alt",
+                "label": "Texto alternativo",
+                "type": "string",
+                "required": true
+              },
+              {
+                "slug": "focal_x",
+                "label": "Punto focal horizontal (0–1)",
+                "type": "number",
+                "validation": {
+                  "min": 0,
+                  "max": 1
+                }
+              },
+              {
+                "slug": "focal_y",
+                "label": "Punto focal vertical (0–1)",
+                "type": "number",
+                "validation": {
+                  "min": 0,
+                  "max": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "slug": "price_cents",
+          "label": "Precio en céntimos EUR (ej. 5900 = 59 €)",
+          "type": "integer",
+          "required": true,
+          "validation": {
+            "min": 0
+          }
+        },
+        {
+          "slug": "available",
+          "label": "Disponible",
+          "type": "boolean",
+          "defaultValue": true
+        },
+        {
+          "slug": "shopify_id",
+          "label": "ID original de Shopify",
+          "type": "string",
+          "unique": true
+        },
+        {
+          "slug": "top",
+          "label": "Top",
+          "type": "reference",
+          "required": true,
+          "validation": {
+            "targetCollection": "products",
+            "multiple": false
+          }
+        },
+        {
+          "slug": "bottom",
+          "label": "Braguita",
+          "type": "reference",
+          "required": true,
+          "validation": {
+            "targetCollection": "products",
+            "multiple": false
+          }
+        }
+      ]
+    },
+    {
+      "slug": "categories",
+      "label": "Categorías",
+      "labelSingular": "Categoría",
+      "routable": false,
+      "sortOrder": 30,
+      "group": "Catálogo",
+      "supports": [
+        "drafts",
+        "revisions"
+      ],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "code",
+          "label": "Código estable",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "slug": "collections",
+      "label": "Colecciones",
+      "labelSingular": "Colección",
+      "routable": true,
+      "sortOrder": 40,
+      "group": "Catálogo",
+      "supports": [
+        "drafts",
+        "revisions",
+        "scheduling",
+        "seo"
+      ],
+      "urlPattern": "/collections/{slug}",
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "code",
+          "label": "Código estable",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "indexed": true
+        },
+        {
+          "slug": "description",
+          "label": "Historia de la colección",
+          "type": "portableText"
+        },
+        {
+          "slug": "image",
+          "label": "Imagen",
+          "type": "image"
+        }
+      ]
+    },
+    {
+      "slug": "sizes",
+      "label": "Tallas",
+      "labelSingular": "Talla",
+      "routable": false,
+      "sortOrder": 50,
+      "group": "Catálogo",
+      "supports": [
+        "drafts",
+        "revisions"
+      ],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "code",
+          "label": "Código estable",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "indexed": true
+        },
+        {
+          "slug": "sort_order",
+          "label": "Orden",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "slug": "colors",
+      "label": "Colores",
+      "labelSingular": "Color",
+      "routable": false,
+      "sortOrder": 60,
+      "group": "Catálogo",
+      "supports": [
+        "drafts",
+        "revisions"
+      ],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "code",
+          "label": "Código estable",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "indexed": true
+        },
+        {
+          "slug": "hex",
+          "label": "Color hexadecimal",
+          "type": "string",
+          "validation": {
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
         }
       ]
     },
@@ -75,54 +436,340 @@
           "type": "portableText",
           "searchable": true
         }
-      ]
-    }
-  ],
-  "taxonomies": [
-    {
-      "name": "category",
-      "label": "Categories",
-      "labelSingular": "Category",
-      "hierarchical": true,
-      "collections": [
-        "posts"
       ],
-      "terms": []
+      "sortOrder": 70
     },
     {
-      "name": "tag",
-      "label": "Tags",
-      "labelSingular": "Tag",
-      "hierarchical": false,
-      "collections": [
-        "posts"
+      "slug": "size_guides",
+      "label": "Guías de tallas",
+      "labelSingular": "Guía de tallas",
+      "routable": false,
+      "sortOrder": 80,
+      "group": "Contenido",
+      "supports": [
+        "drafts",
+        "revisions"
       ],
-      "terms": []
-    }
-  ],
-  "menus": [
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "content",
+          "label": "Guía y medidas",
+          "type": "portableText"
+        }
+      ]
+    },
     {
-      "name": "primary",
-      "label": "Primary Navigation",
-      "items": [
+      "slug": "site_settings",
+      "label": "Configuración del sitio",
+      "labelSingular": "Configuración",
+      "routable": false,
+      "sortOrder": 90,
+      "group": "Contenido",
+      "supports": [
+        "drafts",
+        "revisions"
+      ],
+      "fields": [
         {
-          "type": "custom",
-          "label": "Home",
-          "url": "/"
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
         },
         {
-          "type": "custom",
-          "label": "Posts",
-          "url": "/posts"
+          "slug": "announcement_enabled",
+          "label": "Mostrar barra superior",
+          "type": "boolean",
+          "defaultValue": false
         },
         {
-          "type": "custom",
-          "label": "About",
-          "url": "/about"
+          "slug": "announcement_text",
+          "label": "Texto de barra superior",
+          "type": "text"
+        },
+        {
+          "slug": "announcement_url",
+          "label": "Enlace de barra superior",
+          "type": "url"
+        },
+        {
+          "slug": "hero_title",
+          "label": "Título de portada",
+          "type": "string"
+        },
+        {
+          "slug": "hero_text",
+          "label": "Texto de portada",
+          "type": "text"
+        },
+        {
+          "slug": "hero_image",
+          "label": "Imagen de portada",
+          "type": "image"
+        },
+        {
+          "slug": "hero_link",
+          "label": "Enlace de portada",
+          "type": "url"
+        },
+        {
+          "slug": "contact_email",
+          "label": "Email de contacto",
+          "type": "string"
+        },
+        {
+          "slug": "instagram_url",
+          "label": "Instagram",
+          "type": "url"
+        },
+        {
+          "slug": "production_text",
+          "label": "Información de producción",
+          "type": "portableText"
+        }
+      ]
+    },
+    {
+      "slug": "popups",
+      "label": "Popups",
+      "labelSingular": "Popup",
+      "routable": false,
+      "sortOrder": 100,
+      "group": "Contenido",
+      "supports": [
+        "drafts",
+        "revisions"
+      ],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "enabled",
+          "label": "Activo",
+          "type": "boolean",
+          "defaultValue": false
+        },
+        {
+          "slug": "content",
+          "label": "Contenido",
+          "type": "portableText"
+        },
+        {
+          "slug": "image",
+          "label": "Imagen",
+          "type": "image"
+        },
+        {
+          "slug": "button_text",
+          "label": "Texto del botón",
+          "type": "string"
+        },
+        {
+          "slug": "button_url",
+          "label": "Enlace del botón",
+          "type": "url"
+        },
+        {
+          "slug": "starts_at",
+          "label": "Mostrar desde",
+          "type": "datetime"
+        },
+        {
+          "slug": "ends_at",
+          "label": "Mostrar hasta",
+          "type": "datetime"
+        },
+        {
+          "slug": "delay_seconds",
+          "label": "Retraso en segundos",
+          "type": "integer",
+          "defaultValue": 3,
+          "validation": {
+            "min": 0
+          }
+        },
+        {
+          "slug": "dismiss_days",
+          "label": "Días hasta volver a mostrar",
+          "type": "integer",
+          "defaultValue": 7,
+          "validation": {
+            "min": 0
+          }
+        }
+      ]
+    },
+    {
+      "slug": "shipping_rules",
+      "label": "Configuración de envío",
+      "labelSingular": "Regla de envío",
+      "routable": false,
+      "sortOrder": 110,
+      "group": "Contenido",
+      "supports": [
+        "drafts",
+        "revisions"
+      ],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Título",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "enabled",
+          "label": "Activa",
+          "type": "boolean",
+          "defaultValue": false
+        },
+        {
+          "slug": "zone",
+          "label": "Zona",
+          "type": "select",
+          "required": true,
+          "validation": {
+            "options": [
+              "canarias",
+              "peninsula_baleares",
+              "international",
+              "pickup"
+            ]
+          }
+        },
+        {
+          "slug": "country_codes",
+          "label": "Países (ISO separados por coma)",
+          "type": "string"
+        },
+        {
+          "slug": "postal_prefixes",
+          "label": "Prefijos postales (separados por coma)",
+          "type": "string"
+        },
+        {
+          "slug": "price_cents",
+          "label": "Precio de envío en céntimos EUR",
+          "type": "integer",
+          "required": true,
+          "validation": {
+            "min": 0
+          }
+        },
+        {
+          "slug": "free_above_cents",
+          "label": "Envío gratis desde (céntimos EUR)",
+          "type": "integer",
+          "validation": {
+            "min": 0
+          }
+        },
+        {
+          "slug": "description",
+          "label": "Plazos y condiciones",
+          "type": "text"
         }
       ]
     }
   ],
-  "widgetAreas": [],
-  "content": {}
+  "content": {
+    "categories": [
+      {
+        "id": "categories-top",
+        "slug": "top",
+        "status": "published",
+        "data": {
+          "title": "Top",
+          "code": "top"
+        }
+      },
+      {
+        "id": "categories-braguita",
+        "slug": "braguita",
+        "status": "published",
+        "data": {
+          "title": "Braguita",
+          "code": "braguita"
+        }
+      }
+    ],
+    "collections": [
+      {
+        "id": "collections-margarita",
+        "slug": "margarita",
+        "status": "published",
+        "data": {
+          "title": "Margarita",
+          "code": "margarita"
+        }
+      }
+    ],
+    "sizes": [
+      {
+        "id": "sizes-XS",
+        "slug": "xs",
+        "status": "published",
+        "data": {
+          "title": "XS",
+          "code": "XS",
+          "sort_order": 0
+        }
+      },
+      {
+        "id": "sizes-S",
+        "slug": "s",
+        "status": "published",
+        "data": {
+          "title": "S",
+          "code": "S",
+          "sort_order": 1
+        }
+      },
+      {
+        "id": "sizes-M",
+        "slug": "m",
+        "status": "published",
+        "data": {
+          "title": "M",
+          "code": "M",
+          "sort_order": 2
+        }
+      },
+      {
+        "id": "sizes-L",
+        "slug": "l",
+        "status": "published",
+        "data": {
+          "title": "L",
+          "code": "L",
+          "sort_order": 3
+        }
+      },
+      {
+        "id": "sizes-XL",
+        "slug": "xl",
+        "status": "published",
+        "data": {
+          "title": "XL",
+          "code": "XL",
+          "sort_order": 4
+        }
+      }
+    ]
+  },
+  "widgetAreas": []
 }

@@ -31,3 +31,11 @@ Work in this checkout on `master`, as explicitly requested by the user.
 - Keep secrets in runtime Worker secret bindings; never inline them with `import.meta.env`.
 - Use version-matched official EmDash docs and installed types/source to verify APIs.
 - Preserve generated `src/live.config.ts` boilerplate.
+
+## Agent documentation and performance tools
+
+- Official project skills are installed in `.agents/skills/`; pins and setup are in `docs/agent-tools.md`. Load only the skills and reference sections needed for the current task.
+- Use `astro-docs`, `emdash-docs`, and `cloudflare-docs` for focused API/documentation questions before broad source searches. Verify answers against the installed package versions when APIs differ. Keep retrieved output small; request few matches where supported and print only relevant excerpts from composed tool results.
+- Repository constraints above override skill defaults, especially native-only plugins and the separate public snapshot. Never enable sandboxed plugins because a vendor skill recommends them by default.
+- Use Chrome DevTools MCP for requested network/performance measurements in its isolated profile. Do not use the user's personal browser profile or send local/admin URLs to external CrUX services.
+- For database changes, define the required data and expected reads before implementation. Measure complete create/save/publish requests as well as individual validators; a platform-limit ceiling is not a performance target.

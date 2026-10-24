@@ -54,7 +54,7 @@ test('rejects missing or shared Worker names and normalized environment origins'
 test('migrates the explicit database before uploading and checks afterwards', () => {
   const target = validateTarget(config(), 'staging');
   const commands = deploymentCommands(target);
-  assert.deepEqual(commands.map(x => x[0]), ['astro', 'emdash', 'emdash', 'wrangler', 'emdash']);
+  assert.deepEqual(commands.map(x => x[0]), ['astro', 'emdash', 'emdash', 'catalog-model', 'wrangler', 'emdash']);
   assert.deepEqual(commands[0], ['astro', 'build']);
   for (const args of commands.filter(x => x[0] === 'emdash')) {
     assert.equal(args[args.indexOf('--d1') + 1], target.databaseId);
@@ -63,6 +63,6 @@ test('migrates the explicit database before uploading and checks afterwards', ()
   }
   assert.ok(commands[1].includes('--status'));
   assert.ok(!commands[2].includes('--check'));
-  assert.deepEqual(commands[3], ['wrangler', 'deploy', '--env', 'staging']);
-  assert.ok(commands[4].includes('--check'));
+  assert.deepEqual(commands[4], ['wrangler', 'deploy', '--env', 'staging']);
+  assert.ok(commands[5].includes('--check'));
 });
