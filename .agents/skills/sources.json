@@ -1,0 +1,37 @@
+{
+  "sources": [
+    {
+      "repo": "emdash-cms/emdash",
+      "ref": "12a179389f07821beb819a684e62627e6017ba8d",
+      "release": "emdash@1.3.1",
+      "skills": [
+        "building-emdash-site",
+        "creating-plugins",
+        "emdash-cli"
+      ],
+      "skill_file_sha256": {
+        "building-emdash-site": "87393083e92b33db4ec77b7037b35bf76f5c77bdf875e3dc233dcde442c12238",
+        "creating-plugins": "66fda54d0060e53d2b9ce448940e75a70a693ee11cc527d89e95ab48aac24709",
+        "emdash-cli": "bb4a01fc0263a4b808b000edeeb1a5bcb0bf20809d8cc219e6aff7bf3664e037"
+      }
+    },
+    {
+      "repo": "cloudflare/skills",
+      "ref": "86505e44f87d801aa1864a3c4109e9a8ae5c409f",
+      "skills": [
+        "cloudflare",
+        "workers-best-practices",
+        "wrangler",
+        "workers-profiling",
+        "web-perf"
+      ],
+      "skill_file_sha256": {
+        "cloudflare": "336a55878f37551d14b6d8dddabfe0c97362fd5414380083a365802568fb39b7",
+        "workers-best-practices": "039c2a70aac53e00da20adc3d527bd3fc9b727be90c28b94c81c5e10092339ef",
+        "wrangler": "7884f560509c08ac29ee0d3cfe1b5259855fd6790acf0c5292f4d1c54db7c191",
+        "workers-profiling": "3129ee720db2f479a891ecd35724bbda16fd8f6cd9dedcbaf665502b4f890efb",
+        "web-perf": "79c531e95ca4d96a7de920c28c127c2c09ec55cd452a92222267d2954580be23"
+      }
+    }
+  ]
+}

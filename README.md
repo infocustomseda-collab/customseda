@@ -51,3 +51,7 @@ The temporary HTTP Basic gate uses username `seda` and the `FOUNDATION_ACCESS_TO
 The deployment runner migrates EmDash core and then the versioned catalog model from the CLI before uploading the Worker. See [catalog migration boundaries](docs/catalog-model.md#deployment-boundary). `pnpm test:d1` rehearses the catalog migration against isolated local D1; actual remote catalog acceptance remains pending.
 
 See [deployment and recovery](docs/deployment.md) and [verification evidence](docs/phase-1-verification.md) before deploying. A successful deployment is not certification that all CMS workloads fit Workers Free.
+
+## Agent tooling
+
+Official EmDash and Cloudflare skills are pinned under `.agents/skills/`. Documentation MCPs and an isolated Chrome performance MCP are configured on this Codex host. See [setup, versions and verification](docs/agent-tools.md).
