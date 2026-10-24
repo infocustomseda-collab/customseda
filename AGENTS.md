@@ -5,6 +5,7 @@ Work in this checkout on `master`, as explicitly requested by the user.
 ## Scope and source of truth
 
 - Follow `docs/superpowers/plans/2026-10-24-custom-seda.md` phase by phase.
+- Work locally for now, as requested on 2026-10-25. Staging provisioning, deployment, remote acceptance/performance checks, and recovery rehearsals are deferred to phase 7 before launch; they do not block local phases 3–6.
 - Phase 1 is infrastructure and feasibility only. The starter's posts/pages are temporary CMS smoke-test types, not the approved shop model or visual design.
 - Products and Conjuntos are separate types. Made to order; no stock tracking. Stripe Dashboard manages orders.
 - No Tailwind. Preserve the approved identity in later design work.

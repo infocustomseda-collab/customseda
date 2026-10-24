@@ -2,6 +2,8 @@
 
 > Phase 1 execution was authorized in chat on 2026-10-24. Later phases remain planned. Use the executing-plans skill for inline execution unless another method is chosen.
 
+> **Execution order updated by the user on 2026-10-25:** Work locally for now. All remaining staging provisioning, deployment, remote authentication/acceptance, CPU measurement, and recovery work moves to phase 7, after local phases 3–6 and before production launch. Existing remote resources remain in place. Cloudflare Free feasibility is still a launch requirement, but is not a gate for local development. The next local step is phase 3's Shopify inventory and source-data audit.
+
 **Goal:** Replace the Shopify site with an Astro + EmDash shop on Cloudflare Free, retaining the approved identity and using Stripe Checkout.
 
 **Architecture:** Prerender public pages and rebuild after CMS publication. Run EmDash and checkout/webhook endpoints on Workers, store content in D1 and media in R2. Use Stripe Dashboard for order/payment/refund management and manual production/shipping.
@@ -43,23 +45,18 @@
 - Stripe events can repeat, arrive late, or represent unpaid sessions: verify signatures and process fulfillment/payment state idempotently.
 - Shipping regions overlap within Spain: do not infer Canarias versus mainland/Baleares from country alone.
 
-## 1. Prove Cloudflare Free deployment
+## 1. Establish the local Cloudflare foundation
 
 - [x] Select and pin mutually compatible stable Astro, EmDash, adapter, and Wrangler versions from the official Cloudflare template.
 - [x] Scaffold the minimal project with TypeScript and pnpm; retain only required integrations.
 - [x] Configure local Workers runtime with local D1/R2 rather than a different database adapter.
-- [ ] Provision separate staging and production Workers, D1 databases, and R2 buckets; keep local, staging, and production data isolated.
 - [x] Omit sandboxed plugins, sandbox runner, and Worker Loader bindings that require Workers Paid.
-- [ ] Configure runtime secrets, environment-specific URLs, admin authentication, and media delivery; avoid production URL/passkey settings leaking into staging.
 - [x] Establish explicit remote core migrations: build, inspect database target, migrate through the CLI, deploy the same artifact, and check status.
 - [x] Use production runtime migration checking and development automatic migrations; serialize remote migration jobs.
-- [ ] Exercise fresh setup, login, content creation, image upload, relationship editing, publication, restart, and redeployment against existing remote data.
-- [ ] Inspect actual Worker CPU/errors, upload behavior, bundle/startup constraints, and account quotas; document results.
-- [ ] Document backup/restore and failed-migration recovery; verify a staging restore.
 
-**Progress:** Staging Worker and isolated staging/production D1 + R2 are provisioned; both databases have 90 core migrations applied. Remote passkey/admin-write tests and full recovery acceptance remain pending. See [verification evidence](../../phase-1-verification.md).
+**Progress:** Local runtime and infrastructure tooling are implemented. Earlier remote work provisioned a staging Worker and isolated staging/production D1 + R2; both databases have 90 core migrations applied. All remaining remote acceptance and recovery tasks are deferred to phase 7. See [verification evidence](../../phase-1-verification.md).
 
-**Exit condition:** The essential remote CMS operations work on Workers Free and existing content survives redeployment. If this fails, identify the exact blocker and agree on an architecture change before continuing.
+**Local exit condition:** The CMS works locally with the Cloudflare runtime, local D1/R2, and persistence after restart. Remote Workers Free feasibility and persistence across deployment are phase 7 launch gates.
 
 ## 2. Define the content model
 
@@ -78,6 +75,10 @@
 
 ## 3. Audit and import Shopify content
 
+**Progress — 2026-10-25:** Public-source inventory recorded locally: 16 products (5 Conjuntos, 5 Tops, 6 Braguitas), 98 variants, 81 gallery positions / 74 distinct gallery images, six collection records, and supporting pages/navigation/SEO. See [audit and unresolved mappings](../../import/shopify-audit.md) and [structured source inventory](../../import/shopify-public-inventory.json). Public completeness is cross-checked against pagination and sitemaps; private/export completeness, supported-size decisions, canonical colors, bundle links, and import remain pending. No CMS writes or staging operations were performed.
+
+**Merchant clarification — 2026-10-25:** Explicit Shopify sizes are correct and must be preserved. Missing sizes for the two `Default Title` bottoms remain unspecified. The current component-derived set model cannot preserve all confirmed set/component size differences; resolve that model decision before importing bundle relationships.
+
 - [ ] Inventory all products, variants, galleries, collection content, pages, menus, SEO metadata, and public URLs.
 - [ ] Obtain Shopify exports/API data where available; use public-site exploration to supplement content, not to infer private records.
 - [ ] Map individual pieces and sets to the new types, preserving independent component sizes and set prices.
@@ -88,7 +89,7 @@
 - [ ] Compare imported counts, descriptions, prices, relationships, sizes, and image order against source data.
 - [ ] Record old-to-new URL mappings; preserve existing URLs where practical and prepare permanent redirects elsewhere.
 
-**Exit condition:** A verified staging catalog and content set can be recreated or updated through a repeatable import.
+**Exit condition:** A verified local catalog and content set can be recreated or updated through a repeatable import. Rehearse the import on staging in phase 7.
 
 ## 4. Build the reusable visual system and public pages
 
@@ -124,7 +125,7 @@
 
 ## 6. Connect publishing, images, transitions, and PWA
 
-- [ ] Implement a build-time published-content snapshot/query pipeline that uses the correct remote environment without exposing CMS credentials to browsers.
+- [ ] Implement a build-time published-content snapshot/query pipeline against local content without exposing CMS credentials to browsers; verify remote environment selection in phase 7.
 - [ ] Connect relevant publish/update/delete/settings changes to an authenticated rebuild trigger; coalesce bursts and retain the last successful site if a build fails.
 - [ ] Verify a publication and media change reaches public pages after a successful rebuild; verify drafts remain private.
 - [ ] Generate bounded responsive image derivatives during build/import, with modern formats, dimensions, correct sizes, and lazy loading below the fold.
@@ -137,7 +138,23 @@
 
 **Exit condition:** Publishing reliably refreshes prerendered pages, media loads efficiently, transitions remain accessible, and offline behavior cannot authorize stale purchases.
 
-## 7. Rehearse launch and cut over
+## 7. Validate staging, rehearse launch, and cut over
+
+All staging work is deferred to this phase. Complete the remote acceptance gate before production launch; local results do not establish Workers Free feasibility.
+
+### Deferred staging and remote acceptance
+
+- [ ] Complete separate staging and production Workers, D1 databases, R2 buckets, and session bindings; reuse existing resources and keep local, staging, and production data isolated.
+- [ ] Configure runtime secrets, environment-specific URLs, admin authentication, and media delivery; avoid production URL/passkey settings leaking into staging.
+- [ ] Register the merchant's staging administrator/passkey and verify fresh setup/login, content creation, image upload, relationship editing, and publication with the catalog model.
+- [ ] Verify restart/redeployment against existing remote data and confirm published content and media persist.
+- [ ] Measure complete authenticated create/save/publish requests, realistic gallery uploads, scheduled tasks, Worker CPU/errors, bundle/startup constraints, and account quotas; document whether the essential CMS workflows work on Workers Free.
+- [ ] Document backup/restore and failed-migration recovery; verify a staging restore including database, media, keys, and authentication using an agreed safe recovery target.
+- [ ] Verify remote environment selection for the public snapshot, authenticated rebuild triggers, and publication/media propagation on staging.
+
+**Remote acceptance gate:** Essential CMS operations must work on Workers Free and existing content must survive redeployment. If this fails, identify the exact blocker and agree on an architecture change before launch.
+
+### Launch rehearsal and cutover
 
 - [ ] Add canonical URLs, sitemap, robots rules, social metadata, and accurate Product/offer structured data; block staging indexing.
 - [ ] Verify redirects and internal links for products, collections, the old About/blog route, and policy pages.

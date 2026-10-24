@@ -2,6 +2,8 @@
 
 ## Status
 
+**Schedule update — 2026-10-25:** The user deferred all remaining staging work to phase 7 and chose local development for now. The observations below remain historical evidence; the outstanding remote checks are launch requirements and no longer block local phases 3–6.
+
 Foundation implemented and staging deployed. **Phase 1 is not yet fully accepted:** the merchant must register a staging passkey, and authenticated remote editing/upload tests must follow. No production Worker or Shopify domain cutover has occurred.
 
 ## Versions
