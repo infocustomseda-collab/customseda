@@ -63,18 +63,18 @@
 
 ## 2. Define the content model
 
-- [ ] Define Products, Conjuntos, Categories, Collections, Sizes, and Colors with stable IDs/slugs and explicit cardinality.
-- [ ] Add product descriptions, integer-cent EUR prices, publication status, availability default Yes, SEO metadata, and source Shopify IDs.
-- [ ] Define ordered gallery items with media reference, alt text, optional focal point, and first-image main-image behavior.
-- [ ] Define separate Top/Braguita links for Conjuntos and independent component size selections.
-- [ ] Implement server-side validation for wrong-category links, missing components, unsupported sizes, self/cyclic references, and invalid prices.
-- [ ] Protect existing Conjuntos when components are deleted, unpublished, recategorized, or otherwise changed.
-- [ ] Confirm and enforce the proposed color/collection inheritance and availability rules.
-- [ ] Define Pages, reusable Size Guides, homepage/site settings, navigation, popup, announcement, and shipping configuration.
-- [ ] Version content-model updates separately from EmDash core migrations; keep initial seed data small and free of catalog/media bulk imports.
-- [ ] Verify model constraints through admin editing and API/import writes using focused tests.
+- [x] Define Products, Conjuntos, Categories, Collections, Sizes, and Colors with stable IDs/slugs and explicit cardinality.
+- [x] Add product descriptions, integer-cent EUR prices, publication status, availability default Yes, SEO metadata, and source Shopify IDs.
+- [x] Define ordered gallery items with media reference, alt text, optional focal point, and first-image main-image behavior.
+- [x] Define separate Top/Braguita links for Conjuntos and independent component size selections.
+- [x] Implement server-side validation for wrong-category links, missing components, unsupported sizes, self/cyclic references, and invalid prices.
+- [x] Protect existing Conjuntos when components are deleted, unpublished, recategorized, or otherwise changed.
+- [x] Confirm and enforce the proposed color/collection inheritance and availability rules.
+- [x] Define Pages, reusable Size Guides, homepage/site settings, navigation, popup, announcement, and shipping configuration.
+- [x] Version content-model updates separately from EmDash core migrations; keep initial seed data small and free of catalog/media bulk imports.
+- [x] Verify model constraints through admin editing and API/import writes using focused tests.
 
-**Exit condition:** Editors can create valid Products and Conjuntos; invalid relationships are rejected consistently.
+**Exit condition:** Local model implemented and verified. Editors can create valid Products and Conjuntos; REST writes and runtime publication policies enforce the model. Non-REST pending-reference limitations and remote acceptance checks are documented in [the catalog workflow](../../catalog-model.md).
 
 ## 3. Audit and import Shopify content
 

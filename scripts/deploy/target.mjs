@@ -41,6 +41,7 @@ export function deploymentCommands(target) {
     ['astro', 'build'],
     [...migration, '--status'],
     [...migration],
+    ['catalog-model'],
     ['wrangler', 'deploy', '--env', target.environment],
     [...migration, '--check'],
   ];

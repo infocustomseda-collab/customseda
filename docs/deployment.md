@@ -7,7 +7,7 @@
 - Use a distinct `EMDASH_SITE_URL` per environment. Do not set a fixed production `siteUrl` in Astro config: passkeys and CSRF need the actual environment origin.
 - D1 IDs and R2 names are recorded in `wrangler.jsonc`; do not replace or reprovision them on each deploy.
 - Runtime migration mode is `check`; development is `auto`. Core migrations run through EmDash's CLI and D1 REST adapter on the deployment machine, outside a Worker HTTP invocation.
-- Keep the starter seed small. It bootstraps an empty site; editing it does not migrate existing collections. Shop schema changes get a separate versioned migration process in phase 2.
+- Keep the starter seed small. It bootstraps an empty site; editing it does not migrate existing collections. The catalog model has a separate version marker. The deployment runner applies it through a Node CLI and Wrangler D1 binding proxy after core migrations, before Worker upload. The bulk schema is never applied through the deployed CMS HTTP endpoint. See [catalog migration boundaries](catalog-model.md#deployment-boundary).
 - No sandbox runner or Worker Loader. These require Workers Paid.
 - The hourly maintenance handler and Wrangler Cron expression must match. Scheduled publications and backups still need resource-budget testing; an hourly trigger does not promise Free-tier compatibility for large jobs.
 
@@ -33,9 +33,9 @@ pnpm deploy:staging
 pnpm deploy:production
 ```
 
-The runner validates account/database/origin separation, builds with the selected `CLOUDFLARE_ENV`, displays the migration target, runs interactive migration, deploys that same build, and checks migration status. A failed command stops the sequence. No generic `deploy` command targets an implicit environment.
+The runner validates account/database/origin separation, builds with the selected `CLOUDFLARE_ENV`, displays the migration target, runs interactive core migration, applies the versioned catalog model from Node through the explicitly selected D1 binding, deploys that same build, and checks core migration status. A failed command stops the sequence. No generic `deploy` command targets an implicit environment.
 
-The runner uses an atomic local lock for the entire checkout. If interrupted, confirm its recorded PID is no longer running before manually removing the stale `.emdash/deploy.lock`. Run one deployment job at a time per database. EmDash's database migration lock is an additional guard; it is not a deployment queue. Any future CI must serialize by account + database UUID and provide the reviewed `--expected-target-fingerprint` for noninteractive migration. Do not automatically accept a newly reported fingerprint without inspecting its target.
+The runner uses an atomic local lock for the entire checkout. If interrupted, confirm its recorded PID is no longer running before manually removing the stale `.emdash/deploy.lock`. Run one deployment job at a time per database. Catalog migration also holds the database option `customseda.catalog.migration-lock` across its versioned steps; inspect its owner and timestamp before considering removal of a stale lock. EmDash's database migration lock is an additional guard; it is not a deployment queue. Any future CI must serialize by account + database UUID and provide the reviewed `--expected-target-fingerprint` for noninteractive migration. Do not automatically accept a newly reported fingerprint without inspecting its target.
 
 For diagnosis or noninteractive jobs, use these version-matched CLI commands with the explicit account, UUID, and Wrangler environment from the config:
 

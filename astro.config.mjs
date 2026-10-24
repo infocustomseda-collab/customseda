@@ -19,7 +19,23 @@ export default defineConfig({
 			storage: r2({ binding: "MEDIA" }),
 			// Never run remote core migrations during an HTTP request.
 			migrations: { runtime: "check", dev: "auto" },
+			plugins: [{
+				id: "customseda-catalog", version: "0.1.0", format: "native",
+				entrypoint: new URL("./src/lib/cms/plugin.ts", import.meta.url).pathname,
+			}],
 		}),
+        {
+            name: "customseda-catalog-routes",
+            hooks: {
+                "astro:config:setup"({ injectRoute }) {
+                    injectRoute({
+                        pattern: "/_emdash/api/customseda/model",
+                        entrypoint: "./src/lib/cms/model-route.ts",
+                        prerender: false,
+                    });
+                },
+            },
+        },
 	],
 	devToolbar: { enabled: false },
 });
