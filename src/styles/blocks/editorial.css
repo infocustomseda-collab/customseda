@@ -276,19 +276,21 @@
 		grid-template-columns: minmax(0, 1fr);
 		align-items: start;
 		row-gap: var(--space-m-l);
+		/* Normal pages are a centered reading column; pages that open with a photo use the full page width. */
 		max-inline-size: calc(48rem + 2 * var(--gutter));
+	}
+
+	.content-page[data-layout="intro"] {
+		max-inline-size: calc(var(--container-max) + 2 * var(--gutter));
 	}
 
 	.content-page :is(h2, h3)[id] {
 		scroll-margin-block-start: var(--anchor-offset);
 	}
 
-	/* Section index: a list under the title on phones, a sticky column beside the text on wide screens. */
-	.toc {
-		display: grid;
-		gap: var(--space-2xs);
-		padding-block-end: var(--space-s);
-		border-block-end: var(--border-width) solid var(--color-border-subtle);
+	/* Section index: one closed row on phones that opens the full list, a sticky open column on the right on wide screens. */
+	.toc__panel {
+		display: none;
 	}
 
 	.toc__title {
@@ -300,19 +302,21 @@
 
 	.toc__list,
 	.toc__sub {
+		display: grid;
+		gap: var(--space-3xs);
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
-	.toc__list {
-		display: grid;
-		gap: var(--space-3xs);
+	.toc__sub {
+		padding-inline-start: var(--space-s);
 	}
 
+	/* Taller rows on phones keep each link an easy tap target. */
 	.toc a {
 		display: inline-block;
-		padding-block: var(--space-3xs);
+		padding-block: var(--space-2xs);
 		color: var(--color-text-strong);
 		line-height: var(--leading-heading);
 		text-decoration-color: transparent;
@@ -322,8 +326,8 @@
 		text-decoration-color: currentcolor;
 	}
 
-	.toc__sub {
-		display: none;
+	.toc__sub a {
+		color: var(--color-text-subtle);
 	}
 
 	@media (min-width: 60rem) {
@@ -331,10 +335,12 @@
 			--anchor-offset: 10rem;
 		}
 
+		/* A centered block: the text column (as wide as the prose measure) with the index to its right,
+		   separated by the same gap as the site's other two-column blocks. */
 		.content-page[data-layout="toc"] {
-			grid-template-columns: 14rem minmax(0, 48rem);
-			column-gap: var(--space-xl-2xl);
-			max-inline-size: calc(14rem + 48rem + var(--space-2xl) + 2 * var(--gutter));
+			grid-template-columns: minmax(0, var(--measure)) 14rem;
+			column-gap: var(--space-l-xl);
+			max-inline-size: calc(var(--measure) + 14rem + var(--space-xl) + 2 * var(--gutter));
 		}
 
 		.content-page[data-layout="toc"] > .content-page__title {
@@ -342,36 +348,34 @@
 		}
 
 		.content-page[data-layout="toc"] > .toc {
+			grid-area: 2 / 2;
 			position: sticky;
 			inset-block-start: var(--anchor-offset);
 			max-block-size: calc(100dvh - var(--anchor-offset) - var(--space-m));
 			overflow-y: auto;
 			overscroll-behavior: contain;
-			padding-block-end: 0;
-			border-block-end: 0;
 			font-size: var(--step--1);
 		}
 
-		.toc__sub {
+		.toc__compact {
+			display: none;
+		}
+
+		.toc__panel {
 			display: grid;
-			padding-inline-start: var(--space-s);
+			gap: var(--space-2xs);
 		}
 
-		.toc__sub a {
-			color: var(--color-text-subtle);
+		.toc__panel a {
+			padding-block: var(--space-3xs);
 		}
 
-		.content-page[data-layout="toc"] > :not(.toc, .content-page__title) {
-			grid-column: 2;
+		.content-page[data-layout="toc"] > .content-page__body {
+			grid-area: 2 / 1;
 		}
 	}
 
 	/* A leading photo: above the text on phones, beside it on wide screens, as on the live About page. */
-	/* Full page width, so the text and photo line up with the page-width photos below. */
-	.content-page[data-layout="intro"] {
-		max-inline-size: calc(var(--container-max) + 2 * var(--gutter));
-	}
-
 	.content-intro {
 		display: grid;
 		grid-template-areas: "media" "text";

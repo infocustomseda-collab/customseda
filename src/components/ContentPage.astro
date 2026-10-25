@@ -6,7 +6,9 @@ import type { ShopEntry } from "../lib/shop/content";
 import { contentLayout, type ContentBlock } from "../lib/shop/content-layout";
 import { srcsetOf, type Derivative } from "../lib/shop/images";
 import { localHref, withoutLeadingTitle } from "../lib/shop/site";
+import Disclosure from "./Disclosure.astro";
 import RichText from "./RichText.astro";
+import TocList from "./TocList.astro";
 
 interface Props {
 	page: ShopEntry;
@@ -33,6 +35,7 @@ const photo = (block: ContentBlock) => {
 };
 const lead = layout.lead ? photo(layout.lead) : null;
 const trailing = layout.trailing.map(photo).filter((image) => image.src);
+const tocLinks = layout.toc.reduce((count, item) => count + 1 + (item.children?.length ?? 0), 0);
 ---
 
 <article class="wrapper region content-page" data-layout={lead?.src ? "intro" : layout.toc.length ? "toc" : undefined}>
@@ -51,19 +54,16 @@ const trailing = layout.trailing.map(photo).filter((image) => image.src);
 			<h1 class="content-page__title">{layout.heading}</h1>
 			{layout.toc.length > 0 && (
 				<nav class="toc" aria-label="En esta página">
-					<p class="toc__title" aria-hidden="true">En esta página</p>
-					<ol class="toc__list" role="list">
-						{layout.toc.map((item) => (
-							<li>
-								<a href={`#${item.id}`}>{item.text}</a>
-								{item.children && item.children.length > 0 && (
-									<ol class="toc__sub" role="list">
-										{item.children.map((child) => <li><a href={`#${child.id}`}>{child.text}</a></li>)}
-									</ol>
-								)}
-							</li>
-						))}
-					</ol>
+					{/* Phones: one closed row; wide screens: the open sticky column. Only one is displayed. */}
+					<div class="toc__compact">
+						<Disclosure title={`En esta página (${tocLinks})`}>
+							<TocList items={layout.toc} />
+						</Disclosure>
+					</div>
+					<div class="toc__panel">
+						<p class="toc__title" aria-hidden="true">En esta página</p>
+						<TocList items={layout.toc} />
+					</div>
 				</nav>
 			)}
 			<RichText value={layout.body} class="content-page__body" />

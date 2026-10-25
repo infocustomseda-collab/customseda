@@ -27,6 +27,8 @@ function anchorOf(text: string, used: Set<string>): string {
  */
 export function contentLayout(value: unknown, options: { heading: string; headingFromContent?: boolean }): ContentLayout {
 	let blocks = (Array.isArray(value) ? value : []) as ContentBlock[];
+	// A page that is only photos (the size guide) has no text to sit beside: keep them in the column.
+	if (!blocks.some((block) => !isImage(block))) return { heading: options.heading, body: blocks, trailing: [], toc: [] };
 	const lead = blocks[0] && isImage(blocks[0]) ? blocks[0] : undefined;
 	if (lead) blocks = blocks.slice(1);
 

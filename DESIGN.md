@@ -214,10 +214,12 @@ A warm, quiet palette of browns on near-white paper, with two light accents (but
 - **Bands:** sections sit flush. Each colored band (cacao, butter, sand) carries its own vertical padding (`band`: about 26px on phones to 54px wide). Pages alternate full-bleed photographs and bands, and the footer is separated by the `section` gap.
 - **Grids:** the product grid has two columns on phones and three (or four for related items) from 60rem, with row gaps `l`–`xl`. Process cards and story photos sit in three columns from 48rem. Story photos are a horizontal snap strip on phones.
 - **Product detail:** gallery (3fr) beside a sticky details column (2fr, at least 20rem) from 60rem, stacked below that. The gallery is a swipeable 4:5 strip with a counter on phones, and the first image runs full width above a 2-up grid on wide screens.
-- **Content pages:** a single column of 48rem, with prose at 65ch. `/blogs/noticias` is the reference layout for content pages.
-  - **Lead photo:** when the content starts with a photo, it sits above the text on phones and to the right of it (3fr text / 2fr photo) from 48rem, at full page width. That is the live "Sobre Seda" composition.
+- **Content pages:** two layouts.
+  - **Normal pages** (envíos, privacy policy, Contacto, conjuntos, size guide): a centered reading column of 48rem (prose at 65ch). With a section index the centered block is the text column (as wide as the 65ch measure) plus a 14rem index on its right, separated by `--space-l-xl` (54px at 1440px), the same gap as the site's other two-column blocks.
+  - **Pages that open with a photo** (noticias, `/blogs/noticias` is the reference): the full page width, text on the left and the photo on the right.
+  - **Lead photo:** when the content starts with a photo and has text after it, the photo sits above the text on phones and to the right of it (3fr text / 2fr photo) from 48rem, at full page width. That is the live "Sobre Seda" composition.
   - **Trailing photos:** photos after the text run at page width.
-  - **Section index:** pages with 4 or more h2/h3 headings get an "En esta página" index. On phones it lists the h2s under the title; from 60rem it is a sticky 14rem column beside the text, with its h3s nested. Anchored headings clear the sticky header (6rem on phones, 10rem from 60rem).
+  - **Section index:** pages with 4 or more h2/h3 headings get an "En esta página" index. On phones it is one closed "En esta página (N)" disclosure under the title that opens the full list; from 60rem it is a sticky 14rem column to the right of the text, with its h3s nested. Anchored headings clear the sticky header (6rem on phones, 10rem from 60rem).
 - **Breakpoints:** 48rem (tablet: hero overlay, three-column cards, footer row) and 60rem (desktop: nav row, split detail, catalog filters inline).
 - **CSS architecture:** CUBE CSS in cascade layers `reset, tokens, global, compositions, blocks, utilities, exceptions`. Compositions (`wrapper`, `stack`, `cluster`, `grid`, `split`) know nothing about content. Blocks consume semantic tokens only, never the `--seda-*` primitives.
 

@@ -14,6 +14,14 @@ test('a leading photo leads the page and trailing photos follow the text',()=>{
  assert.deepEqual(layout.toc,[]);
 });
 
+test('a page that is only a photo keeps it in the text column (the size guide)',()=>{
+ const layout=contentLayout([image('tallas')],{heading:'Guía de tallas',headingFromContent:true});
+ assert.equal(layout.lead,undefined);
+ assert.equal(layout.heading,'Guía de tallas');
+ assert.deepEqual(layout.body.map(b=>b._key),['tallas']);
+ assert.deepEqual(layout.trailing,[]);
+});
+
 test('without a content heading the page title stays and photos inside the text stay in place',()=>{
  const layout=contentLayout([block('Intro'),image('mid'),block('Fin')],{heading:'Envíos'});
  assert.equal(layout.heading,'Envíos');
