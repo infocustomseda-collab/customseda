@@ -167,8 +167,9 @@
 		object-fit: cover;
 	}
 
+	/* One fluid inset on every side, so the caption text sits evenly in its panel at every width. */
 	.highlight__body {
-		padding: var(--space-m) var(--space-s-m) var(--space-l);
+		padding: var(--space-m-l);
 		background: var(--color-surface-tint);
 	}
 
@@ -180,7 +181,12 @@
 		font-size: var(--step-1);
 	}
 
-	/* Slideshow: full-bleed strip with uniform crops and counter at every width. */
+	/* Slideshow: full-bleed strip with uniform crops and counter at every width. The space under the
+	   counter matches the space above it, so the controls belong to the photos, not the next band. */
+	.gallery--slideshow {
+		padding-block-end: var(--space-xs);
+	}
+
 	.gallery--slideshow .gallery__item {
 		flex-basis: 100%;
 	}
@@ -264,6 +270,13 @@
 
 	.story__cta {
 		justify-self: center;
+	}
+
+	/* Homepage: the catalog link that closes the craft story. */
+	.home-cta {
+		display: flex;
+		justify-content: center;
+		max-inline-size: none;
 	}
 }
 

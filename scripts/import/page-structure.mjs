@@ -1,4 +1,5 @@
 // Restores the rich-text structure of pages that the first import stored as flat paragraphs.
+import {decode} from './shopify-plan.mjs';
 const textBlocks=content=>content.filter(b=>b?._type==='block');
 
 // The page body from a saved storefront capture: <main> without the page title, styles and scripts.
@@ -6,6 +7,11 @@ export function mainHtmlFromCapture(html) {
  const main=/<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html)?.[1];
  if(main===undefined) throw new Error('Capture has no <main> element.');
  return main.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,'').replace(/<link\b[^>]*>/gi,'').replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/i,'').trim();
+}
+
+// The text of the first, flat import of an HTML description: one line per paragraph, list item or break.
+export function flatImportText(html) {
+ return String(html??'').replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,'').replace(/<\/(p|div|li|h[1-6])\s*>|<br\s*\/?>/gi,'\n').split('\n').map(line=>decode(line.replace(/<[^>]*>/g,'')).trim()).filter(Boolean).join('\n');
 }
 
 // True while the stored blocks are still exactly the flat paragraphs of the first import, so a

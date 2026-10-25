@@ -283,7 +283,10 @@ A native modal dialog: square paper card (at most 26rem), optional 4:3 image, ce
 On phones, the photo (3:2) sits above a solid cacao panel with sky text. From 48rem the copy sits over the photo on a cacao gradient scrim (88% → 60% → transparent), anchored to the bottom.
 
 ### Process cards
-A square photo over a sand caption panel with a centered step-1 title, three across from 48rem. These are the "El patrón / La costura / El tejido" story.
+A square photo over a sand caption panel with a centered step-1 title, three across from 48rem. The panel has the same inset on all four sides (`--space-m-l`: 26px on phones, 36px on desktop). These are the "El patrón / La costura / El tejido" story.
+
+### Slideshow
+A full-bleed strip with a centered `< 1 / 5 >` counter below it. The counter has the same space above and below (`--space-xs`), so it belongs to the photos and never touches the next band.
 
 ## Do's and Don'ts
 

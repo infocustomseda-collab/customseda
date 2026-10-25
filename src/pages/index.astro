@@ -1,5 +1,6 @@
 ---
 // Homepage, assembled from the editable site settings (hero, featured Conjunto, slideshow, intro, process).
+import Button from "../components/Button.astro";
 import Gallery from "../components/Gallery.astro";
 import FeaturedProduct from "../components/home/FeaturedProduct.astro";
 import Highlights from "../components/home/Highlights.astro";
@@ -27,10 +28,11 @@ const highlights = (Array.isArray(data.highlights) ? data.highlights : []).flatM
 const heroTitle = typeof data.hero_title === "string" && data.hero_title ? data.hero_title : site.siteName;
 const heroText = typeof data.hero_text === "string" ? data.hero_text : undefined;
 const introTitle = typeof data.intro_title === "string" ? data.intro_title : "";
+const collectionLink = localHref(data.hero_link);
 ---
 
 <Shop title={site.siteName} description={heroText ?? plainText(data.intro_text)} site={site}>
-	<HomeHero title={heroTitle} text={heroText} image={imageView(data.hero_image, "")} link={localHref(data.hero_link)} />
+	<HomeHero title={heroTitle} text={heroText} image={imageView(data.hero_image, "")} link={collectionLink} />
 
 	{featured && (
 		<FeaturedProduct product={featured.card} color={typeof color?.data.title === "string" ? color.data.title : undefined} description={featuredEntry?.data.description} />
@@ -48,5 +50,12 @@ const introTitle = typeof data.intro_title === "string" ? data.intro_title : "";
 	)}
 
 	<Highlights items={highlights} />
+
+	{/* After the craft story, a way into the catalog so the page does not end on a dead end. */}
+	{collectionLink && (
+		<p class="wrapper home-cta">
+			<Button href={collectionLink} variant="accent">Ver colección</Button>
+		</p>
+	)}
 </Shop>
 
