@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {siteChrome,productCard,localHref,settingsOf} from '../src/lib/shop/site.ts';
+import {siteChrome,productCard,localHref,linkHref,settingsOf} from '../src/lib/shop/site.ts';
 import {imageView} from '../src/lib/shop/view.ts';
 
 const menu=items=>({items:items.map(([label,url])=>({label,url,children:[]}))});
@@ -34,6 +34,15 @@ test('links to the old storefront domain become site paths; other links are kept
  assert.equal(localHref('https://www.instagram.com/customseda/'),'https://www.instagram.com/customseda/');
  assert.equal(localHref('javascript:alert(1)'),undefined);
  assert.equal(localHref(null),undefined);
+});
+
+test('rich-text links also accept email and phone links; navigation stays web-only',()=>{
+ assert.equal(linkHref('mailto:info.customseda@gmail.com'),'mailto:info.customseda@gmail.com');
+ assert.equal(linkHref('tel:+34686659711'),'tel:+34686659711');
+ assert.equal(linkHref('https://www.customseda.com/pages/contact'),'/pages/contact');
+ assert.equal(linkHref('javascript:alert(1)'),undefined);
+ assert.equal(linkHref('mailto:'),undefined);
+ assert.equal(localHref('mailto:info.customseda@gmail.com'),undefined);
 });
 
 test('catalog entries map to cards at their retained public paths',()=>{

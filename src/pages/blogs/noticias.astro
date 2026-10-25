@@ -14,5 +14,5 @@ const heading = pageHeading(site, Astro.url.pathname, String(page.data.title ?? 
 ---
 
 <Shop title={heading} description={plainText(page.data.content)} site={site}>
-	<ContentPage page={page} heading={heading} />
+	<ContentPage page={page} heading={heading} headingFromContent />
 </Shop>

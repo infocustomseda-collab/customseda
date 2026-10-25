@@ -1,21 +1,78 @@
 ---
 // Long-form CMS page (shipping, policies, about): heading plus left-aligned rich text at reading measure.
+// A leading photo sits beside the text on wide screens; photos after the text run at page width;
+// pages with several sections get an index ("En esta página") beside the text.
 import type { ShopEntry } from "../lib/shop/content";
-import { withoutLeadingTitle } from "../lib/shop/site";
+import { contentLayout, type ContentBlock } from "../lib/shop/content-layout";
+import { srcsetOf, type Derivative } from "../lib/shop/images";
+import { localHref, withoutLeadingTitle } from "../lib/shop/site";
+import Disclosure from "./Disclosure.astro";
 import RichText from "./RichText.astro";
+import TocList from "./TocList.astro";
 
 interface Props {
 	page: ShopEntry;
 	heading: string;
+	/** Use the content's first h2 as the page heading, as the live "Sobre Seda" page does. */
+	headingFromContent?: boolean;
 }
 
-const { page, heading } = Astro.props;
+const { page, heading, headingFromContent = false } = Astro.props;
 const title = typeof page.data.title === "string" ? page.data.title : heading;
-const body = withoutLeadingTitle(withoutLeadingTitle(page.data.content, heading), title);
+const content = withoutLeadingTitle(withoutLeadingTitle(page.data.content, heading), title);
+const layout = contentLayout(content, { heading, headingFromContent });
+
+type Asset = { url?: string; width?: number; height?: number; derivatives?: Derivative[] };
+const photo = (block: ContentBlock) => {
+	const asset = (block.asset ?? {}) as Asset;
+	return {
+		src: localHref(asset.url),
+		srcset: asset.derivatives?.length ? srcsetOf(asset.derivatives) : undefined,
+		width: asset.width,
+		height: asset.height,
+		alt: typeof block.alt === "string" ? block.alt : "",
+	};
+};
+const lead = layout.lead ? photo(layout.lead) : null;
+const trailing = layout.trailing.map(photo).filter((image) => image.src);
+const tocLinks = layout.toc.reduce((count, item) => count + 1 + (item.children?.length ?? 0), 0);
 ---
 
-<article class="wrapper region content-page stack">
-	<h1>{heading}</h1>
-	<RichText value={body} />
+<article class="wrapper region content-page" data-layout={lead?.src ? "intro" : layout.toc.length ? "toc" : undefined}>
+	{lead?.src ? (
+		<div class="content-intro">
+			<div class="content-intro__text stack">
+				<h1>{layout.heading}</h1>
+				<RichText value={layout.body} />
+			</div>
+			<figure class="content-intro__media">
+				<img src={lead.src} srcset={lead.srcset} sizes="(min-width: 48rem) 40vw, 100vw" width={lead.width} height={lead.height} alt={lead.alt} fetchpriority="high" decoding="async" />
+			</figure>
+		</div>
+	) : (
+		<>
+			<h1 class="content-page__title">{layout.heading}</h1>
+			{layout.toc.length > 0 && (
+				<nav class="toc" aria-label="En esta página">
+					{/* Phones: one closed row; wide screens: the open sticky column. Only one is displayed. */}
+					<div class="toc__compact">
+						<Disclosure title={`En esta página (${tocLinks})`}>
+							<TocList items={layout.toc} />
+						</Disclosure>
+					</div>
+					<div class="toc__panel">
+						<p class="toc__title" aria-hidden="true">En esta página</p>
+						<TocList items={layout.toc} />
+					</div>
+				</nav>
+			)}
+			<RichText value={layout.body} class="content-page__body" />
+		</>
+	)}
 	<slot />
 </article>
+{trailing.map((image) => (
+	<figure class="wrapper content-wide">
+		<img src={image.src} srcset={image.srcset} sizes="(min-width: 82.5rem) 82.5rem, 100vw" width={image.width} height={image.height} alt={image.alt} loading="lazy" decoding="async" />
+	</figure>
+))}

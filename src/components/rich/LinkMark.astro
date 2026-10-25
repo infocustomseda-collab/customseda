@@ -1,12 +1,12 @@
 ---
 // Portable Text link mark: old-storefront links become site paths; unsafe schemes render as text.
-import { localHref } from "../../lib/shop/site";
+import { linkHref } from "../../lib/shop/site";
 
 interface Props {
 	node: { markDef: { href?: string; blank?: boolean } };
 }
 
-const href = localHref(Astro.props.node?.markDef?.href);
+const href = linkHref(Astro.props.node?.markDef?.href);
 const external = href?.startsWith("http");
 ---
 

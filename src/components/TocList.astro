@@ -1,0 +1,23 @@
+---
+// Section links of a content page's index, with subsections nested under their section.
+import type { TocItem } from "../lib/shop/content-layout";
+
+interface Props {
+	items: TocItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<ol class="toc__list" role="list">
+	{items.map((item) => (
+		<li>
+			<a href={`#${item.id}`}>{item.text}</a>
+			{item.children && item.children.length > 0 && (
+				<ol class="toc__sub" role="list">
+					{item.children.map((child) => <li><a href={`#${child.id}`}>{child.text}</a></li>)}
+				</ol>
+			)}
+		</li>
+	))}
+</ol>

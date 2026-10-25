@@ -21,6 +21,11 @@
 		color: var(--color-text-strong);
 	}
 
+	/* A phone number must not break across lines. */
+	.prose a:is([href^="tel:"], [href^="https://wa.me/"]) {
+		white-space: nowrap;
+	}
+
 	.text-center .prose :is(p, li) {
 		margin-inline: auto;
 	}
@@ -265,8 +270,146 @@
 /* Content pages, contact details and the not-found page. */
 @layer blocks {
 	.content-page {
-		--stack-space: var(--space-m-l);
+		/* Clears the sticky header when the index jumps to a section. */
+		--anchor-offset: 6rem;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		align-items: start;
+		row-gap: var(--space-m-l);
+		/* Normal pages are a centered reading column; pages that open with a photo use the full page width. */
 		max-inline-size: calc(48rem + 2 * var(--gutter));
+	}
+
+	.content-page[data-layout="intro"] {
+		max-inline-size: calc(var(--container-max) + 2 * var(--gutter));
+	}
+
+	.content-page :is(h2, h3)[id] {
+		scroll-margin-block-start: var(--anchor-offset);
+	}
+
+	/* Section index: one closed row on phones that opens the full list, a sticky open column on the right on wide screens. */
+	.toc__panel {
+		display: none;
+	}
+
+	.toc__title {
+		color: var(--color-text-subtle);
+		font-size: var(--step--1);
+		font-weight: var(--weight-body-strong);
+		letter-spacing: var(--tracking-ui);
+	}
+
+	.toc__list,
+	.toc__sub {
+		display: grid;
+		gap: var(--space-3xs);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.toc__sub {
+		padding-inline-start: var(--space-s);
+	}
+
+	/* Taller rows on phones keep each link an easy tap target. */
+	.toc a {
+		display: inline-block;
+		padding-block: var(--space-2xs);
+		color: var(--color-text-strong);
+		line-height: var(--leading-heading);
+		text-decoration-color: transparent;
+	}
+
+	.toc a:hover {
+		text-decoration-color: currentcolor;
+	}
+
+	.toc__sub a {
+		color: var(--color-text-subtle);
+	}
+
+	@media (min-width: 60rem) {
+		.content-page {
+			--anchor-offset: 10rem;
+		}
+
+		/* A centered block: the text column (as wide as the prose measure) with the index to its right,
+		   separated by the same gap as the site's other two-column blocks. */
+		.content-page[data-layout="toc"] {
+			grid-template-columns: minmax(0, var(--measure)) 14rem;
+			column-gap: var(--space-l-xl);
+			max-inline-size: calc(var(--measure) + 14rem + var(--space-xl) + 2 * var(--gutter));
+		}
+
+		.content-page[data-layout="toc"] > .content-page__title {
+			grid-column: 1 / -1;
+		}
+
+		.content-page[data-layout="toc"] > .toc {
+			grid-area: 2 / 2;
+			position: sticky;
+			inset-block-start: var(--anchor-offset);
+			max-block-size: calc(100dvh - var(--anchor-offset) - var(--space-m));
+			overflow-y: auto;
+			overscroll-behavior: contain;
+			font-size: var(--step--1);
+		}
+
+		.toc__compact {
+			display: none;
+		}
+
+		.toc__panel {
+			display: grid;
+			gap: var(--space-2xs);
+		}
+
+		.toc__panel a {
+			padding-block: var(--space-3xs);
+		}
+
+		.content-page[data-layout="toc"] > .content-page__body {
+			grid-area: 2 / 1;
+		}
+	}
+
+	/* A leading photo: above the text on phones, beside it on wide screens, as on the live About page. */
+	.content-intro {
+		display: grid;
+		grid-template-areas: "media" "text";
+		gap: var(--space-l-xl);
+	}
+
+	.content-intro__text {
+		--stack-space: var(--space-s-m);
+		grid-area: text;
+	}
+
+	.content-intro__media {
+		grid-area: media;
+		margin: 0;
+	}
+
+	.content-intro__media img,
+	.content-wide img {
+		inline-size: 100%;
+		block-size: auto;
+	}
+
+	/* Side by side from tablet width, as the live page does. */
+	@media (min-width: 48rem) {
+		.content-intro {
+			grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+			grid-template-areas: "text media";
+			align-items: start;
+		}
+	}
+
+	/* Photos after the text run at page width. */
+	.content-wide {
+		margin-block: 0 var(--space-m-l);
 	}
 
 	.contact-list {

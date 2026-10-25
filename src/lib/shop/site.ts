@@ -21,7 +21,13 @@ export function localHref(value: unknown): string | undefined {
 	}
 }
 
-const isCurrent = (href: string, path: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
+// Rich-text links may also open mail or the phone; navigation and images stay on localHref.
+export function linkHref(value: unknown): string | undefined {
+	if (typeof value === "string" && /^(mailto|tel):[^\s]+$/i.test(value)) return value;
+	return localHref(value);
+}
+
+const isCurrent =(href: string, path: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
 const navItems = (menu: Menu, path: string): NavItem[] =>
 	(menu?.items ?? []).flatMap((item) => {
 		const href = localHref(item.url);

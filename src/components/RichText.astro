@@ -1,6 +1,7 @@
 ---
 // Editable rich text (Portable Text) in the shop's prose style.
 import { PortableText } from "emdash/ui";
+import Heading from "./rich/Heading.astro";
 import LinkMark from "./rich/LinkMark.astro";
 
 interface Props {
@@ -14,6 +15,6 @@ const blocks = Array.isArray(value) ? value : [];
 
 {blocks.length > 0 && (
 	<div class:list={["prose flow", className]}>
-		<PortableText value={blocks} components={{ mark: { link: LinkMark } }} />
+		<PortableText value={blocks} components={{ block: { h2: Heading, h3: Heading }, mark: { link: LinkMark } }} />
 	</div>
 )}
