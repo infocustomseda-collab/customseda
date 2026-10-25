@@ -5,7 +5,7 @@ Work in this checkout on `master`, as explicitly requested by the user.
 ## Scope and source of truth
 
 - Follow `docs/superpowers/plans/2026-10-24-custom-seda.md` phase by phase.
-- Deployment (phase 6, authorized by the user on 2026-10-25): GitHub Actions deploys staging on every push to `master`, and production only once `PRODUCTION_DEPLOY_ENABLED` is turned on after the supervised first production setup. CMS publishes rebuild their own environment. Manual `pnpm deploy:<env>` stays available. Remote acceptance/performance checks, recovery rehearsals and cutover remain phase 7.
+- Work locally (confirmed by the user again on 2026-10-25, after phase 6). No staging or production deploys until phase 7. The deploy tooling exists but stays off: GitHub Actions only runs tests until `STAGING_DEPLOY_ENABLED` / `PRODUCTION_DEPLOY_ENABLED` are set, publish-triggered rebuilds need `GITHUB_REBUILD_TOKEN`, and manual `pnpm deploy:<env>` (wrangler login) is for phase 7. The staging catalog import, remote acceptance/performance checks, recovery rehearsals and cutover are phase 7.
 - Phase 1 is infrastructure and feasibility only. The starter's posts/pages are temporary CMS smoke-test types, not the approved shop model or visual design.
 - Products and Conjuntos are separate types. Made to order; no stock tracking. Stripe Dashboard manages orders.
 - No Tailwind. Preserve the approved identity in later design work.

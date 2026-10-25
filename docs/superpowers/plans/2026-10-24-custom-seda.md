@@ -140,7 +140,7 @@
 - **Rebuilds:** CMS publishes, scheduled publishes and an admin route dispatch rebuilds.
 - **Transitions and PWA:** native cross-document transitions and an installable PWA with offline fallback.
 
-Still open: the GitHub, Cloudflare and rebuild-token setup, the staging catalog import (blocked on a staging administrator), remote verification of publish → rebuild, and the browser checks (transitions, popup back/forward, offline, update banner, mobile performance), which move to phase 7's browser pass.
+The user chose to stay local on 2026-10-25, so all remote work moves to phase 7: the GitHub, Cloudflare and rebuild-token setup, the first staging deploy (`pnpm deploy:staging --allow-empty`, using the wrangler login), the staging catalog import (blocked on a staging administrator), remote verification of publish → rebuild, and the browser checks (transitions, popup back/forward, offline, update banner, mobile performance), which move to phase 7's browser pass.
 
 - [x] Implement a build-time published-content snapshot/query pipeline against local content without exposing CMS credentials to browsers; verify remote environment selection in phase 7.
 - [x] Connect relevant publish/update/delete/settings changes to an authenticated rebuild trigger; coalesce bursts and retain the last successful site if a build fails.
