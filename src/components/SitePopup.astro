@@ -61,12 +61,17 @@ const { popups } = Astro.props;
 			dialog.addEventListener("click", (event) => {
 				if (event.target === dialog) dialog.close();
 			});
-			window.setTimeout(() => {
-				// A page restored from the back/forward cache resumes this timer: recheck dismissals made elsewhere.
-				if (choosePopup(schedules, Date.now(), stored)?.id !== chosen.id) return;
+			this.timer = window.setTimeout(() => {
+				// Pages may have been swapped (ClientRouter) or restored from the back/forward cache meanwhile:
+				// open only while this dialog is on the page, and recheck dismissals made elsewhere.
+				if (!dialog.isConnected || choosePopup(schedules, Date.now(), stored)?.id !== chosen.id) return;
 				if (!dialog.open && !document.querySelector("dialog[open], :popover-open")) dialog.showModal();
 			}, chosen.delaySeconds * 1000);
 		}
+		disconnectedCallback() {
+			window.clearTimeout(this.timer);
+		}
+		timer?: number;
 	}
 	if (!customElements.get("site-popups")) customElements.define("site-popups", SitePopups);
 </script>

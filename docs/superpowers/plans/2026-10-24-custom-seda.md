@@ -138,7 +138,7 @@
 - **Gate:** static assets stay behind the foundation gate (`run_worker_first`) until launch.
 - **Deploys:** the runner migrates, snapshots, builds WebP derivatives, builds and deploys. GitHub Actions deploys staging from `master`; production is gated by `PRODUCTION_DEPLOY_ENABLED`.
 - **Rebuilds:** CMS publishes, scheduled publishes and an admin route dispatch rebuilds.
-- **Transitions and PWA:** native cross-document transitions and an installable PWA with offline fallback.
+- **Transitions and PWA:** Astro `ClientRouter` navigation (chosen by the user over native cross-document transitions, which Firefox does not support), with the product photo and title animating from list to detail. The PWA is installable with an offline fallback.
 
 The user chose to stay local on 2026-10-25, so all remote work moves to phase 7: the GitHub, Cloudflare and rebuild-token setup, the first staging deploy (`pnpm deploy:staging --allow-empty`, using the wrangler login), the staging catalog import (blocked on a staging administrator), remote verification of publish → rebuild, and the browser checks (transitions, popup back/forward, offline, update banner, mobile performance), which move to phase 7's browser pass.
 
