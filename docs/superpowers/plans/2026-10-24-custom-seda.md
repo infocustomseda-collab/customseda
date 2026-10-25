@@ -95,7 +95,9 @@
 
 ## 4. Build the reusable visual system and public pages
 
-- [ ] Audit representative existing desktop/mobile pages and extract logo, font, palette, spacing, border, image-ratio, and motion decisions.
+**Progress — 2026-10-25:** The current-site visual audit is recorded in [the visual audit](../../design/visual-audit.md). It covers the Studio theme tokens, computed styles, and desktop/mobile captures of the home, product, Conjunto, collection, Margarita and size-guide pages. Open merchant asks are a vector logo and icon source, plus the fate of the unused theme schemes and the WhatsApp button.
+
+- [x] Audit representative existing desktop/mobile pages and extract logo, font, palette, spacing, border, image-ratio, and motion decisions.
 - [ ] Define semantic CSS tokens, Utopia fluid type/space scales, selected Open Props values, and a CUBE CSS structure.
 - [ ] Build shared layouts and components: container, stack, cluster, grid, header/footer, buttons, forms, product cards, galleries, price, and size selectors.
 - [ ] Implement homepage and Margarita story using editable CMS content and reusable sections.
