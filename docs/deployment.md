@@ -55,9 +55,11 @@ The runner validates account, database and origin separation, then runs these st
 3. Apply the versioned catalog model through the explicitly selected D1 binding.
 4. Write the published-content snapshot of that environment. The step refuses an empty catalog unless `--allow-empty` is passed, for a first deploy.
 5. Generate WebP image derivatives from that environment's R2 (see [Images and build budget](#images-and-build-budget)).
-6. Build. The build refuses a snapshot from another environment than `CLOUDFLARE_ENV` (`local` when unset).
-7. Deploy that build.
-8. Check core migration status against the build's manifest.
+6. Migrate a **local** stand-in of that environment's database. Prerendering runs EmDash in a local Worker, and EmDash refuses unmigrated databases; the remote database is not involved.
+7. Build. The build refuses a snapshot from another environment than `CLOUDFLARE_ENV` (`local` when unset).
+8. Check the static output: every page must be an HTML document, never an EmDash error response.
+9. Deploy that build.
+10. Check core migration status against the build's manifest.
 
 A failed command stops the sequence. No generic `deploy` command targets an implicit environment. The `emdash migrate` steps need `CLOUDFLARE_API_TOKEN` in the environment (see [Credentials](#credentials)); a Wrangler OAuth login is not enough.
 
