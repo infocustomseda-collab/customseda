@@ -1,5 +1,6 @@
 ---
 // Product gallery: swipeable strip with counter on small screens, stacked grid on wide ones.
+// The slideshow variant stays a full-bleed strip at every width.
 import type { GalleryImage } from "../lib/shop/view";
 import Icon from "./Icon.astro";
 
@@ -7,12 +8,13 @@ interface Props {
 	images: GalleryImage[];
 	label: string;
 	transitionName?: string;
+	variant?: "product" | "slideshow";
 }
 
-const { images, label, transitionName } = Astro.props;
+const { images, label, transitionName, variant = "product" } = Astro.props;
 ---
 
-<product-gallery class="gallery" role="region" aria-label={label}>
+<product-gallery class:list={["gallery", variant === "slideshow" && "gallery--slideshow"]} role="region" aria-label={label}>
 	<ul class="gallery__list" role="list" tabindex="0">
 		{images.map((image, index) => (
 			<li class="gallery__item" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>

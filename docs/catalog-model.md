@@ -46,6 +46,14 @@ No sample products, bundles, merchant shipping prices, or source images are impo
 
 The [local Shopify import](import/shopify-local-import.md) now supplies the actual catalog and supporting content in Spanish (`es`), the configured site default. A separate `customseda.shopify-source.v1` migration adds optional source JSON fields and permits missing size references at the schema layer for native incomplete drafts. Catalog REST validation and publication still require valid sizes. Two source bottoms intentionally remain size-less drafts; no supported sizes were invented. All 16 imported catalog entries are drafts, while imported color lookup labels are published locally. Existing seeded lookup IDs remain intact and resolve through EmDash's reference fallback.
 
+## Storefront model and homepage content
+
+`customseda.storefront.v1` (`seed/storefront.json`) extends Site Settings with the homepage sections: featured Conjunto (single reference), slideshow (ordered images with alt text and focal point), intro title and rich text, process cards (image, alt, title, text) and a TikTok link. It runs after the catalog model through `applyModelMigrations`, both from `pnpm cms:model` locally and from the deployment runner remotely. It upserts only those fields; import-only fields such as `shopify_source` are kept. The applied v1 catalog seed is unchanged.
+
+`pnpm cms:storefront` (local only, with `pnpm dev` running) fills those fields from the audited Shopify homepage. It also sets the source announcement, the primary and footer menus, and restores the Margarita page's source order (photo rows between paragraphs, final "Ver colección" link). All writes go through EmDash's REST API as drafts. Rerunning leaves already-ordered or editor-changed content alone.
+
+Public pages read content through `src/lib/shop/content.ts`. Production reads published rows only. Development also shows drafts with their pending revision and staged references, because the imported catalog is still unpublished. Phase 6 replaces this live read with the build-time snapshot.
+
 ## Deployment boundary
 
 `seed/foundation.json` remains the small runtime setup seed. `seed/seed.json` is the versioned catalog definition consumed by the model migration. Bulk catalog schema/content is deliberately not added to the remote setup request. The model HTTP endpoint returns 404 in production builds.

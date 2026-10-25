@@ -1,0 +1,262 @@
+/* Editorial blocks: rich text, homepage sections and story pages. */
+@layer blocks {
+	.prose {
+		--flow-space: 0.75em;
+	}
+
+	.prose :is(h2, h3) {
+		--flow-space: 1.5em;
+	}
+
+	.prose ul,
+	.prose ol {
+		padding-inline-start: 1.25em;
+	}
+
+	.prose li + li {
+		margin-block-start: 0.35em;
+	}
+
+	.prose a {
+		color: var(--color-text-strong);
+	}
+
+	.text-center .prose :is(p, li) {
+		margin-inline: auto;
+	}
+
+	/* Hero: photo, then the cacao panel on small screens; copy over a scrim on wide ones. */
+	.hero {
+		display: grid;
+	}
+
+	.hero__media {
+		aspect-ratio: var(--ratio-hero);
+		overflow: hidden;
+	}
+
+	.hero__media img {
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+	}
+
+	/* Own colors (not the surface utility) so the wide-screen scrim can replace the solid panel. */
+	.hero__content {
+		--stack-space: var(--space-xs-s);
+		--color-text: var(--color-on-cacao);
+		--color-text-strong: var(--color-on-cacao);
+		--color-focus: var(--color-on-cacao);
+		background: var(--color-surface-cacao);
+		color: var(--color-text);
+		align-items: center;
+		padding: var(--space-l) var(--gutter);
+		text-align: center;
+	}
+
+	.hero__title {
+		font-size: var(--step-5);
+		line-height: 1.05;
+	}
+
+	.hero__text {
+		font-size: var(--step-1);
+		margin-inline: auto;
+	}
+
+	@media (min-width: 48rem) {
+		.hero {
+			grid-template-areas: "stack";
+			min-block-size: clamp(30rem, 78svh, 48rem);
+		}
+
+		.hero > * {
+			grid-area: stack;
+		}
+
+		.hero__media {
+			aspect-ratio: auto;
+		}
+
+		/* Scrim keeps light-blue copy at AA contrast over any photo. */
+		.hero__content {
+			align-self: end;
+			justify-content: end;
+			padding-block: var(--space-3xl) var(--space-xl);
+			background: linear-gradient(to top, rgb(96 62 42 / 0.88), rgb(96 62 42 / 0.6) 55%, transparent);
+		}
+	}
+
+	/* Featured product: photo beside the details on wide screens. */
+	.feature {
+		display: grid;
+		gap: var(--space-l-xl);
+	}
+
+	.feature__media {
+		display: block;
+		overflow: hidden;
+		aspect-ratio: var(--ratio-card);
+	}
+
+	.feature__media img {
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+		transition: scale var(--duration-slow) var(--ease-out);
+	}
+
+	@media (hover: hover) {
+		.feature__media:hover img {
+			scale: 1.03;
+		}
+	}
+
+	.feature__title {
+		font-size: var(--step-4);
+	}
+
+	.feature__color {
+		color: var(--color-text-subtle);
+		font-size: var(--step-1);
+	}
+
+	.feature__details > .button {
+		align-self: start;
+	}
+
+	@media (min-width: 60rem) {
+		.feature {
+			grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+			align-items: center;
+		}
+	}
+
+	/* Process cards: square photo over a tinted caption. */
+	.highlights {
+		display: grid;
+		gap: var(--grid-gap);
+		margin: 0;
+		padding: 0;
+	}
+
+	@media (min-width: 48rem) {
+		.highlights {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	.highlight {
+		display: grid;
+		grid-template-rows: auto 1fr;
+	}
+
+	.highlight__media {
+		aspect-ratio: var(--ratio-square);
+		overflow: hidden;
+	}
+
+	.highlight__media img {
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+	}
+
+	.highlight__body {
+		padding: var(--space-m) var(--space-s-m) var(--space-l);
+		background: var(--color-surface-tint);
+	}
+
+	.highlight__body p {
+		margin-inline: auto;
+	}
+
+	.highlight__title {
+		font-size: var(--step-1);
+	}
+
+	/* Slideshow: full-bleed strip with uniform crops and counter at every width. */
+	.gallery--slideshow .gallery__item {
+		flex-basis: 100%;
+	}
+
+	@media (min-width: 60rem) {
+		.gallery--slideshow .gallery__list {
+			display: flex;
+			gap: 0;
+			overflow-x: auto;
+		}
+
+		.gallery--slideshow .gallery__item {
+			aspect-ratio: 16 / 7;
+		}
+
+		.gallery--slideshow .gallery__item img {
+			block-size: 100%;
+		}
+
+		.gallery--slideshow .gallery__item:first-child {
+			grid-column: auto;
+		}
+
+		.gallery--slideshow .gallery__controls {
+			display: flex;
+		}
+	}
+
+	/* Story pages: centered copy between rows of square photos. */
+	.story {
+		display: grid;
+		gap: var(--space-l-xl);
+	}
+
+	.story__text {
+		max-inline-size: 48rem;
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	.story__text p {
+		margin-inline: auto;
+	}
+
+	.story__text h2 {
+		font-size: var(--step-4);
+	}
+
+	.story__photos {
+		display: flex;
+		gap: var(--space-xs);
+		margin: 0;
+		padding: 0;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+		scrollbar-width: none;
+	}
+
+	.story__photo {
+		flex: 0 0 82%;
+		aspect-ratio: var(--ratio-square);
+		scroll-snap-align: center;
+		background: var(--color-surface-tint);
+	}
+
+	.story__photo img {
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+	}
+
+	@media (min-width: 48rem) {
+		.story__photos {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: var(--grid-gap);
+			overflow: visible;
+		}
+	}
+
+	.story__cta {
+		justify-self: center;
+	}
+}

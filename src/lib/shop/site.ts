@@ -1,0 +1,72 @@
+// Pure mappings from CMS entries and menus to the presentational view models.
+import type { SiteChrome } from "../../layouts/Shop.astro";
+import type { ShopContent, ShopEntry } from "./content.ts";
+import { galleryImages, type NavItem, type ProductCardView, type SocialLink } from "./view.ts";
+
+type Menu = { items: { label: string; url: string }[] } | null | undefined;
+
+const OLD_HOSTS = new Set(["customseda.com", "www.customseda.com"]);
+
+/** Keeps site paths and external http(s) links; rewrites links to the old Shopify domain to paths. */
+export function localHref(value: unknown): string | undefined {
+	if (typeof value !== "string" || !value) return undefined;
+	if (value.startsWith("/") && !value.startsWith("//")) return value;
+	try {
+		const url = new URL(value);
+		if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
+		return OLD_HOSTS.has(url.hostname) ? `${url.pathname}${url.search}${url.hash}` : url.href;
+	} catch {
+		return undefined;
+	}
+}
+
+const isCurrent = (href: string, path: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
+const navItems = (menu: Menu, path: string): NavItem[] =>
+	(menu?.items ?? []).flatMap((item) => {
+		const href = localHref(item.url);
+		return href ? [{ label: item.label, href, current: isCurrent(href, path) }] : [];
+	});
+
+export const settingsOf = (shop: Pick<ShopContent, "site_settings">): ShopEntry | undefined => shop.site_settings[0];
+
+export function siteChrome({ settings, primary, footer, path }: { settings: ShopEntry | undefined; primary: Menu; footer: Menu; path: string }): SiteChrome {
+	const data = settings?.data ?? {};
+	const social: SocialLink[] = [];
+	const instagram = localHref(data.instagram_url);
+	const tiktok = localHref(data.tiktok_url);
+	if (instagram) social.push({ network: "instagram", href: instagram });
+	if (tiktok) social.push({ network: "tiktok", href: tiktok });
+	const text = typeof data.announcement_text === "string" ? data.announcement_text.trim() : "";
+	return {
+		siteName: "Seda",
+		nav: navItems(primary, path),
+		footerLinks: navItems(footer, path),
+		social,
+		announcement: data.announcement_enabled === true && text ? { text, href: localHref(data.announcement_url) } : null,
+	};
+}
+
+/** Products and Conjuntos keep their Shopify paths (/products/<slug>). */
+export function productCard(entry: ShopEntry): ProductCardView {
+	return {
+		href: `/products/${entry.slug}`,
+		title: String(entry.data.title ?? ""),
+		priceCents: Number(entry.data.price_cents ?? 0),
+		images: galleryImages(entry.data.gallery),
+		available: entry.data.available !== false,
+		transitionName: `product-${entry.id}`,
+	};
+}
+
+/** Plain-text summary of Portable Text paragraphs (headings and media skipped), for meta descriptions. */
+export function plainText(value: unknown, max = 160): string {
+	if (!Array.isArray(value)) return "";
+	const text = value
+		.filter((block) => block?._type === "block" && (block.style ?? "normal") === "normal")
+		.map((block) => (block.children ?? []).map((child: { text?: string }) => child.text ?? "").join(""))
+		.join(" ")
+		.replace(/\s+/g, " ")
+		.trim();
+	if (text.length <= max) return text;
+	return `${text.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
+}

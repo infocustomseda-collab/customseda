@@ -1,50 +1,49 @@
 ---
-import { getEmDashCollection, getSiteSettings } from "emdash";
-import { Image } from "emdash/ui";
-import Base from "../layouts/Base.astro";
-import { resolveStarterSiteIdentity } from "../utils/site-identity";
+// Homepage, assembled from the editable site settings (hero, featured Conjunto, slideshow, intro, process).
+import Gallery from "../components/Gallery.astro";
+import FeaturedProduct from "../components/home/FeaturedProduct.astro";
+import Highlights from "../components/home/Highlights.astro";
+import HomeHero from "../components/home/HomeHero.astro";
+import RichText from "../components/RichText.astro";
+import Shop from "../layouts/Shop.astro";
+import { byId, loadShopPage } from "../lib/shop/page";
+import { localHref, plainText, productCard } from "../lib/shop/site";
+import { galleryImages, imageView } from "../lib/shop/view";
 
-const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
-	orderBy: { published_at: "desc" },
-	limit: 10,
-});
-const { siteTitle, siteTagline } = resolveStarterSiteIdentity(
-	await getSiteSettings(),
+const { shop, site, settings } = await loadShopPage(Astro);
+const data = settings?.data ?? {};
+const featured = byId(shop.conjuntos, settings?.refs.featured_conjunto?.[0]);
+const top = byId(shop.products, featured?.refs.top?.[0]);
+const color = byId(shop.colors, top?.refs.color?.[0]);
+const slides = galleryImages(data.slideshow);
+const highlights = (Array.isArray(data.highlights) ? data.highlights : []).flatMap((row: any) =>
+	typeof row?.title === "string" && typeof row?.text === "string"
+		? [{ title: row.title, text: row.text, image: imageView(row.image, typeof row.alt === "string" ? row.alt : "") }]
+		: [],
 );
-if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+const heroTitle = typeof data.hero_title === "string" && data.hero_title ? data.hero_title : site.siteName;
+const heroText = typeof data.hero_text === "string" ? data.hero_text : undefined;
+const introTitle = typeof data.intro_title === "string" ? data.intro_title : "";
 ---
 
-<Base title={siteTitle} description={siteTagline}>
-	<h1>Recent Posts</h1>
+<Shop title={site.siteName} description={heroText ?? plainText(data.intro_text)} site={site}>
+	<HomeHero title={heroTitle} text={heroText} image={imageView(data.hero_image, "")} link={localHref(data.hero_link)} />
 
-	{
-		posts.length === 0 ? (
-			<p>
-				No posts yet. <a href="/_emdash/admin/content/posts/new">Create one</a>.
-			</p>
-		) : (
-			<ul>
-				{posts.map((post) => (
-					<li>
-						<a href={`/posts/${post.id}`}>
-							{post.data.featured_image && (
-								<div {...post.edit.featured_image}><Image image={post.data.featured_image} /></div>
-							)}
-							<h2 {...post.edit.title}>{post.data.title}</h2>
-						</a>
-						{post.data.excerpt && <p {...post.edit.excerpt}>{post.data.excerpt}</p>}
-						{post.data.publishedAt && (
-							<time datetime={post.data.publishedAt.toISOString()}>
-								{post.data.publishedAt.toLocaleDateString("en-US", {
-									year: "numeric",
-									month: "long",
-									day: "numeric",
-								})}
-							</time>
-						)}
-					</li>
-				))}
-			</ul>
-		)
-	}
-</Base>
+	{featured && (
+		<FeaturedProduct product={productCard(featured)} color={typeof color?.data.title === "string" ? color.data.title : undefined} description={featured.data.description} />
+	)}
+
+	{slides.length > 0 && <Gallery images={slides} label="Fotos de campaña de Margarita" variant="slideshow" />}
+
+	{introTitle && (
+		<section class="surface-butter region" aria-labelledby="intro-title">
+			<div class="wrapper stack text-center" style="--stack-space: var(--space-s)">
+				<h2 id="intro-title">{introTitle}</h2>
+				<RichText value={data.intro_text} />
+			</div>
+		</section>
+	)}
+
+	<Highlights items={highlights} />
+</Shop>
+
