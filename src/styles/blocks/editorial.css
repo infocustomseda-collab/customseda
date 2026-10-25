@@ -21,6 +21,11 @@
 		color: var(--color-text-strong);
 	}
 
+	/* A phone number must not break across lines. */
+	.prose a:is([href^="tel:"], [href^="https://wa.me/"]) {
+		white-space: nowrap;
+	}
+
 	.text-center .prose :is(p, li) {
 		margin-inline: auto;
 	}

@@ -25,6 +25,7 @@
     "test:d1": "node --test tests/integration/*.test.mjs",
     "import:shopify": "node scripts/import/shopify-local.mjs",
     "import:shopify:verify": "node scripts/import/shopify-verify.mjs",
+    "import:pages": "node scripts/import/restore-page-structure.mjs",
     "design:fluid": "node scripts/design/fluid-scale.mjs",
     "cms:storefront": "node scripts/cms/storefront-content.mjs",
     "snapshot": "node scripts/build/snapshot.mjs",
