@@ -25,7 +25,8 @@
     "import:shopify": "node scripts/import/shopify-local.mjs",
     "import:shopify:verify": "node scripts/import/shopify-verify.mjs",
     "design:fluid": "node scripts/design/fluid-scale.mjs",
-    "cms:storefront": "node scripts/cms/storefront-content.mjs"
+    "cms:storefront": "node scripts/cms/storefront-content.mjs",
+    "design:open-props": "node scripts/design/open-props.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.4.2",

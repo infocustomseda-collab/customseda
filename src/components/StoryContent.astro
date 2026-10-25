@@ -39,7 +39,7 @@ for (const block of blocks) {
 <div class="story">
 	{parts.map((part) =>
 		part.kind === "photos" ? (
-			<ul class="story__photos" role="list">
+			<ul class="story__photos" role="list" tabindex="0" aria-label="Fotos">
 				{part.images.map((image) => (
 					<li class="story__photo">
 						<img src={localHref(image.asset?.url)} alt={image.alt ?? ""} loading="lazy" decoding="async" />

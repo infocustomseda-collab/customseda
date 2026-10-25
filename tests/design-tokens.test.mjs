@@ -77,7 +77,7 @@ test('stylesheets declare the CUBE layer order and resolve every custom property
  const index = read('src/styles/index.css');
  assert.match(index, /@layer reset, tokens, global, compositions, blocks, utilities, exceptions;/);
  const css = files.map(f => readFileSync(f, 'utf8')).join('\n')
-  + readFileSync(new URL('../node_modules/open-props/easings.min.css', import.meta.url), 'utf8');
+;
  const defined = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
  // Astro's Fonts API injects these at runtime from astro.config.mjs.
  for (const name of ['--font-cormorant', '--font-montserrat']) defined.add(name);
@@ -92,4 +92,13 @@ test('root font size stays at the user default so rem-based Utopia clamps hold',
  const htmlRules = [...global.matchAll(/(?:^|\n)\s*html\s*\{([^}]*)\}/g)].map(m => m[1]).join('');
  assert.doesNotMatch(htmlRules, /font-size/);
  assert.match(global, /body\s*\{[^}]*font-size:\s*var\(--step-0\)/);
+});
+
+test('only selected Open Props values are emitted, copied from the pinned package',async()=>{
+ const {renderOpenPropsCss,SELECTED}=await import('../scripts/design/open-props.mjs');
+ const {default:OpenProps}=await import('open-props');
+ assert.deepEqual(SELECTED,['--ease-out-3']);
+ assert.equal(read('src/styles/global/open-props.css'),renderOpenPropsCss());
+ assert.match(renderOpenPropsCss(),new RegExp(`--ease-out-3: ${OpenProps['--ease-out-3'].replace(/[().]/g,'\\$&')};`));
+ assert.doesNotMatch(read('src/styles/index.css'),/open-props\/easings/);
 });

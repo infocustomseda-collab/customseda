@@ -55,7 +55,7 @@
 	}
 
 	.hero__title {
-		font-size: var(--step-5);
+		font-size: min(var(--step-5), 15vw);
 		line-height: 1.05;
 	}
 
@@ -207,6 +207,7 @@
 	/* Story pages: centered copy between rows of square photos. */
 	.story {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: var(--space-l-xl);
 	}
 
@@ -221,7 +222,7 @@
 	}
 
 	.story__text h2 {
-		font-size: var(--step-4);
+		font-size: min(var(--step-4), 12vw);
 	}
 
 	.story__photos {
@@ -287,6 +288,7 @@
 	}
 
 	.contact-list a {
+		overflow-wrap: anywhere;
 		display: inline-flex;
 		align-items: center;
 		gap: var(--space-2xs);

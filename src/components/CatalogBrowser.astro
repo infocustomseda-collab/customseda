@@ -74,7 +74,7 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 	<ul class="grid" data-layout="products" role="list" data-grid>
 		{items.map((item, index) => (
 			<li data-id={item.id}>
-				<ProductCard product={item.card} eager={index < 3} />
+				<ProductCard product={item.card} eager={index < 3} headingLevel={2} />
 			</li>
 		))}
 	</ul>
