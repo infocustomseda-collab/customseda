@@ -1,11 +1,13 @@
-// Re-converts imported content pages from the saved storefront captures, keeping headings,
-// lists, emphasis, links and image order. Only pages still identical to the flat first import
-// are rewritten; anything an editor has touched is reported and left alone. Local only.
+// Re-converts imported content pages from the saved storefront captures, and Product/Conjunto
+// descriptions from their retained Shopify HTML, keeping headings, lists, emphasis, links and
+// image order. Only entries still identical to the flat first import are rewritten; anything an
+// editor has touched is reported and left alone. Writes send only the restored field; EmDash merges
+// it over the stored entry. Local only.
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {withDeploymentLock} from '../deploy/lock.mjs';
 import {assertLocalOrigin,portableTextFromHtml} from './shopify-plan.mjs';
-import {isUneditedImport,linkContacts,mainHtmlFromCapture} from './page-structure.mjs';
+import {flatImportText,isUneditedImport,linkContacts,mainHtmlFromCapture} from './page-structure.mjs';
 
 const args=process.argv.slice(2);
 if(args.some(x=>!['--apply','--dry-run'].includes(x))||args.length>1) throw new Error('Usage: pnpm import:pages [--dry-run|--apply]');
@@ -49,9 +51,29 @@ async function run() {
   const unedited=isUneditedImport(item.data.content,source.original_text);
   const counts={blocks:content.length,headings:content.filter(b=>/^h\d$/.test(b.style)).length,listItems:content.filter(b=>b.listItem).length,links:content.flatMap(b=>b.markDefs??[]).length,images:content.filter(b=>b._type==='image').length};
   if(!unedited) {report.push({slug,result:'skipped: edited since import',...counts});continue;}
-  if(apply) await api(`/_emdash/api/content/pages/${item.id}`,{method:'PUT',body:{data:{...item.data,content},_rev}});
+  if(apply) await api(`/_emdash/api/content/pages/${item.id}`,{method:'PUT',body:{data:{content},_rev}});
   report.push({slug,result:apply?'restored':'would restore',...counts});
  }
- console.log(JSON.stringify({mode:apply?'apply':'dry-run',target:origin,preview:out,pages:report},null,2));
+ const catalog=[];
+ for(const collection of ['products','conjuntos']) {
+  const items=[];let cursor;
+  do {const data=await api(`/_emdash/api/content/${collection}?limit=100${cursor?`&cursor=${encodeURIComponent(cursor)}`:''}`);items.push(...data.items);cursor=data.nextCursor;}while(cursor);
+  for(const summary of items) {
+   const {item,_rev}=await api(`/_emdash/api/content/${collection}/${summary.id}`);
+   const html=item.data.shopify_source?.body_html;
+   if(typeof html!=='string'||!html.trim()) {catalog.push({collection,slug:item.slug,result:'no source HTML'});continue;}
+   const description=portableTextFromHtml(html);
+   await writeFile(join(out,`${collection}-${item.slug}.json`),JSON.stringify({slug:item.slug,before:item.data.description,after:description},null,2)+'\n');
+   const counts={blocks:description.length,listItems:description.filter(b=>b.listItem).length,bold:description.flatMap(b=>b.children??[]).filter(s=>s.marks.includes('strong')).length};
+   if(!isUneditedImport(item.data.description,flatImportText(html))) {catalog.push({collection,slug:item.slug,result:'skipped: edited since import',...counts});continue;}
+   // Catalog rules still apply: a write the CMS refuses (e.g. it would break a linked Conjunto) is reported, not forced.
+   if(apply) {
+    try {await api(`/_emdash/api/content/${collection}/${item.id}`,{method:'PUT',body:{data:{description},_rev}});}
+    catch(error) {catalog.push({collection,slug:item.slug,result:`blocked: ${error.message.replace(/^[^ ]+ /,'')}`,...counts});continue;}
+   }
+   catalog.push({collection,slug:item.slug,result:apply?'restored':'would restore',...counts});
+  }
+ }
+ console.log(JSON.stringify({mode:apply?'apply':'dry-run',target:origin,preview:out,pages:report,catalog},null,2));
 }
 await withDeploymentLock('.superpowers/shopify-import','local',run);

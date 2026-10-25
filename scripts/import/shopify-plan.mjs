@@ -15,7 +15,7 @@ export function assertShopifyAsset(value) {
  if(url.protocol!=='https:'||!allowed||url.username||url.password) throw new Error('Only original HTTPS Shopify storefront assets are allowed.');
  return url;
 }
-const decode=text=>text.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(all,key)=>{
+export const decode=text=>text.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(all,key)=>{
  if(key.startsWith('#')) {const n=key[1].toLowerCase()==='x'?parseInt(key.slice(2),16):Number(key.slice(1));return n>0&&n<=0x10ffff?String.fromCodePoint(n):all;}
  return {amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' '}[key.toLowerCase()]??all;
 });

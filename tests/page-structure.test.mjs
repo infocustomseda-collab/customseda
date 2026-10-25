@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {portableTextFromHtml} from '../scripts/import/shopify-plan.mjs';
-import {linkContacts,mainHtmlFromCapture,isUneditedImport} from '../scripts/import/page-structure.mjs';
+import {linkContacts,mainHtmlFromCapture,isUneditedImport,flatImportText} from '../scripts/import/page-structure.mjs';
 
 const text=block=>block.children.map(s=>s.text).join('');
 
@@ -61,4 +61,13 @@ test('treats a page as unedited only while its content still matches the flat im
  assert.equal(isUneditedImport([{...flat[0],style:'h2'},flat[1]],original),false);
  assert.equal(isUneditedImport(flat.slice(0,1),original),false);
  assert.equal(isUneditedImport(null,original),false);
+});
+
+test('recognises a catalog description still equal to the first flat import of its source HTML',()=>{
+ const html='<ul>\n<li>\n<strong>Top</strong> diseñado para tu cuerpo</li>\n<li>\n<strong>Tejido</strong> suave<br>\n</li>\n<li>\n<meta charset="UTF-8"> <strong>Composición:</strong><span> 90% poliamida</span>\n</li>\n</ul>';
+ assert.equal(flatImportText(html),'Top diseñado para tu cuerpo\nTejido suave\nComposición: 90% poliamida');
+ const flat=flatImportText(html).split('\n').map((t,i)=>({_type:'block',_key:`p${i}`,style:'normal',markDefs:[],children:[{_type:'span',_key:`s${i}`,text:t,marks:[]}]}));
+ assert.equal(isUneditedImport(flat,flatImportText(html)),true);
+ const restored=portableTextFromHtml(html);
+ assert.deepEqual(restored.map(b=>[b.listItem,b.children.map(s=>s.marks.join('+')||'-').join(' ')]),[['bullet','strong -'],['bullet','strong -'],['bullet','strong -']]);
 });
