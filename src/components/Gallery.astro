@@ -12,6 +12,8 @@ interface Props {
 }
 
 const { images, label, transitionName, variant = "product" } = Astro.props;
+// A product photo leads its page; the homepage slideshow sits below the fold and must not compete with the hero.
+const eager = variant === "product";
 ---
 
 <product-gallery class:list={["gallery", variant === "slideshow" && "gallery--slideshow"]} role="region" aria-label={label}>
@@ -26,8 +28,8 @@ const { images, label, transitionName, variant = "product" } = Astro.props;
 					width={image.width}
 					height={image.height}
 					style={`object-position: ${image.position}${index === 0 && transitionName ? `; view-transition-name: ${transitionName}` : ""}`}
-					loading={index === 0 ? "eager" : "lazy"}
-					fetchpriority={index === 0 ? "high" : undefined}
+					loading={eager && index === 0 ? "eager" : "lazy"}
+					fetchpriority={eager && index === 0 ? "high" : undefined}
 					decoding="async"
 				/>
 			</li>
