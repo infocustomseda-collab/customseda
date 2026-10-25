@@ -1,0 +1,70 @@
+---
+// Product detail at the retained Shopify path /products/<slug>.
+import BuyBox from "../../components/BuyBox.astro";
+import Disclosure from "../../components/Disclosure.astro";
+import Gallery from "../../components/Gallery.astro";
+import Price from "../../components/Price.astro";
+import ProductCard from "../../components/ProductCard.astro";
+import RichText from "../../components/RichText.astro";
+import Shop from "../../layouts/Shop.astro";
+import { productDetail } from "../../lib/shop/detail";
+import { loadShopPage } from "../../lib/shop/page";
+import { plainText } from "../../lib/shop/site";
+
+const { shop, site, settings } = await loadShopPage(Astro);
+const detail = productDetail(shop, Astro.params.slug ?? "");
+if (!detail || detail.kind !== "pieza") return new Response(null, { status: 404 });
+
+const { entry, item } = detail;
+const categoryHref = item.category === "braguita" ? "/collections/braguitas" : "/collections/top";
+const categoryName = item.category === "braguita" ? "Braguitas" : "Tops";
+const sizeLegend = item.category === "braguita" ? "Talla de braguita" : "Talla del top";
+const production = settings?.data.production_text;
+---
+
+<Shop title={item.title} description={plainText(entry.data.description)} image={item.card.images[0]?.src} site={site}>
+	<div class="wrapper region stack" style="--stack-space: var(--section-gap)">
+		<div class="stack" style="--stack-space: var(--space-s)">
+			<nav class="breadcrumb" aria-label="Ruta de navegación">
+				<ol class="cluster" role="list">
+					<li><a href="/collections/bikinis">Bikinis</a></li>
+					<li><a href={categoryHref}>{categoryName}</a></li>
+					<li><span aria-current="page">{item.title}</span></li>
+				</ol>
+			</nav>
+			<div class="split">
+				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={item.card.transitionName} />
+				<div class="product-details stack">
+					<div class="stack" style="--stack-space: var(--space-3xs)">
+						<h1 class="product-details__title">{item.title}</h1>
+						{detail.colorLabel && <p class="product-details__meta">{detail.categoryLabel ?? categoryName} · color {detail.colorLabel}</p>}
+					</div>
+					<Price cents={item.price} />
+					<BuyBox id={item.id} choices={[{ name: "talla", legend: sizeLegend, sizes: item.sizes }]} available={item.available} purchasable={detail.purchasable} />
+					<RichText value={entry.data.description} />
+					<div>
+						{detail.sizeGuide && (
+							<Disclosure title={String(detail.sizeGuide.data.title ?? "Guía de tallas")} icon="ruler">
+								<RichText value={detail.sizeGuide.data.content} />
+							</Disclosure>
+						)}
+						{Array.isArray(production) && production.length > 0 && (
+							<Disclosure title="Producción y envío">
+								<RichText value={production} />
+							</Disclosure>
+						)}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		{detail.related.length > 0 && (
+			<section class="stack" aria-labelledby="related-title" style="--stack-space: var(--space-m-l)">
+				<h2 id="related-title">También te puede gustar</h2>
+				<ul class="grid" data-layout="products" role="list" style="--grid-columns: 4">
+					{detail.related.map((related) => <li><ProductCard product={related.card} /></li>)}
+				</ul>
+			</section>
+		)}
+	</div>
+</Shop>
