@@ -54,8 +54,11 @@ test('rejects missing or shared Worker names and normalized environment origins'
 test('migrates the explicit database, then snapshots, builds, uploads and checks', () => {
   const target = validateTarget(config(), 'staging');
   const commands = deploymentCommands(target);
-  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'emdash', 'catalog-model', 'snapshot', 'images', 'astro', 'wrangler', 'emdash']);
+  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'emdash', 'catalog-model', 'snapshot', 'images', 'prerender-db', 'astro', 'check-static', 'wrangler', 'emdash']);
   assert.deepEqual(commands[4], ['images', 'staging']);
+  // Prerendering runs EmDash against a local stand-in for this environment's database.
+  assert.deepEqual(commands[5], ['prerender-db', 'staging']);
+  assert.deepEqual(commands[7], ['check-static']);
   for (const args of commands.filter(x => x[0] === 'emdash')) {
     assert.equal(args[args.indexOf('--d1') + 1], target.databaseId);
     assert.equal(args[args.indexOf('--account-id') + 1], target.accountId);
@@ -64,9 +67,9 @@ test('migrates the explicit database, then snapshots, builds, uploads and checks
   // Migrations run before any build exists, so they read the manifest from the Astro config.
   assert.ok(commands[0].includes('--status') && commands[0].includes('--from-config'));
   assert.ok(commands[1].includes('--from-config') && !commands[1].includes('--check'));
-  assert.deepEqual(commands[5], ['astro', 'build']);
-  assert.deepEqual(commands[6], ['wrangler', 'deploy', '--env', 'staging']);
-  assert.ok(commands[7].includes('--check') && !commands[7].includes('--from-config'));
+  assert.deepEqual(commands[6], ['astro', 'build']);
+  assert.deepEqual(commands[8], ['wrangler', 'deploy', '--env', 'staging']);
+  assert.ok(commands[9].includes('--check') && !commands[9].includes('--from-config'));
 });
 
 test('the snapshot step targets the deploy environment', () => {
@@ -81,7 +84,7 @@ test('passes a reviewed fingerprint only when provided', () => {
   assert.ok(!deploymentCommands(target).some(args => args.includes(flag)));
   const commands = deploymentCommands(target, { fingerprint: 'fp-reviewed' });
   assert.deepEqual(commands.filter(args => args.includes(flag)).map(args => args[args.indexOf(flag) + 1]), ['fp-reviewed']);
-  assert.ok(!commands[0].includes(flag) && !commands[7].includes(flag));
+  assert.ok(!commands[0].includes(flag) && !commands[9].includes(flag));
 });
 
 test('gated environments must route static assets through the Worker', () => {

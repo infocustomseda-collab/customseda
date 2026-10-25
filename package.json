@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "astro dev --host 127.0.0.1",
-    "build": "node scripts/build/snapshot.mjs --env local --allow-empty && node scripts/build/images.mjs --env local && astro build",
+    "build": "node scripts/build/snapshot.mjs --env local --allow-empty && node scripts/build/images.mjs --env local && node scripts/build/prerender-db.mjs local && astro build && node scripts/build/check-static.mjs",
     "preview": "astro preview --host 127.0.0.1",
     "typecheck": "wrangler types && astro check",
     "cf:types": "wrangler types",
