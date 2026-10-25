@@ -99,13 +99,16 @@ export type PopupView = {
 const whole = (value: unknown, fallback: number) => (typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : fallback);
 const date = (value: unknown) => (typeof value === "string" && value ? value : null);
 
-/** The first enabled popup that has not ended at render time; the browser re-checks the window. */
-export function popupView(popups: ShopEntry[], now: number): PopupView | null {
-	const entry = popups.find((popup) => {
-		const end = date(popup.data.ends_at);
-		return popup.data.enabled === true && !(end && Date.parse(end) < now);
+/** Every enabled popup that has not ended at render time. Start times are checked in the browser,
+ * so a popup scheduled for later never hides one that is running (pages are prerendered). */
+export function popupViews(popups: ShopEntry[], now: number): PopupView[] {
+	return popups.flatMap((entry) => {
+		const end = date(entry.data.ends_at);
+		return entry.data.enabled === true && !(end && Date.parse(end) < now) ? [toPopupView(entry)] : [];
 	});
-	if (!entry) return null;
+}
+
+function toPopupView(entry: ShopEntry): PopupView {
 	const label = typeof entry.data.button_text === "string" ? entry.data.button_text.trim() : "";
 	const href = localHref(entry.data.button_url);
 	return {
@@ -117,4 +120,10 @@ export function popupView(popups: ShopEntry[], now: number): PopupView | null {
 		delaySeconds: whole(entry.data.delay_seconds, 3),
 		schedule: { id: entry.id, startsAt: date(entry.data.starts_at), endsAt: date(entry.data.ends_at), dismissDays: whole(entry.data.dismiss_days, 7) },
 	};
+}
+
+/** "@name" from the last path segment of a social link (absolute or relative); null when there is none. */
+export function socialHandle(href: string): string | null {
+	const segment = new URL(href, "https://example.invalid").pathname.split("/").filter(Boolean).at(-1);
+	return segment ? `@${segment.replace(/^@/, "")}` : null;
 }

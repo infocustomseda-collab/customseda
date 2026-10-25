@@ -132,3 +132,15 @@ test('optional size guides must be published before product publication',async t
  assert.equal((await f.runtime.handleContentPublish('size_guides',id)).success,true);
  assert.equal((await f.runtime.handleContentPublish('products',f.top)).success,true);
 });
+
+test('Products and Conjuntos cannot share a slug: both use /products/<slug>',async t=>{
+ const f=await fixture(t);
+ const bundle={slug:'top-test',data:{...f.data,price_cents:8500},references:{top:[f.top],bottom:[f.bottom]}};
+ assert.ok((await validateCatalogWrite(f.db,'conjuntos',undefined,bundle)).some(e=>e.includes('dirección')));
+ assert.ok((await validateCatalogWrite(f.db,'products',f.top,{slug:'test-set'})).some(e=>e.includes('dirección')));
+ assert.deepEqual(await validateCatalogWrite(f.db,'products',f.top,{slug:'top-unico'}),[]);
+ // A native writer can still stage the collision; publication rechecks the stored slug.
+ const staged=await f.runtime.handleContentCreate('conjuntos',{slug:'bottom-test',data:bundle.data,references:bundle.references});
+ assert.equal(staged.success,true,JSON.stringify(staged));
+ assert.ok((await validateCatalogWrite(f.db,'conjuntos',staged.data.item.id,{},{publish:true})).some(e=>e.includes('dirección')));
+});

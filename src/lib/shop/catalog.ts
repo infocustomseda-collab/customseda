@@ -39,8 +39,8 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
 		sizes: piece.sizes,
 		card: productCard(piece.entry),
 	});
-	// A Conjunto needs both components; it inherits their color and collection, offers the sizes both
-	// pieces share, and is available only when it and both components are.
+	// A Conjunto needs both components; it inherits their color and collection and is available only
+	// when it and both components are.
 	const sets = shop.conjuntos.flatMap((entry): CatalogItem[] => {
 		const top = pieces.find((piece) => piece.entry.id === entry.refs.top?.[0]);
 		const bottom = pieces.find((piece) => piece.entry.id === entry.refs.bottom?.[0]);
@@ -57,7 +57,8 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
 			available,
 			color: top.color,
 			collection: top.collection,
-			sizes: top.sizes.filter((size) => bottom.sizes.includes(size)),
+			// Each piece's size is chosen separately, so the set matches any size either piece offers.
+			sizes: orderSizes([...top.sizes, ...bottom.sizes]),
 			card: { ...card, available },
 		}];
 	});
@@ -93,4 +94,9 @@ export function facetOptions(items: CatalogItem[], shop: Pick<ShopContent, "colo
 		}),
 		sizes: SIZE_ORDER.filter((size) => sizes.has(size)),
 	};
+}
+
+/** The homepage's featured Conjunto, only when the catalog can show it (both components present). */
+export function featuredItem(shop: Lookups, id: string | undefined): CatalogItem | null {
+	return buildCatalog(shop).find((item) => item.kind === "conjunto" && item.id === id) ?? null;
 }

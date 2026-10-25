@@ -16,3 +16,8 @@ export function shouldShowPopup(schedule: PopupSchedule, now: number, dismissedA
 	if (!Number.isNaN(end) && now > end) return false;
 	return dismissedAt === null || now - dismissedAt >= schedule.dismissDays * DAY;
 }
+
+/** The first popup, in CMS order, that is inside its window and not recently dismissed. */
+export function choosePopup(schedules: PopupSchedule[], now: number, dismissedAt: (id: string) => number | null): PopupSchedule | null {
+	return schedules.find((schedule) => shouldShowPopup(schedule, now, dismissedAt(schedule.id))) ?? null;
+}
