@@ -270,8 +270,142 @@
 /* Content pages, contact details and the not-found page. */
 @layer blocks {
 	.content-page {
-		--stack-space: var(--space-m-l);
+		/* Clears the sticky header when the index jumps to a section. */
+		--anchor-offset: 6rem;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		align-items: start;
+		row-gap: var(--space-m-l);
 		max-inline-size: calc(48rem + 2 * var(--gutter));
+	}
+
+	.content-page :is(h2, h3)[id] {
+		scroll-margin-block-start: var(--anchor-offset);
+	}
+
+	/* Section index: a list under the title on phones, a sticky column beside the text on wide screens. */
+	.toc {
+		display: grid;
+		gap: var(--space-2xs);
+		padding-block-end: var(--space-s);
+		border-block-end: var(--border-width) solid var(--color-border-subtle);
+	}
+
+	.toc__title {
+		color: var(--color-text-subtle);
+		font-size: var(--step--1);
+		font-weight: var(--weight-body-strong);
+		letter-spacing: var(--tracking-ui);
+	}
+
+	.toc__list,
+	.toc__sub {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.toc__list {
+		display: grid;
+		gap: var(--space-3xs);
+	}
+
+	.toc a {
+		display: inline-block;
+		padding-block: var(--space-3xs);
+		color: var(--color-text-strong);
+		line-height: var(--leading-heading);
+		text-decoration-color: transparent;
+	}
+
+	.toc a:hover {
+		text-decoration-color: currentcolor;
+	}
+
+	.toc__sub {
+		display: none;
+	}
+
+	@media (min-width: 60rem) {
+		.content-page {
+			--anchor-offset: 10rem;
+		}
+
+		.content-page[data-layout="toc"] {
+			grid-template-columns: 14rem minmax(0, 48rem);
+			column-gap: var(--space-xl-2xl);
+			max-inline-size: calc(14rem + 48rem + var(--space-2xl) + 2 * var(--gutter));
+		}
+
+		.content-page[data-layout="toc"] > .content-page__title {
+			grid-column: 1 / -1;
+		}
+
+		.content-page[data-layout="toc"] > .toc {
+			position: sticky;
+			inset-block-start: var(--anchor-offset);
+			max-block-size: calc(100dvh - var(--anchor-offset) - var(--space-m));
+			overflow-y: auto;
+			overscroll-behavior: contain;
+			padding-block-end: 0;
+			border-block-end: 0;
+			font-size: var(--step--1);
+		}
+
+		.toc__sub {
+			display: grid;
+			padding-inline-start: var(--space-s);
+		}
+
+		.toc__sub a {
+			color: var(--color-text-subtle);
+		}
+
+		.content-page[data-layout="toc"] > :not(.toc, .content-page__title) {
+			grid-column: 2;
+		}
+	}
+
+	/* A leading photo: above the text on phones, beside it on wide screens, as on the live About page. */
+	/* Full page width, so the text and photo line up with the page-width photos below. */
+	.content-page[data-layout="intro"] {
+		max-inline-size: calc(var(--container-max) + 2 * var(--gutter));
+	}
+
+	.content-intro {
+		display: grid;
+		grid-template-areas: "media" "text";
+		gap: var(--space-l-xl);
+	}
+
+	.content-intro__text {
+		--stack-space: var(--space-s-m);
+		grid-area: text;
+	}
+
+	.content-intro__media {
+		grid-area: media;
+		margin: 0;
+	}
+
+	.content-intro__media img,
+	.content-wide img {
+		inline-size: 100%;
+		block-size: auto;
+	}
+
+	/* Side by side from tablet width, as the live page does. */
+	@media (min-width: 48rem) {
+		.content-intro {
+			grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+			grid-template-areas: "text media";
+			align-items: start;
+		}
+	}
+
+	/* Photos after the text run at page width. */
+	.content-wide {
+		margin-block: 0 var(--space-m-l);
 	}
 
 	.contact-list {

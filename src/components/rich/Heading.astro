@@ -1,0 +1,11 @@
+---
+// Portable Text h2/h3 that carry the anchor contentLayout assigned, so the page index can link to them.
+interface Props {
+	node: { style?: string; _anchor?: string };
+}
+
+const { node } = Astro.props;
+const Tag = node?.style === "h3" ? "h3" : "h2";
+---
+
+<Tag id={node?._anchor}><slot /></Tag>
