@@ -1,0 +1,63 @@
+/* CUBE compositions: layout skeletons that know nothing about what they contain. */
+@layer compositions {
+	/* Centered page container with fluid gutters. */
+	.wrapper {
+		inline-size: 100%;
+		max-inline-size: calc(var(--container-max) + 2 * var(--gutter));
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	/* Vertical stack with a uniform gap. */
+	.stack {
+		display: flex;
+		flex-direction: column;
+		gap: var(--stack-space, var(--space-s));
+	}
+
+	/* Inline items that wrap, e.g. button rows and size pills. */
+	.cluster {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: var(--cluster-align, center);
+		justify-content: var(--cluster-justify, flex-start);
+		gap: var(--cluster-space, var(--space-xs));
+	}
+
+	/* Fluid auto-filling grid; --grid-min sets the narrowest column. */
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(var(--grid-min, 16rem), 100%), 1fr));
+		gap: var(--grid-gap);
+	}
+
+	/* Catalog grid: two columns on phones as on the current site, three or four on wide screens. */
+	.grid[data-layout="products"] {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		row-gap: var(--space-l-xl);
+	}
+
+	@media (min-width: 60rem) {
+		.grid[data-layout="products"] {
+			grid-template-columns: repeat(var(--grid-columns, 3), minmax(0, 1fr));
+		}
+	}
+
+	/* Gallery beside a sticky detail column on wide screens; stacked on small ones. */
+	.split {
+		display: grid;
+		gap: var(--space-l-xl);
+	}
+
+	@media (min-width: 60rem) {
+		.split {
+			grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr);
+			align-items: start;
+		}
+
+		.split > :last-child {
+			position: sticky;
+			inset-block-start: var(--split-sticky-top, var(--space-l));
+		}
+	}
+}

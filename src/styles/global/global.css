@@ -52,8 +52,9 @@
 		font-size: var(--step-0);
 	}
 
+	/* Reading measure for prose; layout lists (role="list") stay unconstrained. */
 	p,
-	li,
+	:not([role="list"]) > li,
 	figcaption,
 	blockquote {
 		max-inline-size: var(--measure);
@@ -83,6 +84,11 @@
 	:focus-visible {
 		outline: var(--focus-width) solid var(--color-focus);
 		outline-offset: var(--focus-offset);
+	}
+
+	/* Skip-link and programmatic focus targets need no ring. */
+	[tabindex="-1"]:focus {
+		outline: none;
 	}
 
 	::selection {

@@ -1,0 +1,40 @@
+---
+// Labelled text control with optional hint and error, wired with aria-describedby.
+import type { HTMLAttributes } from "astro/types";
+
+interface Props {
+	id: string;
+	name: string;
+	label: string;
+	type?: "text" | "email" | "tel" | "search";
+	multiline?: boolean;
+	required?: boolean;
+	autocomplete?: HTMLAttributes<"input">["autocomplete"];
+	placeholder?: string;
+	value?: string;
+	hint?: string;
+	error?: string;
+}
+
+const { id, name, label, type = "text", multiline, required, autocomplete, placeholder, value, hint, error } = Astro.props;
+const hintId = hint ? `${id}-hint` : undefined;
+const errorId = error ? `${id}-error` : undefined;
+const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
+const control = {
+	id,
+	name,
+	required,
+	autocomplete,
+	placeholder,
+	class: "field__control",
+	"aria-describedby": describedBy,
+	"aria-invalid": error ? ("true" as const) : undefined,
+};
+---
+
+<div class="field">
+	<label class="field__label" for={id}>{label}{!required && <span class="field__hint"> (opcional)</span>}</label>
+	{multiline ? <textarea {...control}>{value}</textarea> : <input type={type} value={value} {...control} />}
+	{hint && <p class="field__hint" id={hintId}>{hint}</p>}
+	{error && <p class="field__error" id={errorId}>{error}</p>}
+</div>

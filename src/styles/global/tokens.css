@@ -21,6 +21,8 @@
 		--seda-sky: #badbff;
 		--seda-butter: #fdf4aa;
 		--seda-rust: #6b3818;
+		/* Added for form errors; terracotta keeps the warm palette (6.75:1 on paper). */
+		--seda-terracotta: #a3321f;
 
 		/* Surfaces */
 		--color-surface: var(--seda-paper);
@@ -44,6 +46,7 @@
 		--color-border-subtle: var(--seda-ink-15);
 		--color-focus: var(--seda-rust);
 		--color-selection: var(--seda-butter);
+		--color-danger: var(--seda-terracotta);
 
 		/* Typography; --font-* family variables come from Astro's Fonts API. */
 		--font-body: var(--font-cormorant);

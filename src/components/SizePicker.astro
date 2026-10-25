@@ -1,0 +1,29 @@
+---
+// Required single choice of a supported size, as native radios styled as pills.
+import { orderSizes } from "../lib/shop/view";
+
+interface Props {
+	name: string;
+	legend: string;
+	sizes: readonly string[];
+	selected?: string;
+	error?: string;
+}
+
+const { name, legend, sizes, selected, error } = Astro.props;
+const options = orderSizes(sizes);
+const errorId = error ? `${name}-error` : undefined;
+---
+
+<fieldset class="choice-group" aria-invalid={error ? "true" : undefined} aria-describedby={errorId}>
+	<legend class="choice-group__legend">{legend}</legend>
+	<div class="choice-group__options cluster">
+		{options.map((size) => (
+			<label class="choice">
+				<input class="choice__input" type="radio" name={name} value={size} checked={size === selected} required />
+				<span class="choice__label">{size}</span>
+			</label>
+		))}
+	</div>
+	{error && <p class="field__error" id={errorId}>{error}</p>}
+</fieldset>

@@ -1,0 +1,25 @@
+---
+// A link when href is given, otherwise a native button.
+import type { HTMLAttributes } from "astro/types";
+
+type Props = (HTMLAttributes<"a"> & HTMLAttributes<"button">) & {
+	href?: string;
+	variant?: "primary" | "accent" | "secondary";
+	width?: "full";
+	type?: "button" | "submit" | "reset";
+};
+
+const { href, variant = "primary", width, type = "button", class: className, ...rest } = Astro.props;
+const Tag = href ? "a" : "button";
+---
+
+<Tag
+	class:list={["button", className]}
+	data-variant={variant === "primary" ? undefined : variant}
+	data-width={width}
+	href={href}
+	type={href ? undefined : type}
+	{...rest}
+>
+	<slot />
+</Tag>

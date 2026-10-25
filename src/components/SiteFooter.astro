@@ -1,0 +1,40 @@
+---
+import type { NavItem, SocialLink } from "../lib/shop/view";
+import Icon from "./Icon.astro";
+
+interface Props {
+	links: NavItem[];
+	social: SocialLink[];
+}
+
+const { links, social } = Astro.props;
+const networkName = { instagram: "Instagram", tiktok: "TikTok" } as const;
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+	<div class="wrapper">
+		<div class="site-footer__top">
+			<a href="/" class="site-footer__logo">
+				<img src="/brand/seda-wordmark.png" alt="Seda — inicio" width="480" height="225" loading="lazy" />
+			</a>
+			<nav aria-label="Información">
+				<ul class="site-footer__links cluster" role="list">
+					{links.map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+				</ul>
+			</nav>
+			{social.length > 0 && (
+				<ul class="cluster" role="list" style="--cluster-space: var(--space-3xs)">
+					{social.map((link) => (
+						<li>
+							<a class="icon-button" href={link.href} rel="noopener" target="_blank" aria-label={`${networkName[link.network]} (se abre en una pestaña nueva)`}>
+								<Icon name={link.network} size={20} />
+							</a>
+						</li>
+					))}
+				</ul>
+			)}
+		</div>
+		<p class="site-footer__legal">© {year} Seda</p>
+	</div>
+</footer>

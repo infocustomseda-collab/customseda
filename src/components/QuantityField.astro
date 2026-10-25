@@ -1,0 +1,52 @@
+---
+// Number input that works without JavaScript; the buttons enhance it.
+import Icon from "./Icon.astro";
+
+interface Props {
+	id: string;
+	name?: string;
+	label?: string;
+	value?: number;
+	min?: number;
+	max?: number;
+}
+
+const { id, name = "quantity", label = "Cantidad", value = 1, min = 1, max = 10 } = Astro.props;
+---
+
+<div class="field">
+	<label class="field__label" for={id}>{label}</label>
+	<quantity-field class="quantity">
+		<button class="quantity__button" type="button" data-step="-1" aria-label={`Reducir ${label.toLowerCase()}`} disabled={value <= min}>
+			<Icon name="minus" size={18} />
+		</button>
+		<input class="quantity__input" id={id} name={name} type="number" inputmode="numeric" value={value} min={min} max={max} step="1" />
+		<button class="quantity__button" type="button" data-step="1" aria-label={`Aumentar ${label.toLowerCase()}`} disabled={value >= max}>
+			<Icon name="plus" size={18} />
+		</button>
+	</quantity-field>
+</div>
+
+<script>
+	class QuantityField extends HTMLElement {
+		connectedCallback() {
+			const input = this.querySelector("input")!;
+			const buttons = [...this.querySelectorAll<HTMLButtonElement>("button[data-step]")];
+			const sync = () => {
+				const value = Number(input.value);
+				buttons[0].disabled = value <= Number(input.min);
+				buttons[1].disabled = value >= Number(input.max);
+			};
+			for (const button of buttons) {
+				button.addEventListener("click", () => {
+					button.dataset.step === "1" ? input.stepUp() : input.stepDown();
+					input.dispatchEvent(new Event("change", { bubbles: true }));
+					sync();
+				});
+			}
+			input.addEventListener("input", sync);
+			sync();
+		}
+	}
+	if (!customElements.get("quantity-field")) customElements.define("quantity-field", QuantityField);
+</script>
