@@ -1,0 +1,438 @@
+{
+  "verifiedAt": "2026-10-24T23:03:01.133Z",
+  "target": "http://localhost:4321",
+  "counts": {
+    "catalog": 16,
+    "products": 11,
+    "conjuntos": 5,
+    "supporting": 15,
+    "mediaSourceUrls": 106,
+    "distinctLocalMedia": 95,
+    "mediaBytes": 210164752
+  },
+  "catalog": [
+    {
+      "id": "01M5R1TRFADRDQ08QZ4ET2T8RY",
+      "collection": "products",
+      "slug": "top-luz",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916698141046",
+      "price_cents": 3500,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L"
+          ]
+        }
+      ],
+      "galleryImages": 4,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TRMANK2DNAYYBA94T4HJ",
+      "collection": "products",
+      "slug": "braguita-luz",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916702400886",
+      "price_cents": 3000,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L"
+          ]
+        }
+      ],
+      "galleryImages": 5,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TRSK26Y132VTGFZRNPEW",
+      "collection": "products",
+      "slug": "braguita-curve",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916947997046",
+      "price_cents": 2600,
+      "source_options": [
+        {
+          "name": "Title",
+          "position": 1,
+          "values": [
+            "Default Title"
+          ]
+        }
+      ],
+      "galleryImages": 4,
+      "validationErrors": [
+        "sizes: selecciona una o más opciones diferentes."
+      ]
+    },
+    {
+      "id": "01M5R1TS02BMKVHERET0CCGEZS",
+      "collection": "products",
+      "slug": "braguita-curve-1",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916968247670",
+      "price_cents": 2800,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "M",
+            "S"
+          ]
+        }
+      ],
+      "galleryImages": 6,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TS56N53JJFTTGFZE9EX4",
+      "collection": "products",
+      "slug": "braguita-flow",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916963594614",
+      "price_cents": 2600,
+      "source_options": [
+        {
+          "name": "Title",
+          "position": 1,
+          "values": [
+            "Default Title"
+          ]
+        }
+      ],
+      "galleryImages": 5,
+      "validationErrors": [
+        "sizes: selecciona una o más opciones diferentes."
+      ]
+    },
+    {
+      "id": "01M5R1TSAZNCHKKAVY9K4188FW",
+      "collection": "products",
+      "slug": "top-marea",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15922629738870",
+      "price_cents": 3000,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "galleryImages": 3,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TSHDH22Q0KZ7XR4RZ65T",
+      "collection": "products",
+      "slug": "braguita-curve-3",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916972638582",
+      "price_cents": 2600,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "galleryImages": 6,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TSQA3ZM1HZ3ZAE1J16NX",
+      "collection": "products",
+      "slug": "braguita-curve-2",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916971852150",
+      "price_cents": 2800,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "galleryImages": 6,
+      "validationErrors": [
+        "El cambio rompería el conjunto «FUEGO»: Los componentes deben compartir color."
+      ]
+    },
+    {
+      "id": "01M5R1TSWD8VGYAQVYH58GES6X",
+      "collection": "products",
+      "slug": "top-destello",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15923416465782",
+      "price_cents": 3200,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "M"
+          ]
+        }
+      ],
+      "galleryImages": 5,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TT2KBFTAA43RYNP6505G",
+      "collection": "products",
+      "slug": "top-fuego",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15923410633078",
+      "price_cents": 3200,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L"
+          ]
+        }
+      ],
+      "galleryImages": 5,
+      "validationErrors": [
+        "El cambio rompería el conjunto «FUEGO»: Los componentes deben compartir color."
+      ]
+    },
+    {
+      "id": "01M5R1TT9EJESDR5ZDWRPV7CWJ",
+      "collection": "products",
+      "slug": "top-tierra",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15923432259958",
+      "price_cents": 3000,
+      "source_options": [
+        {
+          "name": "Talla",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L"
+          ]
+        }
+      ],
+      "galleryImages": 4,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TTG8YZSCAPNDME0C5DWA",
+      "collection": "conjuntos",
+      "slug": "tierra",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15915599528310",
+      "price_cents": 5000,
+      "source_options": [
+        {
+          "name": "Talla del top",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        {
+          "name": "Talla de braguita",
+          "position": 2,
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "galleryImages": 7,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TTNFC77BMZ9908DERQRW",
+      "collection": "conjuntos",
+      "slug": "destello",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916524568950",
+      "price_cents": 5500,
+      "source_options": [
+        {
+          "name": "Talla Top",
+          "position": 1,
+          "values": [
+            "M"
+          ]
+        },
+        {
+          "name": "Talla braguita",
+          "position": 2,
+          "values": [
+            "S",
+            "M"
+          ]
+        }
+      ],
+      "galleryImages": 6,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TTTRDVSFZVXQZSGEJCQQ",
+      "collection": "conjuntos",
+      "slug": "fuego",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916515295606",
+      "price_cents": 5500,
+      "source_options": [
+        {
+          "name": "Talla top",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        {
+          "name": "Talla de braguita",
+          "position": 2,
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "galleryImages": 5,
+      "validationErrors": [
+        "Los componentes deben compartir color."
+      ]
+    },
+    {
+      "id": "01M5R1TTZVSQD9QPY5H8634GP3",
+      "collection": "conjuntos",
+      "slug": "luz",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15916510183798",
+      "price_cents": 6000,
+      "source_options": [
+        {
+          "name": "Talla Top",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L"
+          ]
+        },
+        {
+          "name": "Talla Braguita",
+          "position": 2,
+          "values": [
+            "S",
+            "M",
+            "L"
+          ]
+        }
+      ],
+      "galleryImages": 6,
+      "validationErrors": []
+    },
+    {
+      "id": "01M5R1TV4FV4HR0GXJDX1ZW36H",
+      "collection": "conjuntos",
+      "slug": "marea",
+      "status": "draft",
+      "locale": "es",
+      "source_key": "product:15915303436662",
+      "price_cents": 5000,
+      "source_options": [
+        {
+          "name": "Talla Top",
+          "position": 1,
+          "values": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        {
+          "name": "Talla Braguita",
+          "position": 2,
+          "values": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "galleryImages": 4,
+      "validationErrors": []
+    }
+  ],
+  "verification": {
+    "tests": {
+      "passed": 45,
+      "failed": 0
+    },
+    "typecheck": "0 errors, 0 warnings, 0 hints",
+    "productionBuild": "passed; upstream admin bundle-size advisory remains",
+    "rerun": {
+      "createdCatalogOrSupportingEntries": 0,
+      "retainedCatalogOrSupportingEntries": 31
+    },
+    "scope": "Local D1/R2 only. All catalog entries remain drafts. Source options preserved without inference."
+  }
+}

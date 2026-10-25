@@ -26,12 +26,14 @@ pnpm cms:model
 
 This applies the versioned catalog model to local D1 and regenerates CMS types. Repeat safely after setup; it preserves existing content. Refresh the admin panel to see the new types.
 
+The current public Shopify catalog is imported locally as Spanish drafts, with original media in local R2. Run `pnpm import:shopify --dry-run`, `pnpm import:shopify --apply`, or `pnpm import:shopify:verify` in the second terminal. See the [import workflow and verified results](docs/import/shopify-local-import.md); retries preserve existing editorial entries.
+
 Development uses real workerd with locally emulated D1, R2, and the Astro session KV. Local state persists in `.wrangler/`. Do not run multiple dev servers against that directory. Astro can start in the background: `pnpm exec astro dev status`, `pnpm exec astro dev logs`, and `pnpm exec astro dev stop` manage it.
 
 ```sh
 pnpm test
 pnpm typecheck
-pnpm build:staging
+pnpm build
 ```
 
 `typecheck` regenerates ignored binding types first. Cloudflare/Astro automatically adds the session KV binding required by EmDash; this is separate from an optional content object cache. Image transformation is temporarily passthrough; build-time optimization belongs to phase 6.

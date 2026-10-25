@@ -44,6 +44,8 @@ Components cannot be deleted or unpublished while referenced. Recategorization o
 
 No sample products, bundles, merchant shipping prices, or source images are imported by the model migration. Initial lookup records retain the current database locale; field labels are Spanish. The import must settle the site's locale configuration before loading the Spanish catalog.
 
+The [local Shopify import](import/shopify-local-import.md) now supplies the actual catalog and supporting content in Spanish (`es`), the configured site default. A separate `customseda.shopify-source.v1` migration adds optional source JSON fields and permits missing size references at the schema layer for native incomplete drafts. Catalog REST validation and publication still require valid sizes. Two source bottoms intentionally remain size-less drafts; no supported sizes were invented. All 16 imported catalog entries are drafts, while imported color lookup labels are published locally. Existing seeded lookup IDs remain intact and resolve through EmDash's reference fallback.
+
 ## Deployment boundary
 
 `seed/foundation.json` remains the small runtime setup seed. `seed/seed.json` is the versioned catalog definition consumed by the model migration. Bulk catalog schema/content is deliberately not added to the remote setup request. The model HTTP endpoint returns 404 in production builds.

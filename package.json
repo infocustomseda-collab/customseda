@@ -21,7 +21,9 @@
     "build:production": "CLOUDFLARE_ENV=production astro build",
     "cms:model": "node scripts/cms/apply-local-model.mjs",
     "cms:model:remote": "node scripts/cms/apply-remote-model.mjs",
-    "test:d1": "node --test tests/integration/*.test.mjs"
+    "test:d1": "node --test tests/integration/*.test.mjs",
+    "import:shopify": "node scripts/import/shopify-local.mjs",
+    "import:shopify:verify": "node scripts/import/shopify-verify.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.4.2",

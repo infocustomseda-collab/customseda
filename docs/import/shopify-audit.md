@@ -2,6 +2,8 @@
 
 ## Scope and evidence
 
+**Subsequent import:** The user instructed importing the public website as it stands. That local import is now recorded in [the import workflow and results](shopify-local-import.md). The observations and initially requested inputs below remain the historical audit; missing source values were retained in drafts rather than blocking import or being invented.
+
 This is the first local phase 3 deliverable. The source is the public storefront at <https://www.customseda.com/>. It is not a Shopify Admin export and cannot establish completeness for drafts, archived products, private metafields, or market-specific records. No Shopify or EmDash content was changed. No staging operation was performed.
 
 The [structured inventory](shopify-public-inventory.json) preserves public Shopify product/variant/image IDs as strings, descriptions, ordered galleries, variant prices in integer EUR cents, observed availability, visible color labels, page SEO metadata, internal links, collection membership, sitemap URLs, and proposed bundle links. Each proposal is explicitly unconfirmed.

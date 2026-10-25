@@ -6,6 +6,7 @@ import emdash from "emdash/astro";
 
 export default defineConfig({
 	output: "server",
+	i18n: {defaultLocale: "es", locales: ["es"]},
 	// Phase 6 adds build-time derivatives; avoid runtime image-transform usage now.
 	adapter: cloudflare({ imageService: "passthrough" }),
 	image: {
@@ -31,6 +32,11 @@ export default defineConfig({
                     injectRoute({
                         pattern: "/_emdash/api/customseda/model",
                         entrypoint: "./src/lib/cms/model-route.ts",
+                        prerender: false,
+                    });
+                    injectRoute({
+                        pattern: "/_emdash/api/customseda/import",
+                        entrypoint: "./src/lib/cms/import-route.ts",
                         prerender: false,
                     });
                 },

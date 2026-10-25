@@ -113,6 +113,9 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
    for(const draft of [false,true]) {
     const bundle=await read(dep.type,dep.id,draft);
     if(!bundle) continue;
+    // An unpublished entry has no live selection to protect. Filtering its
+    // draft components to published rows would invent missing-reference errors.
+    if(!draft && bundle.status!=='published') continue;
     const related=await loadGraph(db,bundle,false,read);
     related.set(candidate.id,candidate);
     // Candidate may point at a different category/collection/color; load those too.
