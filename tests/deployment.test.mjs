@@ -110,11 +110,14 @@ test('deploy scripts run like fdag: plain node, authenticated by wrangler login 
   assert.equal(scripts['deploy:staging'], 'node scripts/deploy/run.mjs staging');
 });
 
-test('only the migration step requires an API token, with a clear message', async () => {
-  const { tokenRequired } = await import('../scripts/deploy/target.mjs');
-  assert.equal(tokenRequired({ CLOUDFLARE_API_TOKEN: 'x' }), null);
-  assert.match(tokenRequired({}), /emdash migrate.*CLOUDFLARE_API_TOKEN/s);
-  assert.match(tokenRequired({}), /wrangler login/);
+test('migrations use the CI token, or else the wrangler login token, like fdag deploys', async () => {
+  const { migrationToken } = await import('../scripts/deploy/target.mjs');
+  let asked = 0;
+  const login = () => { asked++; return 'oauth-token'; };
+  assert.equal(migrationToken({ CLOUDFLARE_API_TOKEN: 'ci-token' }, login), 'ci-token');
+  assert.equal(asked, 0);
+  assert.equal(migrationToken({}, login), 'oauth-token');
+  assert.throws(() => migrationToken({}, () => ''), /pnpm exec wrangler login/);
 });
 
 test('the status command is the runner\'s own read-only first step', async () => {

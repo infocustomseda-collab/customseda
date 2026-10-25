@@ -22,14 +22,7 @@ All secret files are ignored by git, have owner-only permissions (`chmod 600`), 
 
 Never put a Cloudflare API token in `.env` or the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
 
-Manual deploys authenticate like fdag, with `pnpm exec wrangler login` (OAuth). The one exception is EmDash's core migrations. They run from the deploy, never inside the Worker, so they can't exceed Workers Free CPU limits (the problem fdag hit), and `emdash migrate` does not accept OAuth. `pnpm deploy:<env>` and `pnpm migrate:status <env>` therefore stop at once without `CLOUDFLARE_API_TOKEN`. Provide it for that shell only, without writing it to history:
-
-```sh
-read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN
-pnpm deploy:staging
-```
-
-When the variable is set, Wrangler uses it too, which is how CI works. Use a custom token on this account with the "Edit Cloudflare Workers" template plus Account → D1 → Edit (and Workers R2 Storage → Edit if missing). Keep one token for manual use, stored in a password manager, and a second one as the GitHub environment secret, so either can be revoked alone.
+Manual deploys authenticate like fdag: run `pnpm exec wrangler login` once, then `pnpm deploy:<env>`. EmDash's core migrations run from the deploy, never inside the Worker, so they can't exceed Workers Free CPU limits (the problem fdag hit). `emdash migrate` needs a bearer token, so the runner hands it the token of your Wrangler login (`wrangler auth token`). In CI, `CLOUDFLARE_API_TOKEN` comes from the GitHub environment secret, and Wrangler uses it too. Use a custom token on this account with the "Edit Cloudflare Workers" template plus Account → D1 → Edit (and Workers R2 Storage → Edit if missing). Keep one token for manual use, stored in a password manager, and a second one as the GitHub environment secret, so either can be revoked alone.
 
 Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN`, and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
 
