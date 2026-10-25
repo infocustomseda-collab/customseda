@@ -1,0 +1,128 @@
+---
+// Development-only specimen of the design tokens; never served by deployed Workers.
+import { Font } from "astro:assets";
+import "../../styles/index.css";
+
+if (!import.meta.env.DEV) return new Response(null, { status: 404 });
+
+const steps = [5, 4, 3, 2, 1, 0, -1];
+const spaces = ["3xs", "2xs", "xs", "s", "m", "l", "xl", "2xl", "3xl"];
+const colors = [
+	["surface", "--color-surface"], ["surface-tint", "--color-surface-tint"],
+	["surface-butter", "--color-surface-butter"], ["surface-cacao", "--color-surface-cacao"],
+	["text-strong", "--color-text-strong"], ["text", "--color-text"], ["text-subtle", "--color-text-subtle"],
+	["brand", "--color-brand"], ["action", "--color-action"], ["on-cacao", "--color-on-cacao"],
+	["border-control", "--color-border-control"], ["border-subtle", "--color-border-subtle"],
+];
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="robots" content="noindex" />
+		<title>Design tokens — Seda</title>
+		<Font cssVariable="--font-cormorant" />
+		<Font cssVariable="--font-montserrat" />
+	</head>
+	<body>
+		<p class="surface-cacao announcement">¡ENVÍO GRATIS! En compras superiores a 45€ en Canarias - 70€ en Península - 90€ Europa</p>
+		<main class="specimen flow" style="--flow-space: var(--section-gap)">
+			<section class="flow">
+				<h1>Design tokens</h1>
+				<p>Specimen of the Seda tokens defined in <code>src/styles/</code>. Values come from the current-storefront audit.</p>
+			</section>
+
+			<section class="flow" aria-labelledby="type">
+				<h2 id="type">Type scale</h2>
+				{steps.map((step) => (
+					<div class="row">
+						<code>--step-{step}</code>
+						<span style={`font-size: var(--step-${step}); font-family: var(${step >= 1 ? "--font-heading" : "--font-body"}); font-weight: ${step >= 1 ? "var(--weight-heading)" : "inherit"}; color: var(--color-text-strong)`}>
+							{step >= 1 ? "TIERRA" : "Quería que este bikini fuera cómodo"}
+						</span>
+					</div>
+				))}
+			</section>
+
+			<section class="flow" aria-labelledby="colors">
+				<h2 id="colors">Color</h2>
+				<ul role="list" class="swatches">
+					{colors.map(([label, token]) => (
+						<li><span class="swatch" style={`background: var(${token})`}></span><code>{label}</code></li>
+					))}
+				</ul>
+			</section>
+
+			<section class="flow" aria-labelledby="space">
+				<h2 id="space">Space</h2>
+				{spaces.map((space) => (
+					<div class="row"><code>--space-{space}</code><span class="bar" style={`inline-size: var(--space-${space})`}></span></div>
+				))}
+			</section>
+
+			<section class="flow" aria-labelledby="surfaces">
+				<h2 id="surfaces">Surfaces</h2>
+				<div class="surface-butter region text-center flow">
+					<h2>Primera colección</h2>
+					<p class="center">Nace de la idea de crear un bikini diferente: uno con el que las mujeres se sientan <strong>seguras, cómodas y atractivas</strong> mientras practican deporte en la playa.</p>
+				</div>
+				<div class="surface-tint region text-center flow">
+					<h3>El patrón</h3>
+					<p class="center">Todo empieza en el papel. Creamos los patrones pensando en cómo se adapta el bikini al cuerpo y en cómo se mueve cuando practicas deporte.</p>
+				</div>
+				<div class="surface-cacao region text-center flow">
+					<h2 style="font-size: var(--step-4)">MARGARITA</h2>
+					<p class="center">Inspirada en la energía de Las Canteras</p>
+				</div>
+				<p><small>Precio: €50,00 EUR · <a href="#type">Ver todos los detalles</a></small></p>
+			</section>
+		</main>
+	</body>
+</html>
+
+<style>
+	.announcement {
+		padding: var(--space-2xs) var(--gutter);
+		font-family: var(--font-heading);
+		font-size: var(--step--1);
+		font-weight: var(--weight-heading);
+		letter-spacing: var(--tracking-ui);
+		text-align: center;
+		max-inline-size: none;
+	}
+	.specimen {
+		inline-size: min(100% - 2 * var(--gutter), var(--container-max));
+		margin-inline: auto;
+		padding-block: var(--band-padding);
+	}
+	.row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: var(--space-s);
+	}
+	.row code {
+		flex: 0 0 8rem;
+		font-size: var(--step--1);
+		color: var(--color-text-subtle);
+	}
+	.swatches {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+		gap: var(--grid-gap);
+	}
+	.swatch {
+		display: block;
+		aspect-ratio: var(--ratio-card);
+		border: var(--border-width) solid var(--color-border-subtle);
+	}
+	.bar {
+		block-size: var(--space-s);
+		background: var(--color-text-strong);
+	}
+	.center {
+		margin-inline: auto;
+	}
+</style>

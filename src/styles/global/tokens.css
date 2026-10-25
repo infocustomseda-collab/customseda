@@ -1,0 +1,110 @@
+/*
+ * Design tokens. Brand primitives are the exact values of the audited storefront
+ * (docs/design/visual-audit.md); components consume only the semantic tokens below them.
+ * Fluid --step-* and --space-* values live in fluid.css.
+ */
+@layer tokens {
+	:root {
+		color-scheme: light;
+
+		/* Brand primitives */
+		--seda-paper: #fcfcfc;
+		--seda-sand: #f6f5f5;
+		--seda-ink: #6b4f3a;
+		/* Solid ink tints replace the incumbent 75% alpha body text, which failed AA (3.95:1). */
+		--seda-ink-90: #7a604d;
+		--seda-ink-85: #816957;
+		--seda-ink-70: #968374;
+		--seda-ink-15: #e6e2df;
+		--seda-logo: #643924;
+		--seda-cacao: #603e2a;
+		--seda-sky: #badbff;
+		--seda-butter: #fdf4aa;
+		--seda-rust: #6b3818;
+
+		/* Surfaces */
+		--color-surface: var(--seda-paper);
+		--color-surface-tint: var(--seda-sand);
+		--color-surface-butter: var(--seda-butter);
+		--color-surface-cacao: var(--seda-cacao);
+
+		/* Text */
+		--color-text: var(--seda-ink-90);
+		--color-text-strong: var(--seda-ink);
+		--color-text-subtle: var(--seda-ink-85);
+		--color-on-cacao: var(--seda-sky);
+		--color-on-butter: var(--seda-rust);
+		--color-brand: var(--seda-logo);
+
+		/* Controls */
+		--color-action: var(--seda-rust);
+		--color-selected: var(--seda-ink);
+		--color-on-selected: var(--seda-paper);
+		--color-border-control: var(--seda-ink-70);
+		--color-border-subtle: var(--seda-ink-15);
+		--color-focus: var(--seda-rust);
+		--color-selection: var(--seda-butter);
+
+		/* Typography; --font-* family variables come from Astro's Fonts API. */
+		--font-body: var(--font-cormorant);
+		--font-heading: var(--font-montserrat);
+		--weight-body: 500;
+		--weight-body-strong: 700;
+		--weight-heading: 700;
+		--leading-body: 1.7;
+		--leading-heading: 1.25;
+		--leading-ui: 1.2;
+		--tracking-body: 0.0375em;
+		--tracking-heading: 0.015em;
+		--tracking-ui: 0.0625em;
+		--measure: 65ch;
+
+		/* Layout */
+		--container-max: 82.5rem;
+		--gutter: var(--space-s-xl);
+		--grid-gap: var(--space-s-l);
+		--band-padding: var(--space-m-xl);
+		--section-gap: var(--space-m-2xl);
+
+		/* Shape: pill controls, square photographs, nearly flat depth. */
+		--border-width: 1px;
+		--radius-pill: 999px;
+		--radius-control: 2px;
+		--radius-media: 0;
+		--shadow-control: 2px 2px 5px rgb(96 62 42 / 0.1);
+		--shadow-overlay: 6px 6px 25px rgb(96 62 42 / 0.12);
+		--control-height: 3.25rem;
+		--pill-height: 2.5rem;
+
+		/* Media ratios */
+		--ratio-card: 4 / 5;
+		--ratio-square: 1;
+		--ratio-hero: 3 / 2;
+
+		/* Motion: short, eased out; --ease-out-3 (Open Props) equals the incumbent curve. */
+		--duration-instant: 0.1s;
+		--duration-quick: 0.2s;
+		--duration-moderate: 0.3s;
+		--duration-slow: 0.6s;
+		--ease-out: var(--ease-out-3);
+		--ease-media: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+		/* Focus */
+		--focus-width: 2px;
+		--focus-offset: 3px;
+
+		/* Stacking */
+		--z-header: 10;
+		--z-overlay: 20;
+		--z-popup: 30;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:root {
+			--duration-instant: 0s;
+			--duration-quick: 0s;
+			--duration-moderate: 0s;
+			--duration-slow: 0s;
+		}
+	}
+}

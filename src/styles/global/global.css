@@ -1,0 +1,105 @@
+/* Element defaults: the brand applied to plain HTML before any class. */
+@layer global {
+	html {
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-family: var(--font-body);
+		font-weight: var(--weight-body);
+		line-height: var(--leading-body);
+		letter-spacing: var(--tracking-body);
+		font-kerning: normal;
+		accent-color: var(--color-selected);
+		caret-color: var(--color-action);
+		scrollbar-color: var(--color-border-control) var(--color-surface);
+	}
+
+	/* Utopia clamps are in root rem; sizing body (not html) keeps 1rem at the user's default. */
+	body {
+		font-size: var(--step-0);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		html:focus-within {
+			scroll-behavior: smooth;
+		}
+	}
+
+	h1,
+	h2,
+	h3,
+	h4 {
+		color: var(--color-text-strong);
+		font-family: var(--font-heading);
+		font-weight: var(--weight-heading);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	h1 {
+		font-size: var(--step-4);
+	}
+
+	h2 {
+		font-size: var(--step-2);
+	}
+
+	h3 {
+		font-size: var(--step-1);
+	}
+
+	h4 {
+		font-size: var(--step-0);
+	}
+
+	p,
+	li,
+	figcaption,
+	blockquote {
+		max-inline-size: var(--measure);
+		text-wrap: pretty;
+	}
+
+	strong,
+	b {
+		font-weight: var(--weight-body-strong);
+	}
+
+	small {
+		font-size: var(--step--1);
+	}
+
+	a {
+		color: currentcolor;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.2em;
+		transition: text-decoration-color var(--duration-instant) var(--ease-out);
+	}
+
+	a:hover {
+		text-decoration-thickness: 2px;
+	}
+
+	:focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	::selection {
+		background: var(--color-selection);
+		color: var(--color-on-butter);
+	}
+
+	img {
+		border-radius: var(--radius-media);
+	}
+
+	hr {
+		border: 0;
+		border-block-start: var(--border-width) solid var(--color-border-subtle);
+	}
+
+	table {
+		font-variant-numeric: tabular-nums;
+	}
+}

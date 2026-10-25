@@ -1,0 +1,46 @@
+/* CUBE utilities: each class does one job and wins over blocks. */
+@layer utilities {
+	.visually-hidden:not(:focus, :active) {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* Vertical rhythm between flow content; override per context with --flow-space. */
+	.flow > * + * {
+		margin-block-start: var(--flow-space, 1em);
+	}
+
+	/* Colored band padding, as the incumbent sections use. */
+	.region {
+		padding-block: var(--region-space, var(--band-padding));
+	}
+
+	.surface-tint {
+		background: var(--color-surface-tint);
+	}
+
+	.surface-butter {
+		background: var(--color-surface-butter);
+		color: var(--color-text);
+	}
+
+	.surface-cacao {
+		--color-text: var(--color-on-cacao);
+		--color-text-strong: var(--color-on-cacao);
+		--color-focus: var(--color-on-cacao);
+		background: var(--color-surface-cacao);
+		color: var(--color-text);
+	}
+
+	.text-center {
+		text-align: center;
+	}
+
+	.measure-none {
+		max-inline-size: none;
+	}
+}
