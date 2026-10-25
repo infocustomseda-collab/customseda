@@ -7,7 +7,7 @@ const targets: Record<string, Record<string,string>> = {
  products:{category:'categories',collection:'collections',color:'colors',sizes:'sizes',size_guide:'size_guides'},
  conjuntos:{top:'products',bottom:'products'},
 };
-export type CatalogWrite = {data?:Record<string,unknown>;references?:Record<string,string[]>};
+export type CatalogWrite = {data?:Record<string,unknown>;references?:Record<string,string[]>;slug?:string|null};
 export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=true):Promise<CatalogEntry|null> {
  if(!catalogTypes.has(type)) return null;
  const item=await new ContentRepository(db).findByIdOrSlug(type,id);
@@ -124,6 +124,13 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
     if(failures.length) filtered.push(`El cambio rompería el conjunto «${bundle.data.title??bundle.id}»: ${failures[0]}`);
    }
   }
+ }
+ // Products and Conjuntos share the public /products/<slug> path; EmDash only enforces uniqueness per type.
+ if(type==='products'||type==='conjuntos') {
+  const repo=new ContentRepository(db);
+  const slug=typeof body.slug==='string'&&body.slug ? body.slug : id ? (await repo.findByIdOrSlug(type,id))?.slug : null;
+  const other=type==='products'?'conjuntos':'products';
+  if(slug && await repo.findBySlug(other,slug)) filtered.push(`La dirección «${slug}» ya la usa ${other==='conjuntos'?'un conjunto':'un producto'}; elige otra.`);
  }
  if(publish && Array.isArray(candidate.data.gallery)) {
   const ids=[...new Set(candidate.data.gallery.map(row=>row?.image?.id).filter((id):id is string=>typeof id==='string'))];

@@ -73,3 +73,11 @@ test('content pages take the menu label as heading and drop a leading paragraph 
  assert.deepEqual(withoutLeadingTitle(blocks,'Otra cosa'),blocks);
  assert.deepEqual(withoutLeadingTitle(null,'x'),[]);
 });
+
+test('social handles come from absolute or relative links without throwing',async()=>{
+ const {socialHandle}=await import('../src/lib/shop/site.ts');
+ assert.equal(socialHandle('https://www.instagram.com/customseda/'),'@customseda');
+ assert.equal(socialHandle('https://www.tiktok.com/@customseda'),'@customseda');
+ assert.equal(socialHandle('/pages/contact'),'@contact');
+ assert.equal(socialHandle('https://www.instagram.com/'),null);
+});

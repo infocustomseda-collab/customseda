@@ -4,7 +4,7 @@ import { getMenu } from "emdash";
 import { getDb } from "emdash/runtime";
 import type { SiteChrome } from "../../layouts/Shop.astro";
 import { loadShop, type ShopContent, type ShopEntry } from "./content.ts";
-import { popupView, settingsOf, siteChrome } from "./site.ts";
+import { popupViews, settingsOf, siteChrome } from "./site.ts";
 
 export type ShopPage = { shop: ShopContent; site: SiteChrome; settings: ShopEntry | undefined };
 
@@ -15,7 +15,7 @@ export async function loadShopPage(Astro: AstroGlobal): Promise<ShopPage> {
 		getMenu("footer"),
 	]);
 	const settings = settingsOf(shop);
-	const site = { ...siteChrome({ settings, primary, footer, path: Astro.url.pathname }), popup: popupView(shop.popups, Date.now()) };
+	const site = { ...siteChrome({ settings, primary, footer, path: Astro.url.pathname }), popups: popupViews(shop.popups, Date.now()) };
 	return { shop, settings, site };
 }
 

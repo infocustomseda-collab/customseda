@@ -4,13 +4,12 @@
 import Icon from "../../components/Icon.astro";
 import Shop from "../../layouts/Shop.astro";
 import { loadShopPage } from "../../lib/shop/page";
-import { pageHeading } from "../../lib/shop/site";
+import { pageHeading, socialHandle } from "../../lib/shop/site";
 
 const { shop, site, settings } = await loadShopPage(Astro);
 const page = shop.pages.find((entry) => entry.slug === "contact");
 const heading = pageHeading(site, Astro.url.pathname, String(page?.data.title ?? "Contacto"));
 const email = typeof settings?.data.contact_email === "string" && settings.data.contact_email.includes("@") ? settings.data.contact_email : null;
-const handle = (href: string) => `@${new URL(href).pathname.replaceAll("/", "").replace(/^@/, "")}`;
 const networkName = { instagram: "Instagram", tiktok: "TikTok" } as const;
 ---
 
@@ -30,7 +29,7 @@ const networkName = { instagram: "Instagram", tiktok: "TikTok" } as const;
 						<span class="contact-list__label">{networkName[link.network]}</span>
 						<a href={link.href} rel="noopener" target="_blank">
 							<Icon name={link.network} size={18} />
-							{handle(link.href)}
+							{socialHandle(link.href) ?? networkName[link.network]}
 							<span class="visually-hidden"> (se abre en una pestaña nueva)</span>
 						</a>
 					</li>

@@ -6,15 +6,16 @@ import Highlights from "../components/home/Highlights.astro";
 import HomeHero from "../components/home/HomeHero.astro";
 import RichText from "../components/RichText.astro";
 import Shop from "../layouts/Shop.astro";
+import { featuredItem } from "../lib/shop/catalog";
 import { byId, loadShopPage } from "../lib/shop/page";
-import { localHref, plainText, productCard } from "../lib/shop/site";
+import { localHref, plainText } from "../lib/shop/site";
 import { galleryImages, imageView } from "../lib/shop/view";
 
 const { shop, site, settings } = await loadShopPage(Astro);
 const data = settings?.data ?? {};
-const featured = byId(shop.conjuntos, settings?.refs.featured_conjunto?.[0]);
-const top = byId(shop.products, featured?.refs.top?.[0]);
-const color = byId(shop.colors, top?.refs.color?.[0]);
+const featured = featuredItem(shop, settings?.refs.featured_conjunto?.[0]);
+const featuredEntry = byId(shop.conjuntos, featured?.id);
+const color = shop.colors.find((entry) => entry.data.code === featured?.color);
 const slides = galleryImages(data.slideshow);
 const highlights = (Array.isArray(data.highlights) ? data.highlights : []).flatMap((row: any) =>
 	typeof row?.title === "string" && typeof row?.text === "string"
@@ -30,7 +31,7 @@ const introTitle = typeof data.intro_title === "string" ? data.intro_title : "";
 	<HomeHero title={heroTitle} text={heroText} image={imageView(data.hero_image, "")} link={localHref(data.hero_link)} />
 
 	{featured && (
-		<FeaturedProduct product={productCard(featured)} color={typeof color?.data.title === "string" ? color.data.title : undefined} description={featured.data.description} />
+		<FeaturedProduct product={featured.card} color={typeof color?.data.title === "string" ? color.data.title : undefined} description={featuredEntry?.data.description} />
 	)}
 
 	{slides.length > 0 && <Gallery images={slides} label="Fotos de campaña de Margarita" variant="slideshow" />}

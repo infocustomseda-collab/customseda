@@ -1,66 +1,70 @@
 ---
-// Editable promotional popup in a native modal dialog: focus moves in and is trapped, Escape and the close
-// button dismiss it, and focus returns to the page. The browser checks the schedule and the dismissal period.
+// Editable promotional popups in native modal dialogs: focus moves in and is trapped, Escape and the close
+// button dismiss, and focus returns to the page. Every candidate is rendered; the browser opens the first
+// one inside its schedule and not dismissed within its dismissal period.
 import type { PopupView } from "../lib/shop/site";
 import Button from "./Button.astro";
 import Icon from "./Icon.astro";
 import RichText from "./RichText.astro";
 
 interface Props {
-	popup: PopupView;
+	popups: PopupView[];
 }
 
-const { popup } = Astro.props;
-const titleId = `popup-title-${popup.id}`;
+const { popups } = Astro.props;
 ---
 
-<site-popup data-schedule={JSON.stringify(popup.schedule)} data-delay={popup.delaySeconds}>
-	<dialog class="popup" aria-labelledby={titleId}>
-		<button class="popup__close icon-button" type="button" data-close aria-label="Cerrar">
-			<Icon name="close" />
-		</button>
-		{popup.image && (
-			<img class="popup__image" src={popup.image.src} alt={popup.image.alt} width={popup.image.width} height={popup.image.height} loading="lazy" decoding="async" />
-		)}
-		<div class="popup__body stack text-center">
-			<h2 class="popup__title" id={titleId}>{popup.title}</h2>
-			<RichText value={popup.content} />
-			{popup.button && <Button href={popup.button.href} variant="accent" data-close>{popup.button.label}</Button>}
-		</div>
-	</dialog>
-</site-popup>
+<site-popups data-schedules={JSON.stringify(popups.map((popup) => ({ ...popup.schedule, delaySeconds: popup.delaySeconds })))}>
+	{popups.map((popup) => (
+		<dialog class="popup" data-popup={popup.id} aria-labelledby={`popup-title-${popup.id}`}>
+			<button class="popup__close icon-button" type="button" data-close aria-label="Cerrar">
+				<Icon name="close" />
+			</button>
+			{popup.image && (
+				<img class="popup__image" src={popup.image.src} alt={popup.image.alt} width={popup.image.width} height={popup.image.height} loading="lazy" decoding="async" />
+			)}
+			<div class="popup__body stack text-center">
+				<h2 class="popup__title" id={`popup-title-${popup.id}`}>{popup.title}</h2>
+				<RichText value={popup.content} />
+				{popup.button && <Button href={popup.button.href} variant="accent" data-close>{popup.button.label}</Button>}
+			</div>
+		</dialog>
+	))}
+</site-popups>
 
 <script>
-	import { popupStorageKey, shouldShowPopup, type PopupSchedule } from "../lib/shop/popup";
+	import { choosePopup, popupStorageKey, type PopupSchedule } from "../lib/shop/popup";
 
-	class SitePopup extends HTMLElement {
+	const stored = (id: string) => {
+		try {
+			const value = Number(localStorage.getItem(popupStorageKey(id)));
+			return value > 0 ? value : null;
+		} catch {
+			return null; // Storage blocked: show at most once per page view.
+		}
+	};
+
+	class SitePopups extends HTMLElement {
 		connectedCallback() {
-			const dialog = this.querySelector("dialog") as HTMLDialogElement;
-			const schedule = JSON.parse(this.dataset.schedule || "{}") as PopupSchedule;
-			const key = popupStorageKey(schedule.id);
-			let dismissedAt: number | null = null;
-			try {
-				const stored = Number(localStorage.getItem(key));
-				dismissedAt = stored > 0 ? stored : null;
-			} catch {
-				// Storage blocked: show at most once per page view.
-			}
-			if (!shouldShowPopup(schedule, Date.now(), dismissedAt)) return;
-			const remember = () => {
+			const schedules = JSON.parse(this.dataset.schedules || "[]") as (PopupSchedule & { delaySeconds: number })[];
+			const chosen = choosePopup(schedules, Date.now(), stored) as (PopupSchedule & { delaySeconds: number }) | null;
+			if (!chosen) return;
+			const dialog = [...this.querySelectorAll("dialog")].find((element) => element.dataset.popup === chosen.id) as HTMLDialogElement | undefined;
+			if (!dialog) return;
+			dialog.addEventListener("close", () => {
 				try {
-					localStorage.setItem(key, String(Date.now()));
+					localStorage.setItem(popupStorageKey(chosen.id), String(Date.now()));
 				} catch {}
-			};
-			dialog.addEventListener("close", remember);
-			for (const control of this.querySelectorAll("[data-close]")) control.addEventListener("click", () => dialog.close());
+			});
+			for (const control of dialog.querySelectorAll("[data-close]")) control.addEventListener("click", () => dialog.close());
 			// A click on the backdrop (the dialog box itself, outside its content) dismisses it.
 			dialog.addEventListener("click", (event) => {
 				if (event.target === dialog) dialog.close();
 			});
 			window.setTimeout(() => {
 				if (!dialog.open && !document.querySelector("dialog[open], :popover-open")) dialog.showModal();
-			}, Number(this.dataset.delay || 0) * 1000);
+			}, chosen.delaySeconds * 1000);
 		}
 	}
-	if (!customElements.get("site-popup")) customElements.define("site-popup", SitePopup);
+	if (!customElements.get("site-popups")) customElements.define("site-popups", SitePopups);
 </script>

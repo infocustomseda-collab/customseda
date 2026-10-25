@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions} from '../src/lib/shop/catalog.ts';
+import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,featuredItem} from '../src/lib/shop/catalog.ts';
 
 const entry=(type,id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
 const lookups={
@@ -29,10 +29,11 @@ test('catalog combines pieces and complete Conjuntos with derived color, sizes a
  const items=buildCatalog(shop);
  assert.deepEqual(items.map(i=>i.slug),['tierra','fuego','top-tierra','top-fuego','braguita-curve','braguita-flow']);
  const tierra=items.find(i=>i.slug==='tierra');
- assert.deepEqual([tierra.kind,tierra.color,tierra.collection,tierra.sizes,tierra.available],['conjunto','caoba','margarita',['S','M'],true]);
- // A Conjunto is available only when it and both components are; sizes need both pieces.
+ // Buyers pick each piece's size, so a Conjunto matches any size either piece offers.
+ assert.deepEqual([tierra.kind,tierra.color,tierra.collection,tierra.sizes,tierra.available],['conjunto','caoba','margarita',['XS','S','M','L'],true]);
+ // A Conjunto is available only when it and both components are.
  assert.equal(items.find(i=>i.slug==='fuego').available,false);
- assert.deepEqual(items.find(i=>i.slug==='fuego').sizes,[]);
+ assert.deepEqual(items.find(i=>i.slug==='fuego').sizes,['S','M','L','XL']);
  assert.deepEqual(items.find(i=>i.slug==='top-tierra').sizes,['S','M','L']);
  assert.equal(items.find(i=>i.slug==='braguita-curve').category,'braguita');
 });
@@ -54,8 +55,9 @@ test('filters combine as AND across groups and OR within a group',()=>{
  const items=buildCatalog(shop);
  const slugs=f=>filterItems(items,f).map(i=>i.slug);
  assert.deepEqual(slugs({colors:['rojo'],sizes:[],available:false}),['fuego','top-fuego','braguita-flow']);
- assert.deepEqual(slugs({colors:[],sizes:['XL'],available:false}),['top-fuego']);
- assert.deepEqual(slugs({colors:[],sizes:['XS','L'],available:false}),['top-tierra','top-fuego','braguita-curve']);
+ assert.deepEqual(slugs({colors:[],sizes:['XL'],available:false}),['fuego','top-fuego']);
+ assert.deepEqual(slugs({colors:[],sizes:['XS'],available:false}),['tierra','braguita-curve']);
+ assert.deepEqual(slugs({colors:[],sizes:['XS','L'],available:false}),['tierra','fuego','top-tierra','top-fuego','braguita-curve']);
  assert.deepEqual(slugs({colors:['caoba'],sizes:['M'],available:true}),['tierra','top-tierra','braguita-curve']);
  assert.deepEqual(slugs({colors:['rojo'],sizes:['XS'],available:true}),[]);
 });
@@ -81,4 +83,11 @@ test('facet options list only values present in the view, in lookup order',()=>{
  const facets=facetOptions(items.filter(i=>i.category==='top'),shop);
  assert.deepEqual(facets.colors,[{code:'caoba',label:'Caoba'},{code:'rojo',label:'Rojo'}]);
  assert.deepEqual(facets.sizes,['S','M','L','XL']);
+});
+
+test('the featured Conjunto resolves through catalog rules and disappears without a component',()=>{
+ assert.equal(featuredItem(shop,'tierra').slug,'tierra');
+ assert.equal(featuredItem(shop,'huerfano'),null);
+ assert.equal(featuredItem(shop,'top-tierra'),null);
+ assert.equal(featuredItem(shop,undefined),null);
 });

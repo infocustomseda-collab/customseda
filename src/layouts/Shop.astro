@@ -16,7 +16,7 @@ export type SiteChrome = {
 	footerLinks: NavItem[];
 	social: SocialLink[];
 	announcement?: { text: string; href?: string } | null;
-	popup?: PopupView | null;
+	popups?: PopupView[];
 };
 
 interface Props {
@@ -58,6 +58,6 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 			<slot />
 		</main>
 		<SiteFooter links={site.footerLinks} social={site.social} />
-		{site.popup && !noindex && <SitePopup popup={site.popup} />}
+		{site.popups && site.popups.length > 0 && !noindex && <SitePopup popups={site.popups} />}
 	</body>
 </html>
