@@ -1,5 +1,6 @@
 // Presentational view models shared by the public shop components. Pages map CMS data
 // (live in development, the build-time snapshot in phase 6) into these shapes.
+import { srcsetOf } from "./images.ts";
 
 export type GalleryImage = {
 	id: string;
@@ -11,6 +12,8 @@ export type GalleryImage = {
 	position: string;
 	/** Dominant color shown while the photo loads. */
 	placeholder?: string;
+	/** Build-time WebP derivatives (srcset); absent when none were generated. */
+	srcset?: string;
 };
 
 export type ProductCardView = {
@@ -55,6 +58,7 @@ export function imageView(image: any, alt: string, focal: { x?: unknown; y?: unk
 		height: image.height,
 		position: `${percent(focal.x)} ${percent(focal.y)}`,
 		...(typeof color === "string" && SAFE_COLOR.test(color) ? { placeholder: color } : {}),
+		...(Array.isArray(image.derivatives) && image.derivatives.length ? { srcset: srcsetOf(image.derivatives) } : {}),
 	};
 }
 
@@ -69,4 +73,21 @@ export function galleryImages(gallery: unknown): GalleryImage[] {
 export function orderSizes(codes: readonly string[] | undefined): SizeCode[] {
 	const wanted = new Set((codes ?? []).map((code) => code.toUpperCase()));
 	return SIZE_ORDER.filter((code) => wanted.has(code));
+}
+
+/** Cross-document view-transition names for a card's photo and title (lowercase custom idents). */
+export function transitionNames(base: string): { image: string; title: string } {
+	const safe = base.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/^(?=[\d-])/, "t-");
+	return { image: `${safe}-image`, title: `${safe}-title` };
+}
+
+/** A transition name may appear once per page: later duplicates of the same product drop theirs. */
+export function uniqueTransitions<T extends { transitionName?: string }>(cards: T[]): T[] {
+	const seen = new Set<string>();
+	return cards.map((card) => {
+		if (!card.transitionName) return card;
+		if (seen.has(card.transitionName)) return { ...card, transitionName: undefined };
+		seen.add(card.transitionName);
+		return card;
+	});
 }

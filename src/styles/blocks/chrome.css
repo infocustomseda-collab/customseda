@@ -293,4 +293,25 @@
 	.popup__title {
 		font-size: var(--step-3);
 	}
+
+	/* Service-worker update offer, pinned to the bottom of the viewport. */
+	.update-banner {
+		--cluster-justify: space-between;
+		--cluster-space: var(--space-s);
+		position: fixed;
+		inset-block-end: var(--space-s);
+		inset-inline: var(--space-s);
+		z-index: var(--z-popup);
+		max-inline-size: 32rem;
+		margin-inline: auto;
+		padding: var(--space-xs) var(--space-s);
+		border-radius: var(--radius-media);
+		background: var(--color-surface-cacao);
+		color: var(--color-on-cacao);
+		box-shadow: var(--shadow-overlay);
+	}
+
+	.update-banner[hidden] {
+		display: none;
+	}
 }

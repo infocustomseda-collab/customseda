@@ -5,6 +5,8 @@ import Shop from "../../layouts/Shop.astro";
 import { loadShopPage } from "../../lib/shop/page";
 import { plainText } from "../../lib/shop/site";
 
+export const prerender = true;
+
 const { shop, site } = await loadShopPage(Astro);
 const page = shop.pages.find((entry) => entry.slug === "margarita");
 if (!page) return Astro.rewrite("/404");

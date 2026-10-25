@@ -6,6 +6,8 @@ import Shop from "../../layouts/Shop.astro";
 import { loadShopPage } from "../../lib/shop/page";
 import { pageHeading, socialHandle } from "../../lib/shop/site";
 
+export const prerender = true;
+
 const { shop, site, settings } = await loadShopPage(Astro);
 const page = shop.pages.find((entry) => entry.slug === "contact");
 const heading = pageHeading(site, Astro.url.pathname, String(page?.data.title ?? "Contacto"));

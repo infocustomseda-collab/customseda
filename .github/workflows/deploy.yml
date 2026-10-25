@@ -1,0 +1,115 @@
+# Deploys master to staging, then production when enabled. CMS publishes dispatch the same workflow
+# for their own environment. Each environment runs one deploy at a time; a newer run waits (and
+# replaces an older waiting run), so bursts of publishes coalesce. See docs/deployment.md.
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy from master
+        type: choice
+        options: [staging, production]
+      reason:
+        description: Why (set by CMS publish triggers)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# CMS dispatches for one environment coalesce here, before any job starts: at most one runs and one
+# waits per environment. Pushes are never grouped, so every push is verified.
+concurrency:
+  group: ${{ github.event_name == 'workflow_dispatch' && format('dispatch-{0}', inputs.environment) || format('push-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    # Dispatches deploy master, which its push already verified.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm typecheck
+
+  staging:
+    needs: [verify]
+    # Skipped (not failed) until a repository admin adds the environment secret and turns this on.
+    if: >-
+      !cancelled() && vars.STAGING_DEPLOY_ENABLED == 'true' &&
+      (needs.verify.result == 'success' || needs.verify.result == 'skipped') &&
+      (github.event_name == 'push' || inputs.environment == 'staging')
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    steps:
+      # Always the current master: a run that waited in the queue must not deploy an older commit.
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Derivatives are keyed by content hash; reuse them across runs.
+      - uses: actions/cache@v4
+        with:
+          path: .cache/media
+          key: media-staging-${{ github.run_id }}
+          restore-keys: media-staging-
+      - name: Deploy staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          EMDASH_EXPECTED_TARGET_FINGERPRINT: ${{ vars.EMDASH_TARGET_FINGERPRINT }}
+        run: pnpm deploy:staging
+
+  production:
+    needs: [verify, staging]
+    # Skipped (not failed) until the supervised first production setup turns this variable on.
+    # A staging job replaced by a newer queued run is "cancelled"; that run deploys the same master.
+    if: >-
+      !cancelled() && vars.PRODUCTION_DEPLOY_ENABLED == 'true' &&
+      ((github.event_name == 'push' && needs.verify.result == 'success' &&
+        (needs.staging.result == 'success' || needs.staging.result == 'cancelled')) ||
+       (github.event_name == 'workflow_dispatch' && inputs.environment == 'production'))
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      # Always the current master: a run that waited in the queue must not deploy an older commit.
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Derivatives are keyed by content hash; reuse them across runs.
+      - uses: actions/cache@v4
+        with:
+          path: .cache/media
+          key: media-production-${{ github.run_id }}
+          restore-keys: media-production-
+      - name: Deploy production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          EMDASH_EXPECTED_TARGET_FINGERPRINT: ${{ vars.EMDASH_TARGET_FINGERPRINT }}
+        run: pnpm deploy:production

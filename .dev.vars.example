@@ -1,7 +1,0 @@
-# Copy to .dev.vars; generate a local key with: openssl rand -hex 32
-# Set remote secrets separately with wrangler secret put --env staging|production.
-EMDASH_ENCRYPTION_KEY=replace-with-a-generated-local-key
-# Stripe test-mode keys (phase 5, see docs/checkout.md). Leave unset until the Stripe account exists:
-# the buy button then explains that online payment is not active yet.
-# STRIPE_SECRET_KEY=sk_test_...
-# STRIPE_WEBHOOK_SECRET=whsec_...

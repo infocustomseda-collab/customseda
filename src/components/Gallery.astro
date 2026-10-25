@@ -20,6 +20,8 @@ const { images, label, transitionName, variant = "product" } = Astro.props;
 			<li class="gallery__item" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
 				<img
 					src={image.src}
+					srcset={image.srcset}
+					sizes={variant === "product" ? "(min-width: 60em) 50vw, 100vw" : "100vw"}
 					alt={image.alt}
 					width={image.width}
 					height={image.height}
@@ -60,12 +62,12 @@ const { images, label, transitionName, variant = "product" } = Astro.props;
 				previous.disabled = index === 0;
 				next.disabled = index === items.length - 1;
 			};
-			const observer = new IntersectionObserver(
+			const observer = (this.observer = new IntersectionObserver(
 				(entries) => {
 					for (const entry of entries) if (entry.isIntersecting) show(items.indexOf(entry.target as HTMLElement));
 				},
 				{ root: list, threshold: 0.6 },
-			);
+			));
 			items.forEach((item) => observer.observe(item));
 			for (const button of [previous, next]) {
 				button.addEventListener("click", () => {
@@ -76,6 +78,10 @@ const { images, label, transitionName, variant = "product" } = Astro.props;
 			controls.hidden = false;
 			show(0);
 		}
+		disconnectedCallback() {
+			this.observer?.disconnect();
+		}
+		observer?: IntersectionObserver;
 	}
 	if (!customElements.get("product-gallery")) customElements.define("product-gallery", ProductGallery);
 </script>

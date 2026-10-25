@@ -51,18 +51,78 @@ test('rejects missing or shared Worker names and normalized environment origins'
   assert.throws(() => validateTarget(c, 'production'), /distinct.*origin/);
 });
 
-test('migrates the explicit database before uploading and checks afterwards', () => {
+test('migrates the explicit database, then snapshots, builds, uploads and checks', () => {
   const target = validateTarget(config(), 'staging');
   const commands = deploymentCommands(target);
-  assert.deepEqual(commands.map(x => x[0]), ['astro', 'emdash', 'emdash', 'catalog-model', 'wrangler', 'emdash']);
-  assert.deepEqual(commands[0], ['astro', 'build']);
+  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'emdash', 'catalog-model', 'snapshot', 'images', 'astro', 'wrangler', 'emdash']);
+  assert.deepEqual(commands[4], ['images', 'staging']);
   for (const args of commands.filter(x => x[0] === 'emdash')) {
     assert.equal(args[args.indexOf('--d1') + 1], target.databaseId);
     assert.equal(args[args.indexOf('--account-id') + 1], target.accountId);
     assert.equal(args[args.indexOf('--wrangler-env') + 1], 'staging');
   }
-  assert.ok(commands[1].includes('--status'));
-  assert.ok(!commands[2].includes('--check'));
-  assert.deepEqual(commands[4], ['wrangler', 'deploy', '--env', 'staging']);
-  assert.ok(commands[5].includes('--check'));
+  // Migrations run before any build exists, so they read the manifest from the Astro config.
+  assert.ok(commands[0].includes('--status') && commands[0].includes('--from-config'));
+  assert.ok(commands[1].includes('--from-config') && !commands[1].includes('--check'));
+  assert.deepEqual(commands[5], ['astro', 'build']);
+  assert.deepEqual(commands[6], ['wrangler', 'deploy', '--env', 'staging']);
+  assert.ok(commands[7].includes('--check') && !commands[7].includes('--from-config'));
+});
+
+test('the snapshot step targets the deploy environment', () => {
+  const target = validateTarget(config(), 'production');
+  assert.deepEqual(deploymentCommands(target)[3], ['snapshot', 'production', false]);
+  assert.deepEqual(deploymentCommands(target, { allowEmpty: true })[3], ['snapshot', 'production', true]);
+});
+
+test('passes a reviewed fingerprint only when provided', () => {
+  const target = validateTarget(config(), 'staging');
+  const flag = '--expected-target-fingerprint';
+  assert.ok(!deploymentCommands(target).some(args => args.includes(flag)));
+  const commands = deploymentCommands(target, { fingerprint: 'fp-reviewed' });
+  assert.deepEqual(commands.filter(args => args.includes(flag)).map(args => args[args.indexOf(flag) + 1]), ['fp-reviewed']);
+  assert.ok(!commands[0].includes(flag) && !commands[7].includes(flag));
+});
+
+test('gated environments must route static assets through the Worker', () => {
+  const c = config();
+  c.env.staging.vars.FOUNDATION_LOCKED = 'true';
+  assert.throws(() => validateTarget(c, 'staging'), /Gated environments must run the Worker before static assets\./);
+  c.env.staging.assets = { run_worker_first: true };
+  assert.equal(validateTarget(c, 'staging').environment, 'staging');
+  // After launch the gate is off and assets may be served directly.
+  c.env.production.vars.FOUNDATION_LOCKED = 'false';
+  assert.equal(validateTarget(c, 'production').environment, 'production');
+});
+
+test('the checked-in Wrangler config gates assets in both remote environments', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const wrangler = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
+  for (const name of ['staging', 'production']) assert.equal(validateTarget(wrangler, name).environment, name);
+});
+
+test('deploy scripts run like fdag: plain node, authenticated by wrangler login or the CI secret', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { scripts } = JSON.parse(await readFile('package.json', 'utf8'));
+  for (const name of ['deploy:staging', 'deploy:production', 'migrate:status', 'snapshot']) {
+    assert.doesNotMatch(scripts[name], /--env-file/, name);
+  }
+  assert.equal(scripts['deploy:staging'], 'node scripts/deploy/run.mjs staging');
+});
+
+test('migrations use the CI token, or else the wrangler login token, like fdag deploys', async () => {
+  const { migrationToken } = await import('../scripts/deploy/target.mjs');
+  let asked = 0;
+  const login = () => { asked++; return 'oauth-token'; };
+  assert.equal(migrationToken({ CLOUDFLARE_API_TOKEN: 'ci-token' }, login), 'ci-token');
+  assert.equal(asked, 0);
+  assert.equal(migrationToken({}, login), 'oauth-token');
+  assert.throws(() => migrationToken({}, () => ''), /pnpm exec wrangler login/);
+});
+
+test('the status command is the runner\'s own read-only first step', async () => {
+  const { statusCommand } = await import('../scripts/deploy/target.mjs');
+  const target = validateTarget(config(), 'staging');
+  assert.deepEqual(statusCommand(target), deploymentCommands(target)[0]);
+  assert.ok(statusCommand(target).includes('--status') && !statusCommand(target).includes('--expected-target-fingerprint'));
 });

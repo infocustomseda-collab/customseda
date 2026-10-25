@@ -2,10 +2,12 @@
 // Public storefront layout. Purely presentational: pages pass the site chrome as props, so the
 // same markup serves live development data now and the build-time snapshot in phase 6.
 import { Font } from "astro:assets";
+import { ClientRouter } from "astro:transitions";
 import AnnouncementBar from "../components/AnnouncementBar.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import SitePopup from "../components/SitePopup.astro";
+import UpdateBanner from "../components/UpdateBanner.astro";
 import type { PopupView } from "../lib/shop/site";
 import type { NavItem, SocialLink } from "../lib/shop/view";
 import "../styles/index.css";
@@ -42,6 +44,8 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 		{canonical && <link rel="canonical" href={canonical} />}
 		{noindex && <meta name="robots" content="noindex" />}
 		<meta name="theme-color" content="#fcfcfc" />
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 		<meta property="og:type" content="website" />
 		<meta property="og:site_name" content={site.siteName} />
 		<meta property="og:title" content={fullTitle} />
@@ -49,6 +53,7 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 		{image && <meta property="og:image" content={image} />}
 		<Font cssVariable="--font-cormorant" preload={[{ weight: 500, style: "normal" }]} />
 		<Font cssVariable="--font-montserrat" preload />
+		<ClientRouter />
 	</head>
 	<body>
 		<a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -59,5 +64,6 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 		</main>
 		<SiteFooter links={site.footerLinks} social={site.social} />
 		{site.popups && site.popups.length > 0 && !noindex && <SitePopup popups={site.popups} />}
+		{import.meta.env.PROD && <UpdateBanner />}
 	</body>
 </html>

@@ -19,11 +19,11 @@ import {ContentRepository,MediaRepository,handleContentCreate,handleContentPubli
 import {applyCatalogModel} from '../../src/lib/cms/model-migration.ts';
 import {createCatalogPolicy} from '../../src/lib/cms/policy.ts';
 
-export async function fixture(t) {
+export async function fixture(t,{onContentChange}={}) {
  let runtime;
  runtime=await EmDashRuntime.create({
   config:{database:{...sqlite({url:':memory:'}),entrypoint:`test-${crypto.randomUUID()}`}},
-  migrationMode:'auto',plugins:[createCatalogPolicy(()=>runtime.db)],
+  migrationMode:'auto',plugins:[createCatalogPolicy(()=>runtime.db,{onContentChange})],
   createDialect,createStorage:null,sandboxEnabled:false,sandboxedPluginEntries:[],createSandboxRunner:null,createScheduler:null,
   siteInfo:{name:'Test',url:'http://localhost:4321'}
  });

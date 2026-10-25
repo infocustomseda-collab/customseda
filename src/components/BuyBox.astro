@@ -32,7 +32,8 @@ const shippingLabel = (rule: ShippingRule) =>
 		.join(" · ");
 ---
 
-<form class="buy-box stack" id="comprar" data-product={id} method="post" action="/api/checkout" style="--stack-space: var(--space-s-m)">
+<buy-box>
+<form class="buy-box stack" id="comprar" data-product={id} method="post" action="/api/checkout" data-astro-reload style="--stack-space: var(--space-s-m)">
 	<p class="field__error" role="alert" tabindex="-1" data-checkout-error hidden={!message}>{message}</p>
 	{canBuy && (
 		<>
@@ -63,29 +64,40 @@ const shippingLabel = (rule: ShippingRule) =>
 	{purchasable && !canBuy && <p class="field__hint" id={`buy-note-${id}`}>La compra online estará disponible muy pronto.</p>}
 	{canBuy && <p class="field__hint">Pago seguro con Stripe. Confeccionamos cada pieza por encargo.</p>}
 </form>
+</buy-box>
 
 <script>
 	import { checkoutMessage } from "../lib/commerce/messages";
 
-	for (const form of document.querySelectorAll<HTMLFormElement>("form.buy-box")) {
-		const url = new URL(location.href);
-		const message = checkoutMessage(url.searchParams.get("checkout"));
-		const alert = form.querySelector<HTMLElement>("[data-checkout-error]")!;
-		if (message) {
-			alert.textContent = message;
-			alert.hidden = false;
-			alert.focus();
-			// A reload after fixing the problem should not repeat the old reason.
-			url.searchParams.delete("checkout");
-			history.replaceState(history.state, "", url);
+	// A custom element re-attaches after every ClientRouter page swap; module scripts run only once.
+	class BuyBox extends HTMLElement {
+		connectedCallback() {
+			const form = this.querySelector<HTMLFormElement>("form")!;
+			const url = new URL(location.href);
+			const message = checkoutMessage(url.searchParams.get("checkout"));
+			const alert = form.querySelector<HTMLElement>("[data-checkout-error]")!;
+			if (message) {
+				alert.textContent = message;
+				alert.hidden = false;
+				alert.focus();
+				// A reload after fixing the problem should not repeat the old reason.
+				url.searchParams.delete("checkout");
+				history.replaceState(history.state, "", url);
+			}
+			// One Checkout Session per click; Back from Stripe restores the page from the cache, so re-enable.
+			const button = form.querySelector<HTMLButtonElement>("button[type=submit]");
+			form.addEventListener("submit", () => {
+				if (button) setTimeout(() => (button.disabled = true));
+			});
+			this.restore = (event: PageTransitionEvent) => {
+				if (event.persisted && button && form.querySelector("[name=id]")) button.disabled = false;
+			};
+			addEventListener("pageshow", this.restore);
 		}
-		// One Checkout Session per click; Back from Stripe restores the page from the cache, so re-enable.
-		const button = form.querySelector<HTMLButtonElement>("button[type=submit]");
-		form.addEventListener("submit", () => {
-			if (button) setTimeout(() => (button.disabled = true));
-		});
-		addEventListener("pageshow", (event) => {
-			if (event.persisted && button && form.querySelector("[name=id]")) button.disabled = false;
-		});
+		disconnectedCallback() {
+			if (this.restore) removeEventListener("pageshow", this.restore);
+		}
+		restore?: (event: PageTransitionEvent) => void;
 	}
+	if (!customElements.get("buy-box")) customElements.define("buy-box", BuyBox);
 </script>

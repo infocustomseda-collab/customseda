@@ -4,6 +4,8 @@ import Button from "../components/Button.astro";
 import Shop from "../layouts/Shop.astro";
 import { loadShopPage } from "../lib/shop/page";
 
+export const prerender = true;
+
 const { site } = await loadShopPage(Astro);
 Astro.response.status = 404;
 ---

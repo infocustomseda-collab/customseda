@@ -21,7 +21,7 @@ const { popups } = Astro.props;
 				<Icon name="close" />
 			</button>
 			{popup.image && (
-				<img class="popup__image" src={popup.image.src} alt={popup.image.alt} width={popup.image.width} height={popup.image.height} loading="lazy" decoding="async" />
+				<img class="popup__image" src={popup.image.src} srcset={popup.image.srcset} sizes="(min-width: 40em) 30rem, 90vw" alt={popup.image.alt} width={popup.image.width} height={popup.image.height} loading="lazy" decoding="async" />
 			)}
 			<div class="popup__body stack text-center">
 				<h2 class="popup__title" id={`popup-title-${popup.id}`}>{popup.title}</h2>
@@ -61,10 +61,17 @@ const { popups } = Astro.props;
 			dialog.addEventListener("click", (event) => {
 				if (event.target === dialog) dialog.close();
 			});
-			window.setTimeout(() => {
+			this.timer = window.setTimeout(() => {
+				// Pages may have been swapped (ClientRouter) or restored from the back/forward cache meanwhile:
+				// open only while this dialog is on the page, and recheck dismissals made elsewhere.
+				if (!dialog.isConnected || choosePopup(schedules, Date.now(), stored)?.id !== chosen.id) return;
 				if (!dialog.open && !document.querySelector("dialog[open], :popover-open")) dialog.showModal();
 			}, chosen.delaySeconds * 1000);
 		}
+		disconnectedCallback() {
+			window.clearTimeout(this.timer);
+		}
+		timer?: number;
 	}
 	if (!customElements.get("site-popups")) customElements.define("site-popups", SitePopups);
 </script>

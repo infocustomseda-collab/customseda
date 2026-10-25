@@ -18,7 +18,7 @@ const [image] = product.images;
 <section class="feature wrapper region" aria-labelledby="feature-title">
 	{image && (
 		<a class="feature__media" href={product.href} tabindex="-1" aria-hidden="true" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
-			<img src={image.src} alt="" width={image.width} height={image.height} style={`object-position: ${image.position}`} loading="lazy" decoding="async" />
+			<img src={image.src} srcset={image.srcset} sizes="(min-width: 60em) 50vw, 100vw" alt="" width={image.width} height={image.height} style={`object-position: ${image.position}`} loading="lazy" decoding="async" />
 		</a>
 	)}
 	<div class="feature__details stack" style="--stack-space: var(--space-s-m)">

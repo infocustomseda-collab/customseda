@@ -16,7 +16,7 @@ const { items } = Astro.props;
 				<li class="highlight">
 					{item.image && (
 						<div class="highlight__media" style={item.image.placeholder ? `background-color: ${item.image.placeholder}` : undefined}>
-							<img src={item.image.src} alt={item.image.alt} width={item.image.width} height={item.image.height} style={`object-position: ${item.image.position}`} loading="lazy" decoding="async" />
+							<img src={item.image.src} srcset={item.image.srcset} sizes="(min-width: 60em) 33vw, 100vw" alt={item.image.alt} width={item.image.width} height={item.image.height} style={`object-position: ${item.image.position}`} loading="lazy" decoding="async" />
 						</div>
 					)}
 					<div class="highlight__body stack text-center" style="--stack-space: var(--space-2xs)">

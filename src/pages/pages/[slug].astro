@@ -2,8 +2,14 @@
 // CMS pages at the retained Shopify path /pages/<slug>; Margarita and Contacto have their own routes.
 import ContentPage from "../../components/ContentPage.astro";
 import Shop from "../../layouts/Shop.astro";
-import { loadShopPage } from "../../lib/shop/page";
+import { loadShopContent, loadShopPage } from "../../lib/shop/page";
+import { pagePaths } from "../../lib/shop/paths";
 import { pageHeading, plainText } from "../../lib/shop/site";
+
+export const prerender = true;
+export async function getStaticPaths() {
+	return pagePaths(await loadShopContent());
+}
 
 const { shop, site } = await loadShopPage(Astro);
 const page = shop.pages.find((entry) => entry.slug === Astro.params.slug);

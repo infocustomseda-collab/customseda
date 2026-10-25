@@ -76,7 +76,7 @@ No Stripe API version is pinned. The code reads shipping from `collected_informa
 
 ### Local
 
-Add to `.dev.vars`, which is ignored:
+Add to `.env`, which is ignored:
 
 ```sh
 STRIPE_SECRET_KEY=sk_test_...

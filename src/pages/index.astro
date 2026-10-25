@@ -11,6 +11,8 @@ import { byId, loadShopPage } from "../lib/shop/page";
 import { localHref, plainText } from "../lib/shop/site";
 import { galleryImages, imageView } from "../lib/shop/view";
 
+export const prerender = true;
+
 const { shop, site, settings } = await loadShopPage(Astro);
 const data = settings?.data ?? {};
 const featured = featuredItem(shop, settings?.refs.featured_conjunto?.[0]);

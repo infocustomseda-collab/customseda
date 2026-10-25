@@ -13,17 +13,32 @@
 
 ## Credentials
 
-`pnpm exec wrangler login` configures Wrangler authentication. EmDash's remote migration CLI additionally requires `CLOUDFLARE_API_TOKEN` in the deployment process; use a scoped token with D1 Edit for this account. Never put it in source or client code. The initial verification used existing Wrangler OAuth credentials only in child-process environment variables; no token was copied into the repository.
+All secret files are ignored by git, have owner-only permissions (`chmod 600`), and follow the same layout as the fdag project:
 
-Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production) and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Separate local/staging/production files were generated and are ignored, with owner-only file permissions. Back up encryption keys in a password manager before relying on encrypted settings.
+| File | Holds | Used by |
+| --- | --- | --- |
+| `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | `pnpm dev`. Wrangler reads `.env` as the local Worker's secrets; copy `.env.example`. |
+| `.env.cloudflare-staging`, `.env.cloudflare-production` | Remote Worker secrets per environment | `wrangler secret bulk` on first deploy, see below. Not loaded automatically. |
+
+Never put a Cloudflare API token in `.env` or the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
+
+Manual deploys authenticate like fdag: run `pnpm exec wrangler login` once, then `pnpm deploy:<env>`. EmDash's core migrations run from the deploy, never inside the Worker, so they can't exceed Workers Free CPU limits (the problem fdag hit). `emdash migrate` needs a bearer token, so the runner hands it the token of your Wrangler login (`wrangler auth token`). In CI, `CLOUDFLARE_API_TOKEN` comes from the GitHub environment secret, and Wrangler uses it too. Use a custom token on this account with the "Edit Cloudflare Workers" template plus Account → D1 → Edit (and Workers R2 Storage → Edit if missing). Keep one token for manual use, stored in a password manager, and a second one as the GitHub environment secret, so either can be revoked alone.
+
+Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN`, and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
 
 For the first deployment of an environment, upload its secrets through Wrangler, for example:
 
 ```sh
-pnpm exec wrangler secret bulk .dev.vars.production --env production
+pnpm exec wrangler secret bulk .env.cloudflare-production --env production
 ```
 
 Review the selected environment and secret file first. Subsequent deployments preserve remote secrets. The gate fails closed with 503 if locked and the access secret is missing. Do not turn it off until setup is complete and the intended exposure has been reviewed.
+
+### Static pages behind the gate
+
+Public pages are prerendered static assets. Cloudflare serves those without running the Worker, so the gate would not cover them. While `FOUNDATION_LOCKED` is `"true"`, each remote environment therefore sets `"assets": { "run_worker_first": true }` in `wrangler.jsonc`. Every request, pages and images included, then passes the gate, at the cost of one Worker invocation per request. `validateTarget` refuses a locked environment without it.
+
+**Launch switch (phase 7):** set `FOUNDATION_LOCKED` to `"false"` and remove `run_worker_first` together. Pages are then served directly from static assets.
 
 ## Build, migrate, deploy, check
 
@@ -33,9 +48,20 @@ pnpm deploy:staging
 pnpm deploy:production
 ```
 
-The runner validates account/database/origin separation, builds with the selected `CLOUDFLARE_ENV`, displays the migration target, runs interactive core migration, applies the versioned catalog model from Node through the explicitly selected D1 binding, deploys that same build, and checks core migration status. A failed command stops the sequence. No generic `deploy` command targets an implicit environment.
+The runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV`:
 
-The runner uses an atomic local lock for the entire checkout. If interrupted, confirm its recorded PID is no longer running before manually removing the stale `.emdash/deploy.lock`. Run one deployment job at a time per database. Catalog migration also holds the database option `customseda.catalog.migration-lock` across its versioned steps; inspect its owner and timestamp before considering removal of a stale lock. EmDash's database migration lock is an additional guard; it is not a deployment queue. Any future CI must serialize by account + database UUID and provide the reviewed `--expected-target-fingerprint` for noninteractive migration. Do not automatically accept a newly reported fingerprint without inspecting its target.
+1. Show the migration target and status (manifest built from the Astro config with `--from-config`, since no build exists yet).
+2. Run core migration. It is interactive, unless `EMDASH_EXPECTED_TARGET_FINGERPRINT` holds the reviewed fingerprint, as in CI.
+3. Apply the versioned catalog model through the explicitly selected D1 binding.
+4. Write the published-content snapshot of that environment. The step refuses an empty catalog unless `--allow-empty` is passed, for a first deploy.
+5. Generate WebP image derivatives from that environment's R2 (see [Images and build budget](#images-and-build-budget)).
+6. Build. The build refuses a snapshot from another environment than `CLOUDFLARE_ENV` (`local` when unset).
+7. Deploy that build.
+8. Check core migration status against the build's manifest.
+
+A failed command stops the sequence. No generic `deploy` command targets an implicit environment. The `emdash migrate` steps need `CLOUDFLARE_API_TOKEN` in the environment (see [Credentials](#credentials)); a Wrangler OAuth login is not enough.
+
+The runner uses an atomic local lock for the entire checkout. If interrupted, confirm its recorded PID is no longer running before manually removing the stale `.emdash/deploy.lock`. Run one deployment job at a time per database. Catalog migration also holds the database option `customseda.catalog.migration-lock` across its versioned steps; inspect its owner and timestamp before considering removal of a stale lock. EmDash's database migration lock is an additional guard; it is not a deployment queue. CI serializes deploys per environment (see [Continuous deployment](#continuous-deployment-github-actions)) and passes the reviewed fingerprint through `EMDASH_EXPECTED_TARGET_FINGERPRINT`. Do not automatically accept a newly reported fingerprint without inspecting its target. The checkout lock does not span machines: do not run a manual deploy while the same environment's workflow is deploying.
 
 For diagnosis or noninteractive jobs, use these version-matched CLI commands with the explicit account, UUID, and Wrangler environment from the config:
 
@@ -46,6 +72,66 @@ pnpm exec emdash migrate --check --account-id ACCOUNT_ID --d1 DATABASE_UUID --wr
 ```
 
 The build writes `.emdash/migrations.json`; use it with the same installed dependencies and build artifact. Do not run `wrangler d1 migrations apply` as a substitute for EmDash's core migrations. Do not copy a local SQLite file or database dump over production as a deployment step.
+
+## Continuous deployment (GitHub Actions)
+
+`.github/workflows/deploy.yml` runs on every push to `master`:
+
+1. **verify:** `pnpm test` and `pnpm typecheck`.
+2. **staging:** `pnpm deploy:staging`, only while the repository variable `STAGING_DEPLOY_ENABLED` is `true`.
+3. **production:** `pnpm deploy:production`, only after staging succeeds and only while the repository variable `PRODUCTION_DEPLOY_ENABLED` is `true`. Until then the job is **skipped**, not failed.
+
+"Run workflow" in the Actions tab deploys one chosen environment from `master`. CMS publishes use the same entry point, see [Publishing and rebuilds](#publishing-and-rebuilds). Each environment has a concurrency group (`deploy-staging`, `deploy-production`). A deploy never cancels a running one; at most one newer run waits, so several publishes in a row coalesce into one rebuild.
+
+One-time setup per environment, in GitHub → Settings → Environments (`staging`, later `production`):
+
+- **Secret `CLOUDFLARE_API_TOKEN`:** a Cloudflare API token on this account with Workers Scripts edit, D1 edit and R2 read/write rights. `emdash migrate` requires an API token; OAuth logins do not work in CI.
+- **Variable `EMDASH_TARGET_FINGERPRINT`:** the target fingerprint printed by `pnpm migrate:status <environment>` (read-only), reviewed by a person. If the target changes, the deploy fails until someone reviews the new fingerprint and updates the variable.
+- **Repository variable `STAGING_DEPLOY_ENABLED=true`:** set once the `staging` environment secret and fingerprint exist. Until then pushes only run tests and the staging job is skipped.
+- **Repository variable `PRODUCTION_DEPLOY_ENABLED=true`:** set only after the supervised first production setup in phase 7 (secrets, administrator, reviewed fingerprint, Stripe keys).
+
+Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, `GITHUB_REBUILD_TOKEN`) stay in Cloudflare (`wrangler secret put --env …`) and are never copied to GitHub. Manual deploys from a developer machine keep working (`pnpm deploy:staging`). Do not run one while the same environment's workflow is deploying.
+
+## Publishing and rebuilds
+
+Public pages are prebuilt, so a CMS change appears after the next deploy of that environment. Three things trigger that deploy:
+
+- **Publish, unpublish, delete or restore** of shop content (products, Conjuntos, lookups, size guides, site settings, pages, popups, shipping rules). The catalog plugin dispatches `deploy.yml` for its own environment after the response, so the editor never waits.
+- **Scheduled publishing and menu changes,** within the hour. EmDash's scheduled sweep runs no plugin hooks, and menus have no hook at all. Before each hourly sweep, the Worker's scheduled handler checks two things: shop entries whose `scheduled_at` is due, which includes scheduled edits of live entries, and a fingerprint of the menus kept in `options`. It dispatches a rebuild if either changed.
+- **On demand:** "Run workflow" in GitHub, or `POST /_emdash/api/customseda/rebuild` from an administrator session.
+
+Bursts coalesce before any job starts: waiting dispatch runs for an environment replace each other. A deploy always checks out the current `master`. A failed build or deploy leaves the previous site serving; check the Actions tab.
+
+The workflow is dispatched with a **fine-grained personal access token**, scoped to the `infocustomseda-collab/customseda` repository with "Actions: read and write" permission and nothing else. Store it per environment as a Worker secret:
+
+```sh
+pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env staging
+```
+
+`DEPLOY_ENVIRONMENT` and `GITHUB_REPOSITORY` are set as Worker vars in `wrangler.jsonc`. Local development has neither, so it never dispatches.
+
+| Token | Owner | Expires | Renewal |
+| --- | --- | --- | --- |
+| `GITHUB_REBUILD_TOKEN` (staging) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
+
+When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
+
+## Images and build budget
+
+Each deploy writes WebP derivatives (480, 960 and 1440 px, never upscaled) for every image the snapshot references. The originals come from that environment's R2 through a binding, not over HTTP. The derivatives go to `public/media/` and the snapshot's image values are annotated, so pages get `srcset` and `sizes`. Results are cached by content hash in `.cache/media` (locally and through `actions/cache` in CI).
+
+- If an original is missing in R2 or sharp cannot decode it, it is reported and keeps its original `/_emdash/api/media/file/…` URL. The page still works, only heavier.
+- New uploads appear with derivatives after the rebuild that publishing triggers.
+
+The build fails above 15,000 derivative files, or for any file over 25 MiB (Free limits: 20,000 files and 25 MiB per asset).
+
+Worker upload after phase 6: 19.1 MiB, 5.0 MiB gzip (`wrangler deploy --dry-run`; phase 1 recorded about 4.9 MiB gzip). Phase 1 deployed staging at that size, but it is above the commonly documented 3 MB compressed Workers Free limit. The phase 7 Free-tier gate must confirm the current limit.
+
+Measured locally on 2026-10-25 against the imported catalog (drafts, 11 products, 5 Conjuntos, 7 pages):
+
+- 94 originals produced 271 files, 22.2 MiB in total.
+- The cold run took 15.5 s and the cached run 1.9 s. `astro build` itself takes about 10 s.
+- One product photo: 3.1 MB original against 62 KB at 960 px.
 
 ## Free-tier feasibility gate
 

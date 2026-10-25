@@ -10,8 +10,15 @@ import RichText from "../../components/RichText.astro";
 import Shop from "../../layouts/Shop.astro";
 import { shippingRules } from "../../lib/commerce/shipping";
 import { productDetail } from "../../lib/shop/detail";
-import { loadShopPage } from "../../lib/shop/page";
+import { loadShopContent, loadShopPage } from "../../lib/shop/page";
+import { productPaths } from "../../lib/shop/paths";
 import { plainText } from "../../lib/shop/site";
+import { transitionNames, uniqueTransitions } from "../../lib/shop/view";
+
+export const prerender = true;
+export async function getStaticPaths() {
+	return productPaths(await loadShopContent());
+}
 
 const { shop, site, settings } = await loadShopPage(Astro);
 const detail = productDetail(shop, Astro.params.slug ?? "");
@@ -32,6 +39,7 @@ const choices =
 			]
 		: [{ name: "talla", legend: item.category === "braguita" ? "Talla de braguita" : "Talla del top", sizes: item.sizes }];
 const production = settings?.data.production_text;
+const names = item.card.transitionName ? transitionNames(item.card.transitionName) : null;
 ---
 
 <Shop title={item.title} description={plainText(entry.data.description)} image={item.card.images[0]?.src} site={site}>
@@ -45,14 +53,14 @@ const production = settings?.data.production_text;
 				</ol>
 			</nav>
 			<div class="split">
-				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={item.card.transitionName} />
+				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={names?.image} />
 				<div class="product-details stack">
 					<div class="stack" style="--stack-space: var(--space-3xs)">
-						<h1 class="product-details__title">{item.title}</h1>
+						<h1 class="product-details__title" style={names ? `view-transition-name: ${names.title}` : undefined}>{item.title}</h1>
 						<p class="product-details__meta">{section.label}{detail.colorLabel && ` · color ${detail.colorLabel}`}</p>
 					</div>
 					<Price cents={item.price} />
-					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available} purchasable={detail.purchasable} checkoutError={Astro.url.searchParams.get("checkout")} />
+					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available} purchasable={detail.purchasable} />
 					<RichText value={entry.data.description} />
 					{detail.kind === "conjunto" && (
 						<section class="stack" aria-labelledby="includes-title" style="--stack-space: var(--space-xs)">
@@ -61,7 +69,7 @@ const production = settings?.data.production_text;
 								{[detail.top, detail.bottom].map((piece) => (
 									<li>
 										<a class="includes__item" href={piece.item.card.href}>
-											{piece.item.card.images[0] && <img src={piece.item.card.images[0].src} alt="" width={piece.item.card.images[0].width} height={piece.item.card.images[0].height} style={`object-position: ${piece.item.card.images[0].position}`} loading="lazy" decoding="async" />}
+											{piece.item.card.images[0] && <img src={piece.item.card.images[0].src} srcset={piece.item.card.images[0].srcset} sizes="6rem" alt="" width={piece.item.card.images[0].width} height={piece.item.card.images[0].height} style={`object-position: ${piece.item.card.images[0].position}`} loading="lazy" decoding="async" />}
 											<span>{piece.item.title}</span>
 										</a>
 									</li>
@@ -89,7 +97,7 @@ const production = settings?.data.production_text;
 			<section class="stack" aria-labelledby="related-title" style="--stack-space: var(--space-m-l)">
 				<h2 id="related-title">También te puede gustar</h2>
 				<ul class="grid" data-layout="products" role="list" style="--grid-columns: 4">
-					{detail.related.map((related) => <li><ProductCard product={related.card} /></li>)}
+					{uniqueTransitions(detail.related.map((related) => related.card)).map((card) => <li><ProductCard product={card} /></li>)}
 				</ul>
 			</section>
 		)}

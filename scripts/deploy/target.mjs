@@ -21,6 +21,10 @@ export function validateTarget(config, environment) {
   if (!bucket?.bucket_name || database.database_id === other?.d1_databases?.find(x => x.binding === 'DB')?.database_id || bucket.bucket_name === other?.r2_buckets?.find(x => x.binding === 'MEDIA')?.bucket_name) {
     throw new Error('Staging and production require distinct databases and media buckets.');
   }
+  // The gate lives in the Worker; static assets bypass it unless the Worker runs first (launch switch).
+  if (selected?.vars?.FOUNDATION_LOCKED === 'true' && selected?.assets?.run_worker_first !== true) {
+    throw new Error('Gated environments must run the Worker before static assets.');
+  }
   const origin = selected?.vars?.EMDASH_SITE_URL;
   let url;
   try { url = new URL(origin); } catch { /* The check below reports the missing origin. */ }
@@ -35,13 +39,34 @@ export function validateTarget(config, environment) {
   return { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin };
 }
 
-export function deploymentCommands(target) {
-  const migration = ['emdash', 'migrate', '--account-id', target.accountId, '--d1', target.databaseId, '--wrangler-config', 'wrangler.jsonc', '--wrangler-env', target.environment];
+/**
+ * Migrations first (from the Astro config, since no build exists yet), so the snapshot reads the
+ * migrated schema; then snapshot, image derivatives, build, upload and check against the build's manifest.
+ */
+const migrationCommand = target => ['emdash', 'migrate', '--account-id', target.accountId, '--d1', target.databaseId, '--wrangler-config', 'wrangler.jsonc', '--wrangler-env', target.environment];
+
+/**
+ * EmDash's migration CLI needs a bearer token. CI provides CLOUDFLARE_API_TOKEN; a manual deploy uses
+ * the token of the developer's `wrangler login`, so it authenticates exactly like `wrangler deploy`.
+ */
+export function migrationToken(env, wranglerLoginToken) {
+  const token = env.CLOUDFLARE_API_TOKEN || wranglerLoginToken();
+  if (!token) throw new Error('Not authenticated with Cloudflare: run `pnpm exec wrangler login` and repeat the command.');
+  return token;
+}
+
+/** Read-only migration status and target fingerprint, as the deploy's first step shows it. */
+export const statusCommand = target => [...migrationCommand(target), '--from-config', '--status'];
+
+export function deploymentCommands(target, { fingerprint, allowEmpty = false } = {}) {
+  const migration = migrationCommand(target);
   return [
-    ['astro', 'build'],
-    [...migration, '--status'],
-    [...migration],
+    statusCommand(target),
+    [...migration, '--from-config', ...(fingerprint ? ['--expected-target-fingerprint', fingerprint] : [])],
     ['catalog-model'],
+    ['snapshot', target.environment, allowEmpty],
+    ['images', target.environment],
+    ['astro', 'build'],
     ['wrangler', 'deploy', '--env', target.environment],
     [...migration, '--check'],
   ];

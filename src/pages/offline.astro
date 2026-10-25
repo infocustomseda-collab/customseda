@@ -1,0 +1,20 @@
+---
+// Offline fallback served by the service worker when a page is not cached. Checkout is online-only.
+import Button from "../components/Button.astro";
+import Shop from "../layouts/Shop.astro";
+import { loadShopPage } from "../lib/shop/page";
+
+export const prerender = true;
+
+const { site } = await loadShopPage(Astro);
+---
+
+<Shop title="Sin conexión" site={site} noindex>
+	<section class="wrapper region not-found stack text-center">
+		<h1>Sin conexión</h1>
+		<p>No hay conexión a internet. Las páginas que ya has visitado siguen disponibles; para comprar necesitas estar en línea.</p>
+		<div class="cluster" style="--cluster-justify: center; --cluster-space: var(--space-s)">
+			<Button href="/">Reintentar</Button>
+		</div>
+	</section>
+</Shop>

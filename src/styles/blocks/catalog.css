@@ -311,6 +311,11 @@
 		font-size: var(--step-1);
 	}
 
+	/* Custom element wrapper of the buy form: a block so stack spacing applies. */
+	buy-box {
+		display: block;
+	}
+
 	.buy-box__state {
 		color: var(--color-text-strong);
 	}

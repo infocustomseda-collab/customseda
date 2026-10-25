@@ -5,8 +5,14 @@ import CatalogBrowser from "../../components/CatalogBrowser.astro";
 import RichText from "../../components/RichText.astro";
 import Shop from "../../layouts/Shop.astro";
 import { buildCatalog, catalogView, facetOptions } from "../../lib/shop/catalog";
-import { loadShopPage } from "../../lib/shop/page";
+import { loadShopContent, loadShopPage } from "../../lib/shop/page";
+import { collectionPaths } from "../../lib/shop/paths";
 import { plainText } from "../../lib/shop/site";
+
+export const prerender = true;
+export async function getStaticPaths() {
+	return collectionPaths(await loadShopContent());
+}
 
 const { shop, site } = await loadShopPage(Astro);
 const view = catalogView(Astro.params.handle ?? "", shop);

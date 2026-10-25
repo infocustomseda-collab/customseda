@@ -35,9 +35,14 @@
     "staging": {
       "name": "customseda-staging",
       "workers_dev": true,
+      "assets": {
+        "run_worker_first": true
+      },
       "vars": {
         "EMDASH_SITE_URL": "https://customseda-staging.customseda.workers.dev",
-        "FOUNDATION_LOCKED": "true"
+        "FOUNDATION_LOCKED": "true",
+        "DEPLOY_ENVIRONMENT": "staging",
+        "GITHUB_REPOSITORY": "infocustomseda-collab/customseda"
       },
       "d1_databases": [
         {
@@ -56,9 +61,14 @@
     "production": {
       "name": "customseda-production",
       "workers_dev": true,
+      "assets": {
+        "run_worker_first": true
+      },
       "vars": {
         "EMDASH_SITE_URL": "https://customseda-production.customseda.workers.dev",
-        "FOUNDATION_LOCKED": "true"
+        "FOUNDATION_LOCKED": "true",
+        "DEPLOY_ENVIRONMENT": "production",
+        "GITHUB_REPOSITORY": "infocustomseda-collab/customseda"
       },
       "d1_databases": [
         {
