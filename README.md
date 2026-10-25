@@ -2,7 +2,7 @@
 
 Astro + EmDash foundation for the Shopify migration. Work stays on `master`.
 
-The public Posts/Pages starter remains a deployment test. The local CMS now has Products, separate Conjuntos, lookup records, and supporting content. The imported design, Stripe, and public-page prerendering follow in later phases of the [plan](docs/superpowers/plans/2026-10-24-custom-seda.md). See the [catalog model and editor workflow](docs/catalog-model.md).
+The public Posts/Pages starter remains a deployment test. The local CMS now has Products, separate Conjuntos, lookup records, and supporting content. The imported design, Stripe, and public-page prerendering follow in later phases of the [plan](docs/superpowers/plans/2026-10-24-custom-seda.md). See the [catalog model and editor workflow](docs/catalog-model.md). Product pages buy one item at a time through Stripe Checkout; see [checkout and Stripe operations](docs/checkout.md).
 
 ## Local development
 

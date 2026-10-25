@@ -1,0 +1,23 @@
+---
+// Stripe Checkout cancel URL: nothing was charged; offer the way back to the piece.
+import Button from "../../components/Button.astro";
+import Shop from "../../layouts/Shop.astro";
+import { loadShopPage } from "../../lib/shop/page";
+
+export const prerender = false;
+
+const { site } = await loadShopPage(Astro);
+const slug = Astro.url.searchParams.get("producto") ?? "";
+const back = /^[\w-]+$/.test(slug) ? `/products/${slug}` : "/collections/bikinis";
+---
+
+<Shop title="Pago cancelado" site={site} noindex>
+	<section class="wrapper region not-found stack text-center">
+		<h1>Pago cancelado</h1>
+		<p>No se ha realizado ningún cargo. Puedes volver a la pieza cuando quieras.</p>
+		<div class="cluster" style="--cluster-justify: center; --cluster-space: var(--space-s)">
+			<Button href={back}>Volver a la pieza</Button>
+			<Button href="/collections/bikinis" variant="secondary">Ver bikinis</Button>
+		</div>
+	</section>
+</Shop>

@@ -39,7 +39,7 @@ Components cannot be deleted or unpublished while referenced. Recategorization o
 - **Size Guides:** reusable rich-text measurement tables and instructions, optionally linked from products.
 - **Site Settings:** homepage hero, production copy, contact/social links, and enabled/text/link fields for the announcement bar. Use one settings entry for the site.
 - **Popups:** enabled switch, content/image/button, start/end dates, opening delay and dismissal period. The first enabled popup that has not ended shows on public pages after its delay, inside its start/end window, as a native modal dialog (focus trapped, Escape, close button or backdrop dismiss). A dismissal hides it for `dismiss_days` days in that browser (0 = next visit). `pnpm cms:storefront` creates a local draft recreating the source free-shipping popup.
-- **Shipping Rules:** initially disabled; zone, country/postal selectors, EUR-cent charge, free-shipping threshold, and delivery copy. Merchant-approved amounts and address handling are phase 5.
+- **Shipping Rules:** initially disabled; zone, country/postal selectors, EUR-cent charge, free-shipping threshold, and delivery copy. The buy-now checkout offers enabled rules and flags addresses outside a rule's postal prefixes; see [checkout](checkout.md). Amounts still need merchant approval.
 - **Navigation:** use native EmDash menus. Replace temporary starter links during the URL and content audit.
 
 No sample products, bundles, merchant shipping prices, or source images are imported by the model migration. Initial lookup records retain the current database locale; field labels are Spanish. The import must settle the site's locale configuration before loading the Spanish catalog.

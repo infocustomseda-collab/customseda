@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {margaritaOrder,homepage} from '../scripts/cms/storefront-content.mjs';
+import {margaritaOrder,homepage,shippingRules as sourceRules} from '../scripts/cms/storefront-content.mjs';
+import {shippingRules,addressCheck} from '../src/lib/commerce/shipping.ts';
 
 const text=(key,value)=>({_type:'block',_key:key,style:'normal',markDefs:[],children:[{_type:'span',_key:`${key}s`,text:value,marks:[]}]});
 const image=n=>({_type:'image',_key:`image${n}`,asset:{id:`m${n}`},alt:'MARGARITA'});
@@ -26,4 +27,15 @@ test('homepage source copy keeps the bold phrase and three process cards',()=>{
  assert.deepEqual(homepage.introText[0].children.filter(c=>c.marks.includes('strong')).map(c=>c.text),['seguras, cómodas y atractivas']);
  assert.deepEqual(homepage.highlights.map(h=>h.title),['El patrón','La costura','El tejido']);
  assert.equal(homepage.slideshow.length,5);
+});
+
+test('source shipping drafts separate Canarias from Península/Baleares by postal code',()=>{
+ const rules=shippingRules({shipping_rules:sourceRules.map(r=>({id:r.slug,slug:r.slug,status:'draft',data:r.data,refs:{}}))});
+ // The EU rate is not confirmed, so that rule stays disabled.
+ assert.deepEqual(rules.map(r=>r.id),['canarias','peninsula-baleares','recogida-gran-canaria']);
+ const [canarias,peninsula]=rules;
+ for(const [postal,c,p] of [['35001','ok','revisar'],['38300','ok','revisar'],['07001','revisar','ok'],['28013','revisar','ok'],['50001','revisar','ok'],['51001','revisar','revisar'],['52001','revisar','revisar']]) {
+  assert.deepEqual([addressCheck(canarias,{country:'ES',postal_code:postal}),addressCheck(peninsula,{country:'ES',postal_code:postal})],[c,p],postal);
+ }
+ assert.deepEqual([canarias.priceCents,canarias.freeAboveCents,peninsula.priceCents,peninsula.freeAboveCents],[630,4500,1090,7000]);
 });
