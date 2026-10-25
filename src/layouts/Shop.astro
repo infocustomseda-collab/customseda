@@ -5,6 +5,8 @@ import { Font } from "astro:assets";
 import AnnouncementBar from "../components/AnnouncementBar.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHeader from "../components/SiteHeader.astro";
+import SitePopup from "../components/SitePopup.astro";
+import type { PopupView } from "../lib/shop/site";
 import type { NavItem, SocialLink } from "../lib/shop/view";
 import "../styles/index.css";
 
@@ -14,6 +16,7 @@ export type SiteChrome = {
 	footerLinks: NavItem[];
 	social: SocialLink[];
 	announcement?: { text: string; href?: string } | null;
+	popup?: PopupView | null;
 };
 
 interface Props {
@@ -55,5 +58,6 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 			<slot />
 		</main>
 		<SiteFooter links={site.footerLinks} social={site.social} />
+		{site.popup && !noindex && <SitePopup popup={site.popup} />}
 	</body>
 </html>

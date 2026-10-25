@@ -22,6 +22,14 @@ export const homepage={
  announcement:'🌼 ¡ENVÍO GRATIS! En compras superiores a 45€ en Canarias - 70€ en Península - 90€ Europa',
 };
 
+// Recreates the source site's free-shipping popup (a Hoppy app image) as editable text.
+export const popup={slug:'envio-gratis',data:{title:'Envío gratis',enabled:true,delay_seconds:3,dismiss_days:7,
+ button_text:'Ver bikinis',button_url:'/collections/bikinis',
+ content:[
+  ['Canarias: compras superiores a 45 €','l0'],['Península: compras superiores a 70 €','l1'],['Europa: compras superiores a 90 €','l2'],['Tu conjunto, sin gastos de envío.','l3'],
+ ].map(([text,key])=>({_type:'block',_key:key,style:'normal',markDefs:[],children:[{_type:'span',_key:`${key}s`,text,marks:[]}]})),
+}};
+
 // Source header and footer links; paths keep the Shopify URLs (see docs/import/shopify-url-map.json).
 export const menus={
  primary:{label:'Principal',items:[['Inicio','/'],['Bikinis','/collections/bikinis'],['Colección','/pages/margarita'],['Sobre Seda','/blogs/noticias'],['Envíos y Devoluciones','/pages/envios-y-devoluciones'],['Contacto','/pages/contact']]},
@@ -89,6 +97,8 @@ async function main() {
   for(const item of current) await api(`/_emdash/api/menus/${name}/items/${item.id}`,{method:'DELETE'});
   for(const [i,[label,customUrl]] of menu.items.entries()) await api(`/_emdash/api/menus/${name}/items`,{method:'POST',body:JSON.stringify({type:'custom',label,customUrl,sortOrder:i})});
  }
+ const existingPopup=await api(`/_emdash/api/content/popups/${popup.slug}`).catch(()=>null);
+ if(!existingPopup) await api('/_emdash/api/content/popups',{method:'POST',body:JSON.stringify({slug:popup.slug,status:'draft',locale:'es',data:popup.data})});
  console.log(`Homepage fields filled on ${settings.slug}; Margarita ${ordered?'reordered':'already in source order or edited — left unchanged'}. Local drafts only.`);
 }
 

@@ -1,7 +1,8 @@
 // Pure mappings from CMS entries and menus to the presentational view models.
 import type { SiteChrome } from "../../layouts/Shop.astro";
 import type { ShopContent, ShopEntry } from "./content.ts";
-import { galleryImages, type NavItem, type ProductCardView, type SocialLink } from "./view.ts";
+import type { PopupSchedule } from "./popup.ts";
+import { galleryImages, imageView, type NavItem, type ProductCardView, type SocialLink } from "./view.ts";
 
 type Menu = { items: { label: string; url: string }[] } | null | undefined;
 
@@ -83,4 +84,37 @@ export function withoutLeadingTitle(value: unknown, title: string): unknown[] {
 	const [first, ...rest] = value;
 	const text = first?._type === "block" ? (first.children ?? []).map((child: { text?: string }) => child.text ?? "").join("") : null;
 	return text !== null && normalized(text) === normalized(title) ? rest : value;
+}
+
+export type PopupView = {
+	id: string;
+	title: string;
+	content: unknown;
+	image: ReturnType<typeof imageView>;
+	button: { label: string; href: string } | null;
+	delaySeconds: number;
+	schedule: PopupSchedule;
+};
+
+const whole = (value: unknown, fallback: number) => (typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : fallback);
+const date = (value: unknown) => (typeof value === "string" && value ? value : null);
+
+/** The first enabled popup that has not ended at render time; the browser re-checks the window. */
+export function popupView(popups: ShopEntry[], now: number): PopupView | null {
+	const entry = popups.find((popup) => {
+		const end = date(popup.data.ends_at);
+		return popup.data.enabled === true && !(end && Date.parse(end) < now);
+	});
+	if (!entry) return null;
+	const label = typeof entry.data.button_text === "string" ? entry.data.button_text.trim() : "";
+	const href = localHref(entry.data.button_url);
+	return {
+		id: entry.id,
+		title: String(entry.data.title ?? ""),
+		content: entry.data.content,
+		image: imageView(entry.data.image, ""),
+		button: label && href ? { label, href } : null,
+		delaySeconds: whole(entry.data.delay_seconds, 3),
+		schedule: { id: entry.id, startsAt: date(entry.data.starts_at), endsAt: date(entry.data.ends_at), dismissDays: whole(entry.data.dismiss_days, 7) },
+	};
 }

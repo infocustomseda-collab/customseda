@@ -38,7 +38,7 @@ Components cannot be deleted or unpublished while referenced. Recategorization o
 - **Pages:** native title/body and SEO, preserving the foundation's existing pages.
 - **Size Guides:** reusable rich-text measurement tables and instructions, optionally linked from products.
 - **Site Settings:** homepage hero, production copy, contact/social links, and enabled/text/link fields for the announcement bar. Use one settings entry for the site.
-- **Popups:** enabled switch, content/image/button, start/end dates, opening delay and dismissal period. Visibility and accessible dismissal behavior are implemented with the frontend later.
+- **Popups:** enabled switch, content/image/button, start/end dates, opening delay and dismissal period. The first enabled popup that has not ended shows on public pages after its delay, inside its start/end window, as a native modal dialog (focus trapped, Escape, close button or backdrop dismiss). A dismissal hides it for `dismiss_days` days in that browser (0 = next visit). `pnpm cms:storefront` creates a local draft recreating the source free-shipping popup.
 - **Shipping Rules:** initially disabled; zone, country/postal selectors, EUR-cent charge, free-shipping threshold, and delivery copy. Merchant-approved amounts and address handling are phase 5.
 - **Navigation:** use native EmDash menus. Replace temporary starter links during the URL and content audit.
 
