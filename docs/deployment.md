@@ -13,14 +13,24 @@
 
 ## Credentials
 
-`pnpm exec wrangler login` configures Wrangler authentication. EmDash's remote migration CLI additionally requires `CLOUDFLARE_API_TOKEN` in the deployment process; use a scoped token with D1 Edit for this account. Never put it in source or client code. The initial verification used existing Wrangler OAuth credentials only in child-process environment variables; no token was copied into the repository.
+All secret files are ignored by git, have owner-only permissions (`chmod 600`), and follow the same layout as the fdag project:
 
-Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production) and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Separate local/staging/production files were generated and are ignored, with owner-only file permissions. Back up encryption keys in a password manager before relying on encrypted settings.
+| File | Holds | Used by |
+| --- | --- | --- |
+| `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | `pnpm dev`. Wrangler reads `.env` as the local Worker's secrets; copy `.env.example`. |
+| `.env.cloudflare-staging`, `.env.cloudflare-production` | Remote Worker secrets per environment | `wrangler secret bulk` on first deploy, see below. Not loaded automatically. |
+| `.env.deploy` | `CLOUDFLARE_API_TOKEN` for CLI deploys and `emdash migrate` | Your shell only, for example through direnv (`.envrc`: `dotenv_if_exists .env.deploy`, then `direnv allow`). |
+
+Keep the API token out of `.env` and the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
+
+`pnpm exec wrangler login` (OAuth) works for most Wrangler commands, but `emdash migrate` requires `CLOUDFLARE_API_TOKEN`. Use a custom token on this account with the "Edit Cloudflare Workers" template plus Account → D1 → Edit (and Workers R2 Storage → Edit if missing). Create two tokens with the same rights, one in `.env.deploy` and one as the GitHub `staging`/`production` environment secret, so either can be rotated or revoked alone.
+
+Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN`, and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
 
 For the first deployment of an environment, upload its secrets through Wrangler, for example:
 
 ```sh
-pnpm exec wrangler secret bulk .dev.vars.production --env production
+pnpm exec wrangler secret bulk .env.cloudflare-production --env production
 ```
 
 Review the selected environment and secret file first. Subsequent deployments preserve remote secrets. The gate fails closed with 503 if locked and the access secret is missing. Do not turn it off until setup is complete and the intended exposure has been reviewed.

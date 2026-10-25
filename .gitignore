@@ -7,12 +7,12 @@ data.db
 data.db-*
 .wrangler
 
-# Environment / Wrangler secrets
+# Environment / Wrangler secrets (fdag style: .env local, .env.cloudflare-<env> remote, .env.deploy CLI token)
 .env
 .env.*
 !.env.example
-.dev.vars
-.dev.vars.*
+.dev.vars*
+.envrc
 
 # Generated bindings, deployment artifacts and local backups
 worker-configuration.d.ts
@@ -24,4 +24,3 @@ public/media/
 backups/
 .DS_Store
 
-!.dev.vars.example

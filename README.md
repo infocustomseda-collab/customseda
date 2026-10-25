@@ -11,7 +11,7 @@ The project pins Node 24.21.0 and pnpm 11.25.0 in `.tool-versions`, matching the
 ```sh
 mise install
 pnpm install --frozen-lockfile
-# First checkout only: copy .dev.vars.example to .dev.vars and replace its key.
+# First checkout only: copy .env.example to .env and replace its key.
 # Generate a key with: openssl rand -hex 32
 pnpm dev
 ```
@@ -48,7 +48,7 @@ pnpm build
 
 Staging: <https://customseda-staging.customseda.workers.dev/_emdash/admin/>
 
-The temporary HTTP Basic gate uses username `seda` and the `FOUNDATION_ACCESS_TOKEN` value in the ignored `.dev.vars.staging` file. This gate protects the initial setup wizard and is additional to EmDash's passkey login. Do not send the token in a URL or commit it. The merchant must register their own passkey. Production has resources but is not published, and `customseda.com` still points to Shopify.
+The temporary HTTP Basic gate uses username `seda` and the `FOUNDATION_ACCESS_TOKEN` value in the ignored `.env.cloudflare-staging` file. This gate protects the initial setup wizard and is additional to EmDash's passkey login. Do not send the token in a URL or commit it. The merchant must register their own passkey. Production has resources but is not published, and `customseda.com` still points to Shopify.
 
 The deployment runner migrates EmDash core and then the versioned catalog model from the CLI before uploading the Worker. See [catalog migration boundaries](docs/catalog-model.md#deployment-boundary). `pnpm test:d1` rehearses the catalog migration against isolated local D1; actual remote catalog acceptance remains pending.
 
