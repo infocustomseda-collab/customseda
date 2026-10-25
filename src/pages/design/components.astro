@@ -1,0 +1,104 @@
+---
+// Development-only component specimen using imported local drafts; never served by deployed Workers.
+import { env } from "cloudflare:workers";
+import Button from "../../components/Button.astro";
+import Field from "../../components/Field.astro";
+import Gallery from "../../components/Gallery.astro";
+import Price from "../../components/Price.astro";
+import ProductCard from "../../components/ProductCard.astro";
+import QuantityField from "../../components/QuantityField.astro";
+import SizePicker from "../../components/SizePicker.astro";
+import Shop, { type SiteChrome } from "../../layouts/Shop.astro";
+import { galleryImages, type ProductCardView } from "../../lib/shop/view";
+
+if (!import.meta.env.DEV) return new Response(null, { status: 404 });
+
+type Row = { slug: string; title: string; price_cents: number; available: number; gallery: string };
+const query = (table: "ec_products" | "ec_conjuntos") =>
+	env.DB.prepare(`SELECT slug, title, price_cents, available, gallery FROM ${table} WHERE deleted_at IS NULL ORDER BY created_at`).all<Row>();
+const [products, conjuntos] = await Promise.all([query("ec_products"), query("ec_conjuntos")]);
+const card = (row: Row): ProductCardView => ({
+	href: `/products/${row.slug}`,
+	title: row.title,
+	priceCents: row.price_cents,
+	images: galleryImages(JSON.parse(row.gallery || "[]")),
+	available: row.available !== 0,
+});
+const sets = conjuntos.results.map(card);
+const pieces = products.results.map(card);
+const tierra = conjuntos.results.find((row) => row.slug === "tierra") ?? conjuntos.results[0];
+
+const site: SiteChrome = {
+	siteName: "Seda",
+	announcement: { text: "🌼 ¡ENVÍO GRATIS! En compras superiores a 45€ en Canarias - 70€ en Península - 90€ Europa" },
+	nav: [
+		{ label: "Inicio", href: "/" },
+		{ label: "Bikinis", href: "/collections/bikinis", current: true },
+		{ label: "Colección", href: "/pages/margarita" },
+		{ label: "Sobre Seda", href: "/blogs/noticias" },
+		{ label: "Envíos y Devoluciones", href: "/pages/envios-y-devoluciones" },
+		{ label: "Contacto", href: "/pages/contact" },
+	],
+	footerLinks: [
+		{ label: "Envíos y Devoluciones", href: "/pages/envios-y-devoluciones" },
+		{ label: "Guía de tallas", href: "/pages/guia-de-tallas" },
+		{ label: "Contacto", href: "/pages/contact" },
+		{ label: "Política de privacidad", href: "/policies/privacy-policy" },
+	],
+	social: [
+		{ network: "instagram", href: "https://www.instagram.com/customseda/" },
+		{ network: "tiktok", href: "https://www.tiktok.com/@customseda" },
+	],
+};
+---
+
+<Shop title="Componentes" site={site} noindex>
+	<div class="wrapper stack" style="--stack-space: var(--section-gap); padding-block: var(--band-padding)">
+		<section class="stack" aria-labelledby="cards" style="--stack-space: var(--space-m-l)">
+			<h1 id="cards">Conjuntos</h1>
+			<div class="grid" data-layout="products">
+				{sets.map((product, index) => <ProductCard product={product} eager={index < 3} headingLevel={2} />)}
+			</div>
+		</section>
+
+		<section class="stack" aria-labelledby="pieces" style="--stack-space: var(--space-m-l)">
+			<h2 id="pieces">También te puede gustar</h2>
+			<div class="grid" data-layout="products" style="--grid-columns: 4">
+				{pieces.slice(0, 4).map((product) => <ProductCard product={{ ...product, available: product.title !== "TOP DESTELLO" }} />)}
+			</div>
+		</section>
+
+		{tierra && (
+			<section class="split" aria-labelledby="detail">
+				<Gallery images={galleryImages(JSON.parse(tierra.gallery))} label={`Fotos de ${tierra.title}`} />
+				<form class="stack" style="--stack-space: var(--space-s-m)" onsubmit="event.preventDefault()">
+					<h2 id="detail" style="font-size: var(--step-4)">{tierra.title}</h2>
+					<Price cents={tierra.price_cents} />
+					<SizePicker name="top" legend="Talla del top" sizes={["M", "S", "L", "XL"]} selected="S" />
+					<SizePicker name="bottom" legend="Talla de braguita" sizes={["XS", "S", "M", "L", "XL"]} />
+					<QuantityField id="quantity" />
+					<div class="stack" style="--stack-space: var(--space-xs)">
+						<Button type="submit" width="full">Añadir al carrito</Button>
+						<Button variant="secondary" width="full" disabled>No disponible</Button>
+						<Button width="full" aria-busy="true">Procesando</Button>
+					</div>
+				</form>
+			</section>
+		)}
+
+		<section class="stack" aria-labelledby="controls" style="--stack-space: var(--space-m)">
+			<h2 id="controls">Botones y formularios</h2>
+			<div class="cluster" style="--cluster-space: var(--space-s)">
+				<Button href="/pages/margarita" variant="accent">Ver colección</Button>
+				<Button variant="secondary">Ver todos los detalles</Button>
+				<Button>Finalizar compra</Button>
+			</div>
+			<form class="stack" style="max-inline-size: 32rem" onsubmit="event.preventDefault()">
+				<Field id="name" name="name" label="Nombre" autocomplete="name" required />
+				<Field id="email" name="email" type="email" label="Correo electrónico" autocomplete="email" required value="hola@" error="Escribe un correo electrónico válido, por ejemplo nombre@ejemplo.com." />
+				<Field id="message" name="message" label="Mensaje" multiline hint="Cuéntanos tu talla habitual si tienes dudas." />
+				<SizePicker name="demo-error" legend="Talla" sizes={["S", "M", "L"]} error="Elige una talla para continuar." />
+			</form>
+		</section>
+	</div>
+</Shop>

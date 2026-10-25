@@ -1,0 +1,40 @@
+---
+// Catalog card: 4:5 photo with second-image hover swap, centered title and price.
+import type { ProductCardView } from "../lib/shop/view";
+import Price from "./Price.astro";
+
+interface Props {
+	product: ProductCardView;
+	headingLevel?: 2 | 3;
+	eager?: boolean;
+}
+
+const { product, headingLevel = 3, eager = false } = Astro.props;
+const [main, hover] = product.images;
+const Heading = `h${headingLevel}` as "h2" | "h3";
+---
+
+<article class="product-card">
+	<div class="product-card__media" style={main?.placeholder ? `background-color: ${main.placeholder}` : undefined}>
+		{main && (
+			<img
+				src={main.src}
+				alt={main.alt}
+				width={main.width}
+				height={main.height}
+				style={`object-position: ${main.position}${product.transitionName ? `; view-transition-name: ${product.transitionName}` : ""}`}
+				loading={eager ? "eager" : "lazy"}
+				fetchpriority={eager ? "high" : undefined}
+				decoding="async"
+			/>
+		)}
+		{hover && (
+			<img src={hover.src} alt="" width={hover.width} height={hover.height} style={`object-position: ${hover.position}`} loading="lazy" decoding="async" />
+		)}
+		{!product.available && <span class="product-card__badge badge">No disponible</span>}
+	</div>
+	<Heading class="product-card__title">
+		<a class="product-card__link" href={product.href}>{product.title}</a>
+	</Heading>
+	<Price cents={product.priceCents} size="small" />
+</article>

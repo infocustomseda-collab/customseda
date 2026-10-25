@@ -1,0 +1,79 @@
+---
+// Product gallery: swipeable strip with counter on small screens, stacked grid on wide ones.
+import type { GalleryImage } from "../lib/shop/view";
+import Icon from "./Icon.astro";
+
+interface Props {
+	images: GalleryImage[];
+	label: string;
+	transitionName?: string;
+}
+
+const { images, label, transitionName } = Astro.props;
+---
+
+<product-gallery class="gallery" role="region" aria-label={label}>
+	<ul class="gallery__list" role="list" tabindex="0">
+		{images.map((image, index) => (
+			<li class="gallery__item" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
+				<img
+					src={image.src}
+					alt={image.alt}
+					width={image.width}
+					height={image.height}
+					style={`object-position: ${image.position}${index === 0 && transitionName ? `; view-transition-name: ${transitionName}` : ""}`}
+					loading={index === 0 ? "eager" : "lazy"}
+					fetchpriority={index === 0 ? "high" : undefined}
+					decoding="async"
+				/>
+			</li>
+		))}
+	</ul>
+	{images.length > 1 && (
+		<div class="gallery__controls cluster" hidden>
+			<button class="gallery__step" type="button" data-direction="-1" aria-label="Imagen anterior">
+				<Icon name="chevron-left" />
+			</button>
+			<span class="gallery__counter" aria-live="polite"><span data-current>1</span> / {images.length}</span>
+			<button class="gallery__step" type="button" data-direction="1" aria-label="Imagen siguiente">
+				<Icon name="chevron-right" />
+			</button>
+		</div>
+	)}
+</product-gallery>
+
+<script>
+	class ProductGallery extends HTMLElement {
+		connectedCallback() {
+			const list = this.querySelector<HTMLElement>(".gallery__list")!;
+			const controls = this.querySelector<HTMLElement>(".gallery__controls");
+			if (!controls) return;
+			const items = [...list.children] as HTMLElement[];
+			const current = controls.querySelector<HTMLElement>("[data-current]")!;
+			const [previous, next] = controls.querySelectorAll<HTMLButtonElement>("button");
+			let index = 0;
+			const show = (value: number) => {
+				index = value;
+				current.textContent = String(index + 1);
+				previous.disabled = index === 0;
+				next.disabled = index === items.length - 1;
+			};
+			const observer = new IntersectionObserver(
+				(entries) => {
+					for (const entry of entries) if (entry.isIntersecting) show(items.indexOf(entry.target as HTMLElement));
+				},
+				{ root: list, threshold: 0.6 },
+			);
+			items.forEach((item) => observer.observe(item));
+			for (const button of [previous, next]) {
+				button.addEventListener("click", () => {
+					const target = items[Math.min(items.length - 1, Math.max(0, index + Number(button.dataset.direction)))];
+					list.scrollTo({ left: target.offsetLeft - list.offsetLeft, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+				});
+			}
+			controls.hidden = false;
+			show(0);
+		}
+	}
+	if (!customElements.get("product-gallery")) customElements.define("product-gallery", ProductGallery);
+</script>

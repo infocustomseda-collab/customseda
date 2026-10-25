@@ -58,6 +58,11 @@
 		padding: 0;
 	}
 
+	/* Important in the lowest layer outranks every later layer, so [hidden] always hides. */
+	[hidden]:not([hidden="until-found"]) {
+		display: none !important;
+	}
+
 	:target {
 		scroll-margin-block: 5ex;
 	}

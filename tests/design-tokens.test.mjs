@@ -62,6 +62,7 @@ test('semantic text and surface pairs meet WCAG AA', () => {
   ['--color-action', '--color-surface', 4.5], ['--color-on-selected', '--color-selected', 4.5],
   ['--color-text-subtle', '--color-surface', 4.5], ['--color-focus', '--color-surface', 3],
   ['--color-border-control', '--color-surface', 3],
+  ['--color-danger', '--color-surface', 4.5], ['--color-danger', '--color-surface-tint', 4.5],
  ];
  for (const [fg, bg, min] of pairs) {
   const [a, b] = [resolve(all, fg), resolve(all, bg)].map(hex);

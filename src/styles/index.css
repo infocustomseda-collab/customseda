@@ -2,7 +2,6 @@
  * CUBE CSS entry point. Layer order fixes precedence independent of selector specificity:
  * reset → tokens → global (elements) → compositions (layout) → blocks (components)
  * → utilities (single-purpose) → exceptions (data-state variants).
- * Compositions and blocks are added under src/styles/compositions/ and src/styles/blocks/.
  */
 @layer reset, tokens, global, compositions, blocks, utilities, exceptions;
 
@@ -11,4 +10,8 @@
 @import "./global/tokens.css";
 @import "./global/fluid.css";
 @import "./global/global.css";
+@import "./compositions/compositions.css";
+@import "./blocks/controls.css";
+@import "./blocks/catalog.css";
+@import "./blocks/chrome.css";
 @import "./utilities/utilities.css";

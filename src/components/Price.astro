@@ -1,0 +1,15 @@
+---
+import { formatPrice } from "../lib/shop/view";
+
+interface Props {
+	cents: number;
+	size?: "small";
+	class?: string;
+}
+
+const { cents, size, class: className } = Astro.props;
+---
+
+<p class:list={["price", className]} data-size={size}>
+	<data value={(cents / 100).toFixed(2)}>{formatPrice(cents)}</data>
+</p>
