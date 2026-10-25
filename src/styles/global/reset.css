@@ -1,0 +1,64 @@
+/* Modern reset (after Andy Bell's), kept in the lowest layer. */
+@layer reset {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	* {
+		margin: 0;
+	}
+
+	html {
+		-moz-text-size-adjust: none;
+		-webkit-text-size-adjust: none;
+		text-size-adjust: none;
+	}
+
+	body {
+		min-block-size: 100dvh;
+	}
+
+	img,
+	picture,
+	video,
+	canvas,
+	svg {
+		display: block;
+		max-inline-size: 100%;
+	}
+
+	img,
+	video {
+		block-size: auto;
+	}
+
+	input,
+	button,
+	textarea,
+	select {
+		font: inherit;
+		letter-spacing: inherit;
+	}
+
+	p,
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		overflow-wrap: break-word;
+	}
+
+	ul[role="list"],
+	ol[role="list"] {
+		list-style: none;
+		padding: 0;
+	}
+
+	:target {
+		scroll-margin-block: 5ex;
+	}
+}

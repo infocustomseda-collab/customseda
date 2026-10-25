@@ -3,7 +3,9 @@ import { getMenuWithCacheHint, getSiteSettingsWithCacheHint } from "emdash";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import LiveSearch from "emdash/ui/search";
+import { Font } from "astro:assets";
 import { resolveStarterSiteIdentity } from "../utils/site-identity";
+import "../styles/index.css";
 
 interface Props {
 	title: string;
@@ -52,11 +54,13 @@ const pageCtx = createPublicPageContext({
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="es">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{fullTitle}</title>
+		<Font cssVariable="--font-cormorant" preload={[{ weight: 500, style: "normal" }]} />
+		<Font cssVariable="--font-montserrat" preload />
 		<EmDashHead page={pageCtx} />
 	</head>
 	<body>
