@@ -28,7 +28,7 @@ Work in this checkout on `master`, as explicitly requested by the user.
 
 ## Security and generated files
 
-- Secret files follow the fdag layout and are ignored: `.env` (local Worker secrets), `.env.cloudflare-<env>` (remote Worker secrets), `.env.deploy` (Cloudflare API token, shell only). Never create `.env.production`/`.env.development`/`.env.local`/`.env.staging`. `.wrangler/`, `.emdash/`, `.envrc`, backups, and generated binding declarations are ignored too.
+- Secret files follow the fdag layout and are ignored: `.env` (local Worker secrets), `.env.cloudflare-<env>` (remote Worker secrets), `.env.deploy` (Cloudflare API token, loaded only by deploy/migrate/snapshot scripts via `--env-file-if-exists`). Never create `.env.production`/`.env.development`/`.env.local`/`.env.staging`. `.wrangler/`, `.emdash/`, backups, and generated binding declarations are ignored too.
 - Keep secrets in runtime Worker secret bindings; never inline them with `import.meta.env`.
 - Use version-matched official EmDash docs and installed types/source to verify APIs.
 - Preserve generated `src/live.config.ts` boilerplate.

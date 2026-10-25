@@ -100,3 +100,19 @@ test('the checked-in Wrangler config gates assets in both remote environments', 
   const wrangler = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
   for (const name of ['staging', 'production']) assert.equal(validateTarget(wrangler, name).environment, name);
 });
+
+test('remote scripts load the CLI token from .env.deploy like fdag, and CI works without it', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { scripts } = JSON.parse(await readFile('package.json', 'utf8'));
+  for (const name of ['deploy:staging', 'deploy:production', 'migrate:status', 'snapshot']) {
+    assert.match(scripts[name], /^node --env-file-if-exists=\.env\.deploy /, name);
+  }
+  assert.equal(scripts['deploy:staging'], 'node --env-file-if-exists=.env.deploy scripts/deploy/run.mjs staging');
+});
+
+test('the status command is the runner\'s own read-only first step', async () => {
+  const { statusCommand } = await import('../scripts/deploy/target.mjs');
+  const target = validateTarget(config(), 'staging');
+  assert.deepEqual(statusCommand(target), deploymentCommands(target)[0]);
+  assert.ok(statusCommand(target).includes('--status') && !statusCommand(target).includes('--expected-target-fingerprint'));
+});

@@ -19,7 +19,7 @@ All secret files are ignored by git, have owner-only permissions (`chmod 600`), 
 | --- | --- | --- |
 | `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | `pnpm dev`. Wrangler reads `.env` as the local Worker's secrets; copy `.env.example`. |
 | `.env.cloudflare-staging`, `.env.cloudflare-production` | Remote Worker secrets per environment | `wrangler secret bulk` on first deploy, see below. Not loaded automatically. |
-| `.env.deploy` | `CLOUDFLARE_API_TOKEN` for CLI deploys and `emdash migrate` | Your shell only, for example through direnv (`.envrc`: `dotenv_if_exists .env.deploy`, then `direnv allow`). |
+| `.env.deploy` | `CLOUDFLARE_API_TOKEN` for CLI deploys and `emdash migrate` | Loaded only by the scripts that reach Cloudflare (`pnpm deploy:<env>`, `pnpm migrate:status <env>`, `pnpm snapshot`) through `node --env-file-if-exists=.env.deploy`, like fdag's `.env.framer`/`.env.r2`. CI has no such file and uses the GitHub environment secret. |
 
 Keep the API token out of `.env` and the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
 
@@ -87,7 +87,7 @@ The build writes `.emdash/migrations.json`; use it with the same installed depen
 One-time setup per environment, in GitHub → Settings → Environments (`staging`, later `production`):
 
 - **Secret `CLOUDFLARE_API_TOKEN`:** a Cloudflare API token on this account with Workers Scripts edit, D1 edit and R2 read/write rights. `emdash migrate` requires an API token; OAuth logins do not work in CI.
-- **Variable `EMDASH_TARGET_FINGERPRINT`:** the target fingerprint printed by `pnpm exec emdash migrate --from-config --status ...` for that environment, reviewed by a person. If the target changes, the deploy fails until someone reviews the new fingerprint and updates the variable.
+- **Variable `EMDASH_TARGET_FINGERPRINT`:** the target fingerprint printed by `pnpm migrate:status <environment>` (read-only), reviewed by a person. If the target changes, the deploy fails until someone reviews the new fingerprint and updates the variable.
 - **Repository variable `PRODUCTION_DEPLOY_ENABLED=true`:** set only after the supervised first production setup in phase 7 (secrets, administrator, reviewed fingerprint, Stripe keys).
 
 Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, `GITHUB_REBUILD_TOKEN`) stay in Cloudflare (`wrangler secret put --env …`) and are never copied to GitHub. Manual deploys from a developer machine keep working (`pnpm deploy:staging`). Do not run one while the same environment's workflow is deploying.

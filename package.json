@@ -15,8 +15,9 @@
     "cf:types": "wrangler types",
     "cf:whoami": "wrangler whoami",
     "test": "node --test tests/*.test.mjs",
-    "deploy:staging": "node scripts/deploy/run.mjs staging",
-    "deploy:production": "node scripts/deploy/run.mjs production",
+    "deploy:staging": "node --env-file-if-exists=.env.deploy scripts/deploy/run.mjs staging",
+    "deploy:production": "node --env-file-if-exists=.env.deploy scripts/deploy/run.mjs production",
+    "migrate:status": "node --env-file-if-exists=.env.deploy scripts/deploy/status.mjs",
     "build:staging": "CLOUDFLARE_ENV=staging astro build",
     "build:production": "CLOUDFLARE_ENV=production astro build",
     "cms:model": "node scripts/cms/apply-local-model.mjs",
@@ -26,7 +27,7 @@
     "import:shopify:verify": "node scripts/import/shopify-verify.mjs",
     "design:fluid": "node scripts/design/fluid-scale.mjs",
     "cms:storefront": "node scripts/cms/storefront-content.mjs",
-    "snapshot": "node scripts/build/snapshot.mjs",
+    "snapshot": "node --env-file-if-exists=.env.deploy scripts/build/snapshot.mjs",
     "design:open-props": "node scripts/design/open-props.mjs"
   },
   "dependencies": {

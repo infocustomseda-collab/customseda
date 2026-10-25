@@ -12,7 +12,6 @@ data.db-*
 .env.*
 !.env.example
 .dev.vars*
-.envrc
 
 # Generated bindings, deployment artifacts and local backups
 worker-configuration.d.ts
