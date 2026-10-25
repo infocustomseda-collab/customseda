@@ -40,7 +40,9 @@
       },
       "vars": {
         "EMDASH_SITE_URL": "https://customseda-staging.customseda.workers.dev",
-        "FOUNDATION_LOCKED": "true"
+        "FOUNDATION_LOCKED": "true",
+        "DEPLOY_ENVIRONMENT": "staging",
+        "GITHUB_REPOSITORY": "infocustomseda-collab/customseda"
       },
       "d1_databases": [
         {
@@ -64,7 +66,9 @@
       },
       "vars": {
         "EMDASH_SITE_URL": "https://customseda-production.customseda.workers.dev",
-        "FOUNDATION_LOCKED": "true"
+        "FOUNDATION_LOCKED": "true",
+        "DEPLOY_ENVIRONMENT": "production",
+        "GITHUB_REPOSITORY": "infocustomseda-collab/customseda"
       },
       "d1_databases": [
         {

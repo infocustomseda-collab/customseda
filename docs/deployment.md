@@ -81,6 +81,30 @@ One-time setup per environment, in GitHub → Settings → Environments (`stagin
 
 Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, `GITHUB_REBUILD_TOKEN`) stay in Cloudflare (`wrangler secret put --env …`) and are never copied to GitHub. Manual deploys from a developer machine keep working (`pnpm deploy:staging`). Do not run one while the same environment's workflow is deploying.
 
+## Publishing and rebuilds
+
+Public pages are prebuilt, so a CMS change appears after the next deploy of that environment. Three things trigger that deploy:
+
+- **Publish, unpublish, delete or restore** of shop content (products, Conjuntos, lookups, size guides, site settings, pages, popups, shipping rules). The catalog plugin dispatches `deploy.yml` for its own environment after the response, so the editor never waits.
+- **Scheduled publishing.** EmDash's hourly sweep runs no plugin hooks. The Worker's scheduled handler checks whether shop content was published in the last hour and dispatches a rebuild if so.
+- **Menu changes,** which have no CMS hook. An administrator calls `POST /_emdash/api/customseda/rebuild` from the admin session, or uses "Run workflow" in GitHub.
+
+Bursts coalesce in the workflow's concurrency queue. A failed build or deploy leaves the previous site serving; check the Actions tab.
+
+The workflow is dispatched with a **fine-grained personal access token**, scoped to the `infocustomseda-collab/customseda` repository with "Actions: read and write" permission and nothing else. Store it per environment as a Worker secret:
+
+```sh
+pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env staging
+```
+
+`DEPLOY_ENVIRONMENT` and `GITHUB_REPOSITORY` are set as Worker vars in `wrangler.jsonc`. Local development has neither, so it never dispatches.
+
+| Token | Owner | Expires | Renewal |
+| --- | --- | --- | --- |
+| `GITHUB_REBUILD_TOKEN` (staging) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
+
+When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
+
 ## Free-tier feasibility gate
 
 Test remote setup, passkey login, content create/edit/publish, relation writes, realistic image uploads, and redeployment. Inspect invocation CPU and outcome, not merely HTTP status or build success. Requests occasionally receive CPU headroom, so a request exceeding 10 ms that succeeds is not evidence of a sustainable Free workload. Cloudflare rejected an explicit CPU cap with error 100328 because custom CPU caps are unavailable on Workers Free. Staging therefore uses the platform default. Do not raise the budget by upgrading the plan without discussing it.

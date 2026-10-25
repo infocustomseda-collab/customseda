@@ -70,6 +70,11 @@ export default defineConfig({
                         prerender: false,
                     });
                     injectRoute({
+                        pattern: "/_emdash/api/customseda/rebuild",
+                        entrypoint: "./src/lib/cms/rebuild-route.ts",
+                        prerender: false,
+                    });
+                    injectRoute({
                         pattern: "/_emdash/api/customseda/import",
                         entrypoint: "./src/lib/cms/import-route.ts",
                         prerender: false,
