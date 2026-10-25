@@ -1,0 +1,420 @@
+{
+	"schemaVersion": 2,
+	"generatedAt": "2026-10-25T14:20:45.383Z",
+	"title": "Design System: Seda",
+	"extensions": {
+		"colorMeta": {
+			"paper": {
+				"role": "neutral",
+				"displayName": "Paper",
+				"canonical": "#fcfcfc",
+				"tonalRamp": [
+					"oklch(15% 0.000 89.9)",
+					"oklch(25% 0.000 89.9)",
+					"oklch(35% 0.000 89.9)",
+					"oklch(45% 0.000 89.9)",
+					"oklch(55% 0.000 89.9)",
+					"oklch(65% 0.000 89.9)",
+					"oklch(80% 0.000 89.9)",
+					"oklch(95% 0.000 89.9)"
+				]
+			},
+			"sand": {
+				"role": "neutral",
+				"displayName": "Sand",
+				"canonical": "#f6f5f5",
+				"tonalRamp": [
+					"oklch(15% 0.001 17.2)",
+					"oklch(25% 0.001 17.2)",
+					"oklch(35% 0.001 17.2)",
+					"oklch(45% 0.001 17.2)",
+					"oklch(55% 0.001 17.2)",
+					"oklch(65% 0.001 17.2)",
+					"oklch(80% 0.001 17.2)",
+					"oklch(95% 0.001 17.2)"
+				]
+			},
+			"ink": {
+				"role": "primary",
+				"displayName": "Workshop Ink",
+				"canonical": "#6b4f3a",
+				"tonalRamp": [
+					"oklch(15% 0.050 58.0)",
+					"oklch(25% 0.050 58.0)",
+					"oklch(35% 0.050 58.0)",
+					"oklch(45% 0.050 58.0)",
+					"oklch(55% 0.050 58.0)",
+					"oklch(65% 0.050 58.0)",
+					"oklch(80% 0.050 58.0)",
+					"oklch(95% 0.050 58.0)"
+				]
+			},
+			"ink-90": {
+				"role": "neutral",
+				"displayName": "Ink 90",
+				"canonical": "#7a604d",
+				"tonalRamp": [
+					"oklch(15% 0.044 57.7)",
+					"oklch(25% 0.044 57.7)",
+					"oklch(35% 0.044 57.7)",
+					"oklch(45% 0.044 57.7)",
+					"oklch(55% 0.044 57.7)",
+					"oklch(65% 0.044 57.7)",
+					"oklch(80% 0.044 57.7)",
+					"oklch(95% 0.044 57.7)"
+				]
+			},
+			"ink-85": {
+				"role": "neutral",
+				"displayName": "Ink 85",
+				"canonical": "#816957",
+				"tonalRamp": [
+					"oklch(15% 0.041 58.6)",
+					"oklch(25% 0.041 58.6)",
+					"oklch(35% 0.041 58.6)",
+					"oklch(45% 0.041 58.6)",
+					"oklch(55% 0.041 58.6)",
+					"oklch(65% 0.041 58.6)",
+					"oklch(80% 0.041 58.6)",
+					"oklch(95% 0.041 58.6)"
+				]
+			},
+			"ink-70": {
+				"role": "neutral",
+				"displayName": "Ink 70",
+				"canonical": "#968374",
+				"tonalRamp": [
+					"oklch(15% 0.032 60.5)",
+					"oklch(25% 0.032 60.5)",
+					"oklch(35% 0.032 60.5)",
+					"oklch(45% 0.032 60.5)",
+					"oklch(55% 0.032 60.5)",
+					"oklch(65% 0.032 60.5)",
+					"oklch(80% 0.032 60.5)",
+					"oklch(95% 0.032 60.5)"
+				]
+			},
+			"ink-15": {
+				"role": "neutral",
+				"displayName": "Ink 15",
+				"canonical": "#e6e2df",
+				"tonalRamp": [
+					"oklch(15% 0.006 59.6)",
+					"oklch(25% 0.006 59.6)",
+					"oklch(35% 0.006 59.6)",
+					"oklch(45% 0.006 59.6)",
+					"oklch(55% 0.006 59.6)",
+					"oklch(65% 0.006 59.6)",
+					"oklch(80% 0.006 59.6)",
+					"oklch(95% 0.006 59.6)"
+				]
+			},
+			"logo-brown": {
+				"role": "primary",
+				"displayName": "Wordmark Brown",
+				"canonical": "#643924",
+				"tonalRamp": [
+					"oklch(15% 0.069 46.1)",
+					"oklch(25% 0.069 46.1)",
+					"oklch(35% 0.069 46.1)",
+					"oklch(45% 0.069 46.1)",
+					"oklch(55% 0.069 46.1)",
+					"oklch(65% 0.069 46.1)",
+					"oklch(80% 0.069 46.1)",
+					"oklch(95% 0.069 46.1)"
+				]
+			},
+			"cacao": {
+				"role": "secondary",
+				"displayName": "Cacao",
+				"canonical": "#603e2a",
+				"tonalRamp": [
+					"oklch(15% 0.057 50.9)",
+					"oklch(25% 0.057 50.9)",
+					"oklch(35% 0.057 50.9)",
+					"oklch(45% 0.057 50.9)",
+					"oklch(55% 0.057 50.9)",
+					"oklch(65% 0.057 50.9)",
+					"oklch(80% 0.057 50.9)",
+					"oklch(95% 0.057 50.9)"
+				]
+			},
+			"sky": {
+				"role": "secondary",
+				"displayName": "Atlantic Sky",
+				"canonical": "#badbff",
+				"tonalRamp": [
+					"oklch(15% 0.061 250.8)",
+					"oklch(25% 0.061 250.8)",
+					"oklch(35% 0.061 250.8)",
+					"oklch(45% 0.061 250.8)",
+					"oklch(55% 0.061 250.8)",
+					"oklch(65% 0.061 250.8)",
+					"oklch(80% 0.061 250.8)",
+					"oklch(95% 0.061 250.8)"
+				]
+			},
+			"butter": {
+				"role": "tertiary",
+				"displayName": "Butter",
+				"canonical": "#fdf4aa",
+				"tonalRamp": [
+					"oklch(15% 0.094 102.1)",
+					"oklch(25% 0.094 102.1)",
+					"oklch(35% 0.094 102.1)",
+					"oklch(45% 0.094 102.1)",
+					"oklch(55% 0.094 102.1)",
+					"oklch(65% 0.094 102.1)",
+					"oklch(80% 0.094 102.1)",
+					"oklch(95% 0.094 102.1)"
+				]
+			},
+			"rust": {
+				"role": "tertiary",
+				"displayName": "Rust",
+				"canonical": "#6b3818",
+				"tonalRamp": [
+					"oklch(15% 0.085 50.1)",
+					"oklch(25% 0.085 50.1)",
+					"oklch(35% 0.085 50.1)",
+					"oklch(45% 0.085 50.1)",
+					"oklch(55% 0.085 50.1)",
+					"oklch(65% 0.085 50.1)",
+					"oklch(80% 0.085 50.1)",
+					"oklch(95% 0.085 50.1)"
+				]
+			},
+			"terracotta": {
+				"role": "tertiary",
+				"displayName": "Terracotta",
+				"canonical": "#a3321f",
+				"tonalRamp": [
+					"oklch(15% 0.120 32.1)",
+					"oklch(25% 0.120 32.1)",
+					"oklch(35% 0.120 32.1)",
+					"oklch(45% 0.120 32.1)",
+					"oklch(55% 0.120 32.1)",
+					"oklch(65% 0.120 32.1)",
+					"oklch(80% 0.120 32.1)",
+					"oklch(95% 0.120 32.1)"
+				]
+			}
+		},
+		"typographyMeta": {
+			"display": {
+				"displayName": "Display",
+				"purpose": "Hero title only; capped at 15vw on phones."
+			},
+			"headline": {
+				"displayName": "Headline",
+				"purpose": "Page h1, product titles, featured product, story headings."
+			},
+			"title": {
+				"displayName": "Title",
+				"purpose": "Section h2."
+			},
+			"title-small": {
+				"displayName": "Title small",
+				"purpose": "h3, process-card titles, mobile drawer menu."
+			},
+			"body": {
+				"displayName": "Body",
+				"purpose": "All running text, 65ch measure; also buttons, prices and size pills at the same family."
+			},
+			"label": {
+				"displayName": "Label",
+				"purpose": "Field labels, legends, badges, contact labels, sort control."
+			},
+			"announcement": {
+				"displayName": "Announcement",
+				"purpose": "Announcement bar only."
+			}
+		},
+		"shadows": [
+			{
+				"name": "control",
+				"value": "2px 2px 5px rgb(96 62 42 / 0.1)",
+				"purpose": "Buttons at rest, kept from the live site."
+			},
+			{
+				"name": "overlay",
+				"value": "6px 6px 25px rgb(96 62 42 / 0.12)",
+				"purpose": "Popup, mobile nav drawer, update banner."
+			}
+		],
+		"motion": [
+			{
+				"name": "ease-out",
+				"value": "cubic-bezier(0, 0, .3, 1)",
+				"purpose": "Default easing for state changes and reveals."
+			},
+			{
+				"name": "ease-media",
+				"value": "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+				"purpose": "Image fades, card photo swap."
+			},
+			{
+				"name": "duration-instant",
+				"value": "0.1s",
+				"purpose": "Hover border thickening, link underline."
+			},
+			{
+				"name": "duration-quick",
+				"value": "0.2s",
+				"purpose": "Button background, disclosure chevron."
+			},
+			{
+				"name": "duration-moderate",
+				"value": "0.3s",
+				"purpose": "Drawer, popup, card photo swap."
+			},
+			{
+				"name": "duration-slow",
+				"value": "0.6s",
+				"purpose": "Featured image zoom, scroll reveal."
+			}
+		],
+		"breakpoints": [
+			{
+				"name": "tablet",
+				"value": "48rem"
+			},
+			{
+				"name": "desktop",
+				"value": "60rem"
+			}
+		]
+	},
+	"components": [
+		{
+			"name": "Primary Button",
+			"kind": "button",
+			"refersTo": "button-primary",
+			"description": "Default action: buy, submit.",
+			"html": "<button class=\"ds-btn ds-btn-primary\">Comprar</button>",
+			"css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-block-size: 3.25rem; padding: 0.55rem 2rem; border: 1px solid var(--b); border-radius: 999px; background: var(--bg); color: var(--fg); font-family: var(--font-body, Cormorant, Georgia, serif); font-size: 1.1rem; font-weight: 700; letter-spacing: 0.0625em; line-height: 1.2; text-decoration: none; cursor: pointer; box-shadow: 2px 2px 5px rgb(96 62 42 / 0.1); transition: box-shadow 0.1s cubic-bezier(0,0,.3,1), background-color 0.2s cubic-bezier(0,0,.3,1); } .ds-btn:hover { box-shadow: 2px 2px 5px rgb(96 62 42 / 0.1), inset 0 0 0 1px var(--b); } .ds-btn:active { box-shadow: inset 0 0 0 1px var(--b); } .ds-btn:focus-visible { outline: 2px solid #6b3818; outline-offset: 3px; } .ds-btn-primary { --bg: #6b4f3a; --fg: #fcfcfc; --b: #6b4f3a; }"
+		},
+		{
+			"name": "Accent Button",
+			"kind": "button",
+			"refersTo": "button-accent",
+			"description": "Butter pill on bands and the hero: \"Ver colección\".",
+			"html": "<button class=\"ds-btn ds-btn-accent\">Ver colección</button>",
+			"css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-block-size: 3.25rem; padding: 0.55rem 2rem; border: 1px solid var(--b); border-radius: 999px; background: var(--bg); color: var(--fg); font-family: var(--font-body, Cormorant, Georgia, serif); font-size: 1.1rem; font-weight: 700; letter-spacing: 0.0625em; line-height: 1.2; text-decoration: none; cursor: pointer; box-shadow: 2px 2px 5px rgb(96 62 42 / 0.1); transition: box-shadow 0.1s cubic-bezier(0,0,.3,1), background-color 0.2s cubic-bezier(0,0,.3,1); } .ds-btn:hover { box-shadow: 2px 2px 5px rgb(96 62 42 / 0.1), inset 0 0 0 1px var(--b); } .ds-btn:active { box-shadow: inset 0 0 0 1px var(--b); } .ds-btn:focus-visible { outline: 2px solid #6b3818; outline-offset: 3px; } .ds-btn-accent { --bg: #fdf4aa; --fg: #6b3818; --b: #fdf4aa; } .ds-btn-accent:hover { --b: #6b3818; }"
+		},
+		{
+			"name": "Secondary Button",
+			"kind": "button",
+			"refersTo": "button-secondary",
+			"description": "Outlined rust pill for secondary actions.",
+			"html": "<button class=\"ds-btn ds-btn-secondary\">Guía de tallas</button>",
+			"css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-block-size: 3.25rem; padding: 0.55rem 2rem; border: 1px solid var(--b); border-radius: 999px; background: var(--bg); color: var(--fg); font-family: var(--font-body, Cormorant, Georgia, serif); font-size: 1.1rem; font-weight: 700; letter-spacing: 0.0625em; line-height: 1.2; text-decoration: none; cursor: pointer; box-shadow: 2px 2px 5px rgb(96 62 42 / 0.1); transition: box-shadow 0.1s cubic-bezier(0,0,.3,1), background-color 0.2s cubic-bezier(0,0,.3,1); } .ds-btn:hover { box-shadow: 2px 2px 5px rgb(96 62 42 / 0.1), inset 0 0 0 1px var(--b); } .ds-btn:active { box-shadow: inset 0 0 0 1px var(--b); } .ds-btn:focus-visible { outline: 2px solid #6b3818; outline-offset: 3px; } .ds-btn-secondary { --bg: #fcfcfc; --fg: #6b3818; --b: #6b3818; }"
+		},
+		{
+			"name": "Size Pills",
+			"kind": "chip",
+			"refersTo": "size-pill",
+			"description": "Native radios as pills; selected fills with ink, unavailable is dashed and struck.",
+			"html": "<div class=\"ds-pills\"><label><input type=\"radio\" name=\"ds-size\"><span>XS</span></label><label><input type=\"radio\" name=\"ds-size\" checked><span>S</span></label><label><input type=\"radio\" name=\"ds-size\"><span>M</span></label><label><input type=\"radio\" name=\"ds-size\" disabled><span>L</span></label></div>",
+			"css": ".ds-pills { display: flex; flex-wrap: wrap; gap: 0.55rem; } .ds-pills label { position: relative; } .ds-pills input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; } .ds-pills span { display: grid; place-items: center; min-inline-size: 3.25rem; min-block-size: 2.5rem; padding-inline: 1.1rem; border: 1px solid #968374; border-radius: 999px; color: #6b4f3a; font-family: var(--font-body, Cormorant, Georgia, serif); font-size: 1.1rem; font-weight: 700; letter-spacing: 0.0625em; line-height: 1; transition: background-color 0.1s, border-color 0.1s; } .ds-pills input:hover + span { border-color: #6b4f3a; } .ds-pills input:checked + span { border-color: #6b4f3a; background: #6b4f3a; color: #fcfcfc; } .ds-pills input:focus-visible + span { outline: 2px solid #6b3818; outline-offset: 3px; } .ds-pills input:disabled + span { border-style: dashed; color: #816957; text-decoration: line-through; }"
+		},
+		{
+			"name": "Text Field",
+			"kind": "input",
+			"refersTo": "text-field",
+			"description": "Label, nearly square control, hint.",
+			"html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Correo electrónico</span><input class=\"ds-field__control\" type=\"email\" placeholder=\"tu@correo.com\"></label>",
+			"css": ".ds-field { display: grid; gap: 0.27rem; font-family: var(--font-body, Cormorant, Georgia, serif); } .ds-field__label { color: #6b4f3a; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.0625em; } .ds-field__control { min-block-size: 3.25rem; padding: 0.55rem 1.1rem; border: 1px solid #968374; border-radius: 2px; background: #fcfcfc; color: #6b4f3a; font: inherit; font-size: 1.1rem; transition: border-color 0.1s; } .ds-field__control::placeholder { color: #816957; } .ds-field__control:hover { border-color: #6b4f3a; } .ds-field__control:focus-visible { outline: 2px solid #6b3818; outline-offset: 3px; }"
+		},
+		{
+			"name": "Product Card",
+			"kind": "card",
+			"refersTo": "badge",
+			"description": "Square-edged 4:5 photo with paper badge, centered Montserrat title and Cormorant price.",
+			"html": "<a class=\"ds-card\" href=\"#\"><span class=\"ds-card__media\"><span class=\"ds-card__badge\">Bajo pedido</span></span><span class=\"ds-card__title\">TOP TIERRA</span><span class=\"ds-card__price\">€50,00</span></a>",
+			"css": ".ds-card { display: grid; gap: 0.8rem; inline-size: 14rem; text-align: center; color: #6b4f3a; text-decoration: none; } .ds-card__media { position: relative; aspect-ratio: 4 / 5; background: linear-gradient(160deg, #badbff, #f6f5f5 60%, #e6e2df); } .ds-card__badge { position: absolute; inset-block-end: 0.8rem; inset-inline-start: 0.8rem; padding: 0.27rem 0.8rem; border-radius: 999px; background: #fcfcfc; font-family: var(--font-body, Cormorant, Georgia, serif); font-size: 0.88rem; font-weight: 700; letter-spacing: 0.0625em; } .ds-card__title { font-family: var(--font-heading, Montserrat, sans-serif); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.0625em; } .ds-card__price { font-family: var(--font-body, Cormorant, Georgia, serif); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.0625em; font-variant-numeric: tabular-nums; } .ds-card:focus-visible { outline: 2px solid #6b3818; outline-offset: 3px; }"
+		},
+		{
+			"name": "Announcement Bar",
+			"kind": "nav",
+			"refersTo": "announcement-bar",
+			"description": "Full-width cacao band with sky Montserrat text.",
+			"html": "<div class=\"ds-announce\">🌼 Envío gratis en Canarias a partir de 60 € 🌼</div>",
+			"css": ".ds-announce { padding: 0.55rem 1.1rem; background: #603e2a; color: #badbff; font-family: var(--font-heading, Montserrat, sans-serif); font-size: 0.88rem; font-weight: 700; letter-spacing: 0.0625em; line-height: 1.4; text-align: center; text-wrap: balance; }"
+		},
+		{
+			"name": "Site Navigation",
+			"kind": "nav",
+			"description": "Desktop header nav: centered Cormorant links in ink; underline on hover and current page.",
+			"html": "<nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\">Inicio</a><a href=\"#\">Bikinis</a><a href=\"#\">Colección</a><a href=\"#\">Sobre Seda</a><a href=\"#\">Contacto</a></nav>",
+			"css": ".ds-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.55rem 1.65rem; padding-block: 0.8rem; border-block-end: 1px solid #e6e2df; background: #fcfcfc; font-family: var(--font-body, Cormorant, Georgia, serif); font-size: 1.1rem; } .ds-nav a { padding-block: 0.27rem; color: #6b4f3a; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 0.2em; transition: text-decoration-color 0.1s; } .ds-nav a:hover, .ds-nav a[aria-current=\"page\"] { text-decoration-color: currentcolor; } .ds-nav a:focus-visible { outline: 2px solid #6b3818; outline-offset: 3px; }"
+		}
+	],
+	"narrative": {
+		"northStar": "The Seamstress's Notebook",
+		"overview": "Seda's story starts on paper (\"Todo empieza en el papel…\"): a pattern, then the sewing, then the fabric. The interface is that notebook. It is near-white paper written in warm brown ink, with a few warm colors that frame the sunlit Atlantic photography and never compete with it. The mood is warm, calm and handmade: unhurried, intimate, and confident because it is personal.\n\nThe approved live site at customseda.com is the authority, and this file records it as rebuilt in plain CSS. Its signature is an inverted type pairing: a delicate display serif (Cormorant) carries body copy and every control, while a heavy geometric sans (Montserrat 700) carries headings. Space is generous, motion is short and eased out, and depth is almost absent. Rhythm comes from full-bleed photographs alternating with flat colored bands (cacao, butter, sand), not from cards or shadows.\n\nValues differ from the live theme only where the phase 4 accessibility audit fixed a defect: solid ink tints replace the live site's 75%-opacity body text (which failed AA), a terracotta color was added for form errors, and a cacao scrim keeps hero text legible over photographs. Anything else is a change to an approved design and needs the merchant's approval first.",
+		"keyCharacteristics": [
+			"Paper and brown ink; the photography supplies the saturated color.",
+			"Serif for reading and controls, heavy sans for headings: never swapped.",
+			"Pill-shaped controls, square photographs.",
+			"Flat colored bands set the page rhythm.",
+			"Quiet motion: 0.1–0.6s, eased out, off under reduced motion."
+		],
+		"rules": [
+			{
+				"name": "The Quiet Frame Rule",
+				"body": "The interface never brings its own saturated color. Saturation belongs to the photographs and the swimwear; the UI stays in browns, paper, butter and sky.",
+				"section": "colors"
+			},
+			{
+				"name": "The Sky-on-Cacao Rule",
+				"body": "Sky text appears only on a cacao surface or cacao scrim. On paper or bare photographs it washes out, which is the defect the live hero had.",
+				"section": "colors"
+			},
+			{
+				"name": "The No-Alpha-Text Rule",
+				"body": "Text color is always a solid token. Tinting text with opacity is what made the live body text fail AA.",
+				"section": "colors"
+			},
+			{
+				"name": "The Inverted Pair Rule",
+				"body": "Montserrat is for headings and the announcement bar. Cormorant is for everything else, including buttons, prices, navigation and labels. Never set body copy in Montserrat or headings in Cormorant.",
+				"section": "typography"
+			},
+			{
+				"name": "The Content-Case Rule",
+				"body": "Uppercase titles (\"MARGARITA\", product names) come from the CMS content, never from `text-transform`.",
+				"section": "typography"
+			},
+			{
+				"name": "The Real-Weight Rule",
+				"body": "Use only loaded weights (Cormorant 500/600/700, Montserrat 700). The live theme requested 800 and browsers synthesized it.",
+				"section": "typography"
+			},
+			{
+				"name": "The Flat Band Rule",
+				"body": "New surfaces separate themselves with a band color or a hairline (`ink-15`), never with a new shadow.",
+				"section": "elevation"
+			}
+		],
+		"dos": [
+			"**Do** use only the semantic tokens (`--color-text`, `--color-action`, `--color-surface-tint`…) in blocks; primitives (`--seda-*`) live only in `tokens.css`.",
+			"**Do** keep controls pill-shaped and photographs square-edged.",
+			"**Do** set every size and spacing value from the Utopia `--step-*` and `--space-*` scales.",
+			"**Do** separate sections with flat bands or `ink-15` hairlines.",
+			"**Do** keep motion within 0.1–0.6s, eased out (`cubic-bezier(0, 0, .3, 1)`), and zeroed under `prefers-reduced-motion`.",
+			"**Do** keep text at AA: solid ink tints on paper, sky only on cacao, rust on butter.",
+			"**Do** model content pages on `/blogs/noticias`: one centered 48rem column, prose at 65ch."
+		],
+		"donts": [
+			"**Don't** change an approved live-site value (color, type, shape, layout) without the merchant's approval. Fixes go through approval too.",
+			"**Don't** set body text, buttons or prices in Montserrat, or headings in Cormorant.",
+			"**Don't** tint text with opacity.",
+			"**Don't** add new shadows, gradients or rounded photographs. The only gradient is the hero scrim.",
+			"**Don't** introduce saturated UI colors. The navy, teal and yellow theme schemes of the Shopify theme are dropped.",
+			"**Don't** use `text-transform: uppercase` for titles. Case comes from content.",
+			"**Don't** bring back Shopify chrome: Shop Pay and payment-option buttons, sale/\"Precio habitual\" markup, locale selector, account and search icons.",
+			"**Don't** trace or redraw the wordmark. Use the supplied raster until the merchant provides a vector."
+		]
+	}
+}
