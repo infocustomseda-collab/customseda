@@ -110,19 +110,22 @@
 
 **Exit condition:** The imported content renders in a coherent, responsive site that preserves the approved brand identity.
 
-## 5. Implement cart and Stripe Checkout
+## 5. Implement buy-now Stripe Checkout
 
-- [ ] Define a versioned local cart containing product or Conjunto IDs, selected component sizes, and quantity; persist it across page navigation.
-- [ ] Implement cart add/edit/remove behavior and show both component sizes for Conjuntos.
-- [ ] Create a small checkout endpoint that loads authoritative database values, validates published/available items and supported sizes, and calculates prices server-side.
-- [ ] Handle stale prices, unavailable products, and removed sizes with explicit cart correction before payment.
-- [ ] Snapshot item titles, component references, selected sizes, quantities, currency, and charged prices when checkout is created.
-- [ ] Make Stripe line items and associated order details readable for manual production in Stripe Dashboard; verify how all required details are surfaced within Stripe limits.
-- [ ] Implement agreed shipping regions, thresholds, and pickup; verify address collection distinguishes Canarias, mainland/Baleares, and other destinations before committing to hosted-checkout behavior.
-- [ ] Confirm tax/customs treatment and production/shipping copy with the merchant before configuring checkout.
-- [ ] Implement verified Stripe webhooks and minimal restricted D1 payment-event records; deduplicate events and check payment status, including delayed payment success.
-- [ ] Add success/cancel/error pages and choose cart-clearing behavior based on verified payment state.
-- [ ] Test individual pieces, mixed-size Conjuntos, quantities, shipping boundaries, tampered prices, duplicate events, delayed payments, failed payments, and cancellation in Stripe test mode.
+> **Scope split by the user on 2026-10-25:** keep checkout simple for now. Each product or Conjunto page buys one item directly; the multi-item cart moves to phase 8, after launch. A Conjunto is one Stripe line item carrying both component sizes. A Stripe account does not exist yet: build and test locally against mocked Stripe responses, then complete the test-mode checks once the account exists.
+
+**Progress — 2026-10-25:** Buy-now checkout is implemented locally against mocked Stripe responses; see [checkout and Stripe operations](../../checkout.md). Product pages post to `/api/checkout`, which revalidates against D1 and creates a one-line Stripe Checkout Session with a metadata snapshot. Shipping comes from enabled Shipping Rules (local drafts from the source page; the EU rule stays disabled until rates are confirmed). `/api/stripe/webhook` verifies signatures and records deduplicated events in `customseda_payment_events` (model version `customseda.checkout.v1`), and flags postal codes outside the chosen zone. The header cart link is hidden until phase 8. Still open: the Stripe account, merchant tax/rate/copy confirmation, the Stripe test-mode run, and the receipt approach.
+
+- [ ] **Merchant:** create the Stripe account (business details, payout bank account, branding, Spanish locale, EUR); share test-mode secret and webhook signing keys for local `.dev.vars`; live keys only in phase 7.
+- [x] Replace the disabled add button with a buy-now form posting the item ID, selected size(s), quantity, shipping destination, and the displayed price; it works without JavaScript.
+- [x] Create a small checkout endpoint that loads authoritative database values, validates published/available items (a Conjunto and both components) and supported sizes, and calculates prices server-side.
+- [x] Return to the product page with an explicit message for unavailable items, unsupported sizes, or a displayed price that no longer matches, before any payment.
+- [x] Create one Stripe line item per purchase (Conjunto: "Top M · Braguita S") and snapshot item and component references, sizes, quantity, currency, and charged prices in session and payment metadata within Stripe limits.
+- [x] Implement shipping from the CMS Shipping Rules: Canarias, Península/Baleares, EU, and free Gran Canaria pickup, with thresholds on the server-calculated subtotal. The buyer chooses the destination before Stripe; webhooks flag postal codes that contradict it for manual review.
+- [ ] Confirm tax/customs treatment (IGIC/IVA), EU rates, and production/shipping copy with the merchant before configuring live checkout.
+- [x] Implement verified Stripe webhooks and minimal restricted D1 payment-event records; deduplicate events and track payment status, including delayed payment success and failure.
+- [x] Add success/cancel pages that report verified payment state.
+- [ ] Test individual pieces, mixed-size Conjuntos, quantities, shipping boundaries, tampered prices and sizes, duplicate events, delayed and failed payments, and cancellation; repeat the flow in Stripe test mode once the account exists.
 - [ ] Document manual production, shipping, refund, and customer-notification steps using Stripe Dashboard; confirm the receipt/contact-email approach.
 
 **Exit condition:** Test purchases charge the intended amount and preserve clear production details, without an EmDash order-management UI.
@@ -135,7 +138,7 @@
 - [ ] Generate bounded responsive image derivatives during build/import, with modern formats, dimensions, correct sizes, and lazy loading below the fold.
 - [ ] Measure media size and build duration against free quotas; document limits and the fallback for new uploads/failed processing.
 - [ ] Add Astro view transitions for matching product photos/titles with stable unique names, browser fallback, and reduced-motion support.
-- [ ] Verify cart and popup lifecycle behavior across Astro navigation and browser back/forward.
+- [ ] Verify popup lifecycle behavior across Astro navigation and browser back/forward.
 - [ ] Add PWA manifest, icons, service worker, offline fallback, and update behavior.
 - [ ] Keep admin, checkout, webhooks, private responses, and authoritative price/availability outside service-worker caches; keep checkout online-only.
 - [ ] Verify offline messaging, fresh deployment activation, image loading, navigation, and performance on mobile.
@@ -174,6 +177,19 @@ All staging work is deferred to this phase. Complete the remote acceptance gate 
 - [ ] Deliver an operations guide covering CMS publication/rebuilds, image uploads, Stripe orders, backups, migrations, and recovery.
 
 **Exit condition:** The live domain serves the verified replacement, checkout works, operations are documented, and rollback remains available during the transition.
+
+## 8. Add the multi-item cart
+
+Moved from phase 5 by the user on 2026-10-25; buy-now checkout covers launch.
+
+- [ ] Define a versioned local cart containing product or Conjunto IDs, selected component sizes, and quantity; persist it across page navigation.
+- [ ] Implement cart add/edit/remove behavior and show both component sizes for Conjuntos.
+- [ ] Extend the checkout endpoint to validate every cart line and calculate shipping on the combined subtotal.
+- [ ] Handle stale prices, unavailable products, and removed sizes with explicit cart correction before payment.
+- [ ] Choose cart-clearing behavior based on verified payment state; verify cart lifecycle across Astro navigation, back/forward, and the PWA.
+- [ ] Test mixed carts, shipping thresholds across lines, and cart corrections in Stripe test mode.
+
+**Exit condition:** Several items buy in one Stripe Checkout with one shipping charge, and stale carts are corrected before payment.
 
 ## Suggested repository boundaries during implementation
 
