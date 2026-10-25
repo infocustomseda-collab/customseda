@@ -143,7 +143,8 @@
 	.quantity {
 		display: inline-grid;
 		justify-self: start;
-		grid-template-columns: var(--control-height) 3.5rem var(--control-height);
+		grid-template-columns: minmax(2.75rem, var(--control-height)) minmax(2.5rem, 3.5rem) minmax(2.75rem, var(--control-height));
+		max-inline-size: 100%;
 		border: var(--border-width) solid var(--color-border-control);
 		border-radius: var(--radius-control);
 	}

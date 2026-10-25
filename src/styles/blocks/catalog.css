@@ -197,6 +197,7 @@
 
 	.catalog {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: var(--space-m);
 	}
 
@@ -217,6 +218,8 @@
 
 	.catalog__sort {
 		display: flex;
+		flex-wrap: wrap;
+		max-inline-size: 100%;
 		align-items: center;
 		gap: var(--space-2xs);
 		color: var(--color-text-strong);
@@ -225,7 +228,10 @@
 	}
 
 	.catalog__sort .field__control {
+		flex: 1 1 10rem;
 		inline-size: auto;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		min-block-size: var(--pill-height);
 		font-size: var(--step-0);
 	}
@@ -367,7 +373,7 @@
 
 	.includes {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
 		gap: var(--space-s);
 		margin: 0;
 		padding: 0;
@@ -375,8 +381,9 @@
 
 	.includes__item {
 		display: grid;
-		grid-template-columns: 4rem 1fr;
+		grid-template-columns: 4rem minmax(0, 1fr);
 		align-items: center;
+		overflow-wrap: anywhere;
 		gap: var(--space-xs);
 		color: var(--color-text-strong);
 		font-weight: var(--weight-body-strong);

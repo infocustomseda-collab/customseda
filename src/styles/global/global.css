@@ -34,6 +34,9 @@
 		line-height: var(--leading-heading);
 		letter-spacing: var(--tracking-heading);
 		text-wrap: balance;
+		/* Long display words hyphenate, then break, rather than force horizontal scrolling at 200% text. */
+		hyphens: auto;
+		overflow-wrap: anywhere;
 	}
 
 	h1 {

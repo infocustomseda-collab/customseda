@@ -6,7 +6,7 @@
 @layer reset, tokens, global, compositions, blocks, utilities, exceptions;
 
 @import "./global/reset.css";
-@import "open-props/easings" layer(tokens);
+@import "./global/open-props.css";
 @import "./global/tokens.css";
 @import "./global/fluid.css";
 @import "./global/global.css";

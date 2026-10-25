@@ -7,6 +7,6 @@ interface Props {
 const { text, href } = Astro.props;
 ---
 
-<div class="announcement surface-cacao">
+<aside class="announcement surface-cacao" aria-label="Aviso">
 	<p>{href ? <a href={href}>{text}</a> : text}</p>
-</div>
+</aside>
