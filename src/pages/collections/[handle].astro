@@ -10,7 +10,7 @@ import { plainText } from "../../lib/shop/site";
 
 const { shop, site } = await loadShopPage(Astro);
 const view = catalogView(Astro.params.handle ?? "", shop);
-if (!view) return new Response(null, { status: 404 });
+if (!view) return Astro.rewrite("/404");
 const items = view.items(buildCatalog(shop));
 const facets = facetOptions(items, shop);
 const tabs = [

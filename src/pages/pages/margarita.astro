@@ -7,7 +7,7 @@ import { plainText } from "../../lib/shop/site";
 
 const { shop, site } = await loadShopPage(Astro);
 const page = shop.pages.find((entry) => entry.slug === "margarita");
-if (!page) return new Response(null, { status: 404 });
+if (!page) return Astro.rewrite("/404");
 const title = typeof page.data.title === "string" ? page.data.title : "Margarita";
 ---
 

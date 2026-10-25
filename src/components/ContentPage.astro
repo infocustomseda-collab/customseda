@@ -1,0 +1,21 @@
+---
+// Long-form CMS page (shipping, policies, about): heading plus left-aligned rich text at reading measure.
+import type { ShopEntry } from "../lib/shop/content";
+import { withoutLeadingTitle } from "../lib/shop/site";
+import RichText from "./RichText.astro";
+
+interface Props {
+	page: ShopEntry;
+	heading: string;
+}
+
+const { page, heading } = Astro.props;
+const title = typeof page.data.title === "string" ? page.data.title : heading;
+const body = withoutLeadingTitle(withoutLeadingTitle(page.data.content, heading), title);
+---
+
+<article class="wrapper region content-page stack">
+	<h1>{heading}</h1>
+	<RichText value={body} />
+	<slot />
+</article>

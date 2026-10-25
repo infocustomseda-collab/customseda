@@ -14,7 +14,7 @@ import { plainText } from "../../lib/shop/site";
 
 const { shop, site, settings } = await loadShopPage(Astro);
 const detail = productDetail(shop, Astro.params.slug ?? "");
-if (!detail) return new Response(null, { status: 404 });
+if (!detail) return Astro.rewrite("/404");
 
 const { entry, item } = detail;
 const section =
