@@ -1,0 +1,139 @@
+---
+// Product grid with client-side filters (color, size, availability) and sorting. The server renders every
+// item in catalog order; the script hides, reorders and syncs the URL. Without JavaScript the full list shows.
+import type { CatalogItem } from "../lib/shop/catalog";
+import ProductCard from "./ProductCard.astro";
+
+interface Props {
+	items: CatalogItem[];
+	colors: { code: string; label: string }[];
+	sizes: string[];
+}
+
+const { items, colors, sizes } = Astro.props;
+const data = items.map(({ card: _card, ...item }) => item);
+const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
+---
+
+<catalog-browser class="catalog">
+	<div class="catalog__toolbar" data-enhanced hidden>
+		<button class="filters__toggle button" data-variant="secondary" type="button" aria-expanded="false" aria-controls="catalog-filters">
+			Filtrar
+		</button>
+		<p class="catalog__count" aria-live="polite" data-count>{count(items.length)}</p>
+		<label class="catalog__sort">
+			<span>Ordenar por</span>
+			<select class="field__control" name="orden" form="catalog-filters">
+				<option value="destacados">Destacados</option>
+				<option value="precio-asc">Precio: menor a mayor</option>
+				<option value="precio-desc">Precio: mayor a menor</option>
+				<option value="nombre">Nombre</option>
+			</select>
+		</label>
+	</div>
+
+	<form class="filters" id="catalog-filters" data-enhanced hidden aria-label="Filtros">
+		{colors.length > 1 && (
+			<fieldset class="choice-group">
+				<legend class="choice-group__legend">Color</legend>
+				<div class="choice-group__options cluster">
+					{colors.map((color) => (
+						<label class="choice">
+							<input class="choice__input" type="checkbox" name="color" value={color.code} />
+							<span class="choice__label">{color.label}</span>
+						</label>
+					))}
+				</div>
+			</fieldset>
+		)}
+		{sizes.length > 1 && (
+			<fieldset class="choice-group">
+				<legend class="choice-group__legend">Talla</legend>
+				<div class="choice-group__options cluster">
+					{sizes.map((size) => (
+						<label class="choice">
+							<input class="choice__input" type="checkbox" name="talla" value={size} />
+							<span class="choice__label">{size}</span>
+						</label>
+					))}
+				</div>
+			</fieldset>
+		)}
+		<fieldset class="choice-group">
+			<legend class="choice-group__legend">Disponibilidad</legend>
+			<div class="choice-group__options cluster">
+				<label class="choice">
+					<input class="choice__input" type="checkbox" name="disponible" value="1" />
+					<span class="choice__label">Solo disponibles</span>
+				</label>
+			</div>
+		</fieldset>
+		<button class="filters__clear" type="reset">Quitar filtros</button>
+	</form>
+
+	<ul class="grid" data-layout="products" role="list" data-grid>
+		{items.map((item, index) => (
+			<li data-id={item.id}>
+				<ProductCard product={item.card} eager={index < 3} />
+			</li>
+		))}
+	</ul>
+
+	<div class="catalog__empty stack text-center" data-empty hidden>
+		<p>Ninguna pieza coincide con estos filtros.</p>
+		<button class="button" data-variant="secondary" type="button" data-clear>Quitar filtros</button>
+	</div>
+
+	<script type="application/json" data-items set:html={JSON.stringify(data).replaceAll("<", "\\u003c")} />
+</catalog-browser>
+
+<script>
+	import { filterItems, filtersQuery, parseFilters, sortItems, type CatalogItem } from "../lib/shop/filters";
+
+	class CatalogBrowser extends HTMLElement {
+		connectedCallback() {
+			const items = JSON.parse(this.querySelector("[data-items]")!.textContent || "[]") as CatalogItem[];
+			const form = this.querySelector<HTMLFormElement>("form")!;
+			const grid = this.querySelector<HTMLElement>("[data-grid]")!;
+			const cards = new Map([...grid.children].map((li) => [(li as HTMLElement).dataset.id, li as HTMLElement]));
+			const empty = this.querySelector<HTMLElement>("[data-empty]")!;
+			const counter = this.querySelector<HTMLElement>("[data-count]")!;
+			const toggle = this.querySelector<HTMLButtonElement>(".filters__toggle")!;
+			const sort = this.querySelector("select") as HTMLSelectElement;
+			const colors = [...form.querySelectorAll<HTMLInputElement>('[name="color"]')].map((input) => input.value);
+
+			const initial = parseFilters(location.search, { colors });
+			for (const input of form.querySelectorAll<HTMLInputElement>("input")) {
+				input.checked =
+					(input.name === "color" && initial.colors.includes(input.value)) ||
+					(input.name === "talla" && initial.sizes.includes(input.value)) ||
+					(input.name === "disponible" && initial.available);
+			}
+			sort.value = initial.sort;
+
+			const apply = () => {
+				const filters = parseFilters(`?${new URLSearchParams(new FormData(form) as unknown as Record<string, string>)}`, { colors });
+				const visible = sortItems(filterItems(items, filters), filters.sort);
+				const shown = new Set(visible.map((item) => item.id));
+				for (const item of visible) grid.appendChild(cards.get(item.id)!);
+				for (const [id, li] of cards) li.hidden = !shown.has(id!);
+				counter.textContent = `${visible.length} ${visible.length === 1 ? "producto" : "productos"}`;
+				empty.hidden = visible.length > 0;
+				history.replaceState(history.state, "", `${location.pathname}${filtersQuery(filters)}${location.hash}`);
+			};
+
+			form.addEventListener("change", apply);
+			sort.addEventListener("change", apply);
+			form.addEventListener("reset", () => requestAnimationFrame(() => { sort.value = "destacados"; apply(); }));
+			this.querySelector("[data-clear]")!.addEventListener("click", () => form.reset());
+			toggle.addEventListener("click", () => {
+				const open = toggle.getAttribute("aria-expanded") !== "true";
+				toggle.setAttribute("aria-expanded", String(open));
+				this.toggleAttribute("data-open", open);
+			});
+			for (const element of this.querySelectorAll<HTMLElement>("[data-enhanced]")) element.hidden = false;
+			apply();
+		}
+	}
+	if (!customElements.get("catalog-browser")) customElements.define("catalog-browser", CatalogBrowser);
+</script>
