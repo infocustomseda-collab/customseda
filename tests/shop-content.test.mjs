@@ -40,3 +40,16 @@ test('development preview adds drafts, pending revisions and staged references',
 
  assert.deepEqual((await loadShop(f.db,{drafts:false})).site_settings,[]);
 });
+
+test('boolean fields read back as booleans whether stored on the row or in a revision',async t=>{
+ const f=await fixture(t);
+ await applyStorefrontModel(f.db);
+ const popup=await f.runtime.handleContentCreate('popups',{slug:'envio',data:{title:'Envío',enabled:true}});
+ assert.equal(popup.success,true,JSON.stringify(popup));
+ const settings=await f.runtime.handleContentCreate('site_settings',{slug:'home',data:{title:'Seda',announcement_enabled:true}});
+ assert.equal(settings.success,true,JSON.stringify(settings));
+ const shop=await loadShop(f.db,{drafts:true});
+ assert.equal(shop.popups[0].data.enabled,true);
+ assert.equal(shop.site_settings[0].data.announcement_enabled,true);
+ assert.equal(shop.products[0].data.available,true);
+});

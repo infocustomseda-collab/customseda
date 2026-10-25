@@ -1,0 +1,66 @@
+---
+// Editable promotional popup in a native modal dialog: focus moves in and is trapped, Escape and the close
+// button dismiss it, and focus returns to the page. The browser checks the schedule and the dismissal period.
+import type { PopupView } from "../lib/shop/site";
+import Button from "./Button.astro";
+import Icon from "./Icon.astro";
+import RichText from "./RichText.astro";
+
+interface Props {
+	popup: PopupView;
+}
+
+const { popup } = Astro.props;
+const titleId = `popup-title-${popup.id}`;
+---
+
+<site-popup data-schedule={JSON.stringify(popup.schedule)} data-delay={popup.delaySeconds}>
+	<dialog class="popup" aria-labelledby={titleId}>
+		<button class="popup__close icon-button" type="button" data-close aria-label="Cerrar">
+			<Icon name="close" />
+		</button>
+		{popup.image && (
+			<img class="popup__image" src={popup.image.src} alt={popup.image.alt} width={popup.image.width} height={popup.image.height} loading="lazy" decoding="async" />
+		)}
+		<div class="popup__body stack text-center">
+			<h2 class="popup__title" id={titleId}>{popup.title}</h2>
+			<RichText value={popup.content} />
+			{popup.button && <Button href={popup.button.href} variant="accent" data-close>{popup.button.label}</Button>}
+		</div>
+	</dialog>
+</site-popup>
+
+<script>
+	import { popupStorageKey, shouldShowPopup, type PopupSchedule } from "../lib/shop/popup";
+
+	class SitePopup extends HTMLElement {
+		connectedCallback() {
+			const dialog = this.querySelector("dialog") as HTMLDialogElement;
+			const schedule = JSON.parse(this.dataset.schedule || "{}") as PopupSchedule;
+			const key = popupStorageKey(schedule.id);
+			let dismissedAt: number | null = null;
+			try {
+				const stored = Number(localStorage.getItem(key));
+				dismissedAt = stored > 0 ? stored : null;
+			} catch {
+				// Storage blocked: show at most once per page view.
+			}
+			if (!shouldShowPopup(schedule, Date.now(), dismissedAt)) return;
+			const remember = () => {
+				try {
+					localStorage.setItem(key, String(Date.now()));
+				} catch {}
+			};
+			dialog.addEventListener("close", remember);
+			for (const control of this.querySelectorAll("[data-close]")) control.addEventListener("click", () => dialog.close());
+			// A click on the backdrop (the dialog box itself, outside its content) dismisses it.
+			dialog.addEventListener("click", (event) => {
+				if (event.target === dialog) dialog.close();
+			});
+			window.setTimeout(() => {
+				if (!dialog.open && !document.querySelector("dialog[open], :popover-open")) dialog.showModal();
+			}, Number(this.dataset.delay || 0) * 1000);
+		}
+	}
+	if (!customElements.get("site-popup")) customElements.define("site-popup", SitePopup);
+</script>

@@ -222,3 +222,65 @@
 		color: var(--color-text-subtle);
 	}
 }
+
+/* Promotional popup (native modal dialog). */
+@layer blocks {
+	/* margin: auto restores the native modal centering that the reset removes. */
+	.popup {
+		margin: auto;
+		inline-size: min(26rem, 100% - 2 * var(--gutter));
+		max-block-size: min(40rem, 100dvh - 2 * var(--space-m));
+		padding: 0;
+		border: 0;
+		background: var(--color-surface);
+		color: var(--color-text);
+		box-shadow: var(--shadow-overlay);
+		opacity: 0;
+		scale: 0.96;
+		transition:
+			opacity var(--duration-moderate) var(--ease-out),
+			scale var(--duration-moderate) var(--ease-out),
+			overlay var(--duration-moderate) allow-discrete,
+			display var(--duration-moderate) allow-discrete;
+	}
+
+	.popup[open] {
+		opacity: 1;
+		scale: 1;
+	}
+
+	@starting-style {
+		.popup[open] {
+			opacity: 0;
+			scale: 0.96;
+		}
+	}
+
+	.popup::backdrop {
+		background: rgb(96 62 42 / 0.45);
+	}
+
+	.popup__close {
+		position: absolute;
+		inset-block-start: var(--space-2xs);
+		inset-inline-end: var(--space-2xs);
+		background: var(--color-surface);
+	}
+
+	.popup__image {
+		inline-size: 100%;
+		block-size: auto;
+		aspect-ratio: 4 / 3;
+		object-fit: cover;
+	}
+
+	.popup__body {
+		--stack-space: var(--space-s);
+		align-items: center;
+		padding: var(--space-xl) var(--space-m) var(--space-l);
+	}
+
+	.popup__title {
+		font-size: var(--step-3);
+	}
+}

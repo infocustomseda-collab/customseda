@@ -30,6 +30,8 @@ export type ShopEntry = {
 };
 export type ShopContent = Record<ShopType, ShopEntry[]>;
 
+const BOOLEAN_FIELDS = ["available", "enabled", "announcement_enabled"];
+
 type Loaded = ShopEntry & { type: ShopType; group: string; staged?: Record<string, unknown> };
 
 async function items(repo: ContentRepository, type: ShopType, drafts: boolean) {
@@ -57,7 +59,8 @@ export async function loadShop(db: Kysely<Database>, { drafts }: { drafts: boole
 					staged = revision.data._references as Record<string, unknown> | undefined;
 				}
 			}
-			if (data.available === 0 || data.available === 1) data.available = Boolean(data.available);
+			// SQLite stores booleans as 0/1 on the row; revisions keep JSON booleans.
+			for (const field of BOOLEAN_FIELDS) if (data[field] === 0 || data[field] === 1) data[field] = Boolean(data[field]);
 			const group = item.translationGroup ?? item.id;
 			loaded.push({ id: item.id, slug: item.slug ?? item.id, status: item.status, data, refs: {}, type, group, staged });
 		}
