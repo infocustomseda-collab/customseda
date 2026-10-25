@@ -132,15 +132,25 @@
 
 ## 6. Connect publishing, images, transitions, and PWA
 
-- [ ] Implement a build-time published-content snapshot/query pipeline against local content without exposing CMS credentials to browsers; verify remote environment selection in phase 7.
-- [ ] Connect relevant publish/update/delete/settings changes to an authenticated rebuild trigger; coalesce bursts and retain the last successful site if a build fails.
+**Progress — 2026-10-25:** Implemented per the [phase 6 design](../specs/2026-10-25-phase6-static-publishing-design.md) and [plan](2026-10-25-phase6-static-publishing.md).
+
+- **Static pages:** public pages prerender to slash-free HTML from a per-environment snapshot of published content.
+- **Gate:** static assets stay behind the foundation gate (`run_worker_first`) until launch.
+- **Deploys:** the runner migrates, snapshots, builds WebP derivatives, builds and deploys. GitHub Actions deploys staging from `master`; production is gated by `PRODUCTION_DEPLOY_ENABLED`.
+- **Rebuilds:** CMS publishes, scheduled publishes and an admin route dispatch rebuilds.
+- **Transitions and PWA:** native cross-document transitions and an installable PWA with offline fallback.
+
+Still open: the GitHub, Cloudflare and rebuild-token setup, the staging catalog import (blocked on a staging administrator), remote verification of publish → rebuild, and the browser checks (transitions, popup back/forward, offline, update banner, mobile performance), which move to phase 7's browser pass.
+
+- [x] Implement a build-time published-content snapshot/query pipeline against local content without exposing CMS credentials to browsers; verify remote environment selection in phase 7.
+- [x] Connect relevant publish/update/delete/settings changes to an authenticated rebuild trigger; coalesce bursts and retain the last successful site if a build fails.
 - [ ] Verify a publication and media change reaches public pages after a successful rebuild; verify drafts remain private.
-- [ ] Generate bounded responsive image derivatives during build/import, with modern formats, dimensions, correct sizes, and lazy loading below the fold.
-- [ ] Measure media size and build duration against free quotas; document limits and the fallback for new uploads/failed processing.
-- [ ] Add Astro view transitions for matching product photos/titles with stable unique names, browser fallback, and reduced-motion support.
+- [x] Generate bounded responsive image derivatives during build/import, with modern formats, dimensions, correct sizes, and lazy loading below the fold.
+- [x] Measure media size and build duration against free quotas; document limits and the fallback for new uploads/failed processing.
+- [x] Add Astro view transitions for matching product photos/titles with stable unique names, browser fallback, and reduced-motion support.
 - [ ] Verify popup lifecycle behavior across Astro navigation and browser back/forward.
-- [ ] Add PWA manifest, icons, service worker, offline fallback, and update behavior.
-- [ ] Keep admin, checkout, webhooks, private responses, and authoritative price/availability outside service-worker caches; keep checkout online-only.
+- [x] Add PWA manifest, icons, service worker, offline fallback, and update behavior.
+- [x] Keep admin, checkout, webhooks, private responses, and authoritative price/availability outside service-worker caches; keep checkout online-only.
 - [ ] Verify offline messaging, fresh deployment activation, image loading, navigation, and performance on mobile.
 
 **Exit condition:** Publishing reliably refreshes prerendered pages, media loads efficiently, transitions remain accessible, and offline behavior cannot authorize stale purchases.
@@ -160,6 +170,11 @@ All staging work is deferred to this phase. Complete the remote acceptance gate 
 - [ ] Verify remote environment selection for the public snapshot, authenticated rebuild triggers, and publication/media propagation on staging.
 
 **Remote acceptance gate:** Essential CMS operations must work on Workers Free and existing content must survive redeployment. If this fails, identify the exact blocker and agree on an architecture change before launch.
+
+- [ ] Import the Shopify catalog into staging once a staging administrator and EmDash API token exist; verify a publication and media change reaches staging pages through the rebuild trigger.
+- [ ] Browser pass (Chrome DevTools MCP, isolated profile): product transitions and reduced motion, popup back/forward, PWA install/offline/update banner, image LCP on mobile.
+- [ ] Supervised first production setup (secrets, administrator, reviewed fingerprint, Stripe keys), then set `PRODUCTION_DEPLOY_ENABLED=true`.
+- [ ] At launch, set `FOUNDATION_LOCKED=false` and remove `assets.run_worker_first` together.
 
 ### Launch rehearsal and cutover
 

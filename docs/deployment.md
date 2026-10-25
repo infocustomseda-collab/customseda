@@ -114,6 +114,8 @@ Each deploy writes WebP derivatives (480, 960 and 1440 px, never upscaled) for e
 
 The build fails above 15,000 derivative files, or for any file over 25 MiB (Free limits: 20,000 files and 25 MiB per asset).
 
+Worker upload after phase 6: 19.1 MiB, 5.0 MiB gzip (`wrangler deploy --dry-run`; phase 1 recorded about 4.9 MiB gzip). Phase 1 deployed staging at that size, but it is above the commonly documented 3 MB compressed Workers Free limit. The phase 7 Free-tier gate must confirm the current limit.
+
 Measured locally on 2026-10-25 against the imported catalog (drafts, 11 products, 5 Conjuntos, 7 pages):
 
 - 94 originals produced 271 files, 22.2 MiB in total.
