@@ -42,22 +42,27 @@ const SAFE_COLOR = /^(#[\da-f]{3,8}|rgb\(\d{1,3},\s?\d{1,3},\s?\d{1,3}\))$/i;
 const percent = (value: unknown) =>
 	typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1 ? `${Math.round(value * 100)}%` : "50%";
 
+/** Maps a stored EmDash image value (local provider) to a view; null when unusable. */
+export function imageView(image: any, alt: string, focal: { x?: unknown; y?: unknown } = {}): GalleryImage | null {
+	const key = image?.meta?.storageKey;
+	if (!image || typeof key !== "string" || !key || !(image.width > 0) || !(image.height > 0)) return null;
+	const color = image.dominantColor ?? image.meta?.dominantColor;
+	return {
+		id: String(image.id),
+		src: `/_emdash/api/media/file/${encodeURIComponent(key)}`,
+		alt,
+		width: image.width,
+		height: image.height,
+		position: `${percent(focal.x)} ${percent(focal.y)}`,
+		...(typeof color === "string" && SAFE_COLOR.test(color) ? { placeholder: color } : {}),
+	};
+}
+
 export function galleryImages(gallery: unknown): GalleryImage[] {
 	if (!Array.isArray(gallery)) return [];
 	return gallery.flatMap((row) => {
-		const image = row?.image;
-		const key = image?.meta?.storageKey;
-		if (!image || typeof key !== "string" || !key || !(image.width > 0) || !(image.height > 0)) return [];
-		const color = image.dominantColor ?? image.meta?.dominantColor;
-		return [{
-			id: String(image.id),
-			src: `/_emdash/api/media/file/${encodeURIComponent(key)}`,
-			alt: typeof row.alt === "string" ? row.alt : "",
-			width: image.width,
-			height: image.height,
-			position: `${percent(row.focal_x)} ${percent(row.focal_y)}`,
-			...(typeof color === "string" && SAFE_COLOR.test(color) ? { placeholder: color } : {}),
-		}];
+		const view = imageView(row?.image, typeof row?.alt === "string" ? row.alt : "", { x: row?.focal_x, y: row?.focal_y });
+		return view ? [view] : [];
 	});
 }
 

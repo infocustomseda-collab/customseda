@@ -1,0 +1,123 @@
+{
+    "$schema": "https://emdashcms.com/seed.schema.json",
+    "version": "1",
+    "meta": {
+        "name": "Custom Seda storefront",
+        "description": "Homepage sections added by customseda.storefront.v1; extends site settings only."
+    },
+    "collections": [
+        {
+            "slug": "site_settings",
+            "label": "Configuración del sitio",
+            "labelSingular": "Configuración",
+            "routable": false,
+            "sortOrder": 90,
+            "group": "Contenido",
+            "supports": [
+                "drafts",
+                "revisions"
+            ],
+            "fields": [
+                {
+                    "slug": "featured_conjunto",
+                    "label": "Conjunto destacado en portada",
+                    "type": "reference",
+                    "required": false,
+                    "validation": {
+                        "targetCollection": "conjuntos",
+                        "multiple": false
+                    }
+                },
+                {
+                    "slug": "slideshow",
+                    "label": "Galería de portada — arrastra para ordenar",
+                    "type": "repeater",
+                    "validation": {
+                        "maxItems": 8,
+                        "subFields": [
+                            {
+                                "slug": "image",
+                                "label": "Imagen",
+                                "type": "image",
+                                "required": true
+                            },
+                            {
+                                "slug": "alt",
+                                "label": "Texto alternativo",
+                                "type": "string",
+                                "required": true
+                            },
+                            {
+                                "slug": "focal_x",
+                                "label": "Punto focal horizontal (0–1)",
+                                "type": "number",
+                                "validation": {
+                                    "min": 0,
+                                    "max": 1
+                                }
+                            },
+                            {
+                                "slug": "focal_y",
+                                "label": "Punto focal vertical (0–1)",
+                                "type": "number",
+                                "validation": {
+                                    "min": 0,
+                                    "max": 1
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "slug": "intro_title",
+                    "label": "Título de presentación",
+                    "type": "string"
+                },
+                {
+                    "slug": "intro_text",
+                    "label": "Texto de presentación",
+                    "type": "portableText"
+                },
+                {
+                    "slug": "highlights",
+                    "label": "Proceso — tarjetas de portada",
+                    "type": "repeater",
+                    "validation": {
+                        "maxItems": 6,
+                        "subFields": [
+                            {
+                                "slug": "image",
+                                "label": "Imagen",
+                                "type": "image",
+                                "required": true
+                            },
+                            {
+                                "slug": "alt",
+                                "label": "Texto alternativo",
+                                "type": "string",
+                                "required": true
+                            },
+                            {
+                                "slug": "title",
+                                "label": "Título",
+                                "type": "string",
+                                "required": true
+                            },
+                            {
+                                "slug": "text",
+                                "label": "Texto",
+                                "type": "text",
+                                "required": true
+                            }
+                        ]
+                    }
+                },
+                {
+                    "slug": "tiktok_url",
+                    "label": "Enlace de TikTok",
+                    "type": "url"
+                }
+            ]
+        }
+    ]
+}

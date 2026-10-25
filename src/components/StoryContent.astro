@@ -1,0 +1,55 @@
+---
+// Editorial page body: runs of consecutive images become photo rows; a paragraph that is only a
+// link becomes a button. Everything else renders as rich text, in the editor's order.
+import { localHref } from "../lib/shop/site";
+import Button from "./Button.astro";
+import RichText from "./RichText.astro";
+
+type Node = { _type: string; _key: string; asset?: { url?: string }; alt?: string; style?: string; children?: { text?: string; marks?: string[] }[]; markDefs?: { _key: string; _type: string; href?: string }[] };
+interface Props {
+	value: unknown;
+}
+
+const blocks = (Array.isArray(Astro.props.value) ? Astro.props.value : []) as Node[];
+type Part = { kind: "photos"; images: Node[] } | { kind: "text"; blocks: Node[] } | { kind: "cta"; label: string; href: string };
+
+function cta(block: Node): Part | null {
+	const [span, ...others] = block.children ?? [];
+	const mark = block.markDefs?.find((def) => def._type === "link" && span?.marks?.includes(def._key));
+	const href = localHref(mark?.href);
+	return block._type === "block" && others.length === 0 && span?.text?.trim() && href ? { kind: "cta", label: span.text.trim(), href } : null;
+}
+
+const parts: Part[] = [];
+for (const block of blocks) {
+	const last = parts.at(-1);
+	if (block._type === "image") {
+		if (!localHref(block.asset?.url)) continue;
+		if (last?.kind === "photos") last.images.push(block);
+		else parts.push({ kind: "photos", images: [block] });
+		continue;
+	}
+	const button = cta(block);
+	if (button) parts.push(button);
+	else if (last?.kind === "text") last.blocks.push(block);
+	else parts.push({ kind: "text", blocks: [block] });
+}
+---
+
+<div class="story">
+	{parts.map((part) =>
+		part.kind === "photos" ? (
+			<ul class="story__photos" role="list">
+				{part.images.map((image) => (
+					<li class="story__photo">
+						<img src={localHref(image.asset?.url)} alt={image.alt ?? ""} loading="lazy" decoding="async" />
+					</li>
+				))}
+			</ul>
+		) : part.kind === "cta" ? (
+			<p class="story__cta"><Button href={part.href} variant="accent">{part.label}</Button></p>
+		) : (
+			<RichText value={part.blocks} class="story__text" />
+		),
+	)}
+</div>

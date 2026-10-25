@@ -1,0 +1,28 @@
+---
+// Full-bleed campaign photo. Wide screens set the copy over a cacao scrim; small screens put it on a cacao panel below.
+import type { GalleryImage } from "../../lib/shop/view";
+import Button from "../Button.astro";
+
+interface Props {
+	title: string;
+	text?: string;
+	image: GalleryImage | null;
+	link?: string;
+	linkLabel?: string;
+}
+
+const { title, text, image, link, linkLabel = "Ver colección" } = Astro.props;
+---
+
+<section class="hero" aria-labelledby="hero-title">
+	{image && (
+		<div class="hero__media" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
+			<img src={image.src} alt={image.alt} width={image.width} height={image.height} style={`object-position: ${image.position}`} loading="eager" fetchpriority="high" decoding="async" />
+		</div>
+	)}
+	<div class="hero__content stack">
+		<h1 class="hero__title" id="hero-title">{title}</h1>
+		{text && <p class="hero__text">{text}</p>}
+		{link && <Button href={link} variant="accent">{linkLabel}</Button>}
+	</div>
+</section>

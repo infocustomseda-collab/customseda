@@ -5,7 +5,7 @@ import {Kysely} from 'kysely';
 import {getPlatformProxy} from 'wrangler';
 import {OptionsRepository} from 'emdash';
 import {CatalogD1Dialect} from './d1-dialect.mjs';
-import {applyCatalogModel,modelVersion} from '../../src/lib/cms/model-migration.ts';
+import {applyModelMigrations,modelVersions} from '../../src/lib/cms/model-migration.ts';
 
 export function remoteModelConfig(target){
  if(!['staging','production'].includes(target.environment)||!/^[a-f0-9]{32}$/i.test(target.accountId)||!/^(?!00000000-0000-0000-0000-000000000000$)(?!ffffffff-ffff-ffff-ffff-ffffffffffff$)[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(target.databaseId)) throw new Error('Invalid explicit catalog migration target.');
@@ -27,17 +27,22 @@ export async function remoteCatalogModel(target,{check=false,proxyFactory=getPla
   proxy=await proxyFactory({configPath,envFiles:[],persist:false,remoteBindings:true});
   db=new Kysely({dialect:new CatalogD1Dialect({database:proxy.env.DB})});
   const options=new OptionsRepository(db);
-  const version=await options.get(modelVersion);
+  const latest=modelVersions.at(-1);
   if(check) {
-   if(!version) throw new Error(`Catalog model ${modelVersion} has not been applied to ${target.environment}.`);
-   return {version:modelVersion,applied:false};
+   for(const version of modelVersions) {
+    if(!await options.get(version)) throw new Error(`Catalog model ${version} has not been applied to ${target.environment}.`);
+   }
+   return {version:latest,applied:false,results:[]};
   }
   // Share a lock with other catalog migration processes, including other machines.
   const key='customseda.catalog.migration-lock';
   const owner=crypto.randomUUID();
   if(!await options.setIfAbsent(key,{owner,startedAt:new Date().toISOString()})) throw new Error('Catalog migration lock is held. Inspect the existing run before removing a stale lock.');
   const lock=await options.getVersioned(key);
-  try {return await applyCatalogModel(db);}
+  try {
+   const results=await applyModelMigrations(db);
+   return {version:latest,applied:results.some(r=>r.applied),results};
+  }
   finally {if(lock?.value?.owner===owner) await options.compareAndDelete(key,lock.revision);}
  } finally {
   await db?.destroy();

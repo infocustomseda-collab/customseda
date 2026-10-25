@@ -1,0 +1,30 @@
+---
+// Process photos (pattern, sewing, fabric): square image over a tinted caption panel.
+import type { GalleryImage } from "../../lib/shop/view";
+
+interface Props {
+	items: { image: GalleryImage | null; title: string; text: string }[];
+}
+
+const { items } = Astro.props;
+---
+
+{items.length > 0 && (
+	<section class="wrapper region" aria-label="Cómo hacemos cada bikini">
+		<ul class="highlights" role="list">
+			{items.map((item) => (
+				<li class="highlight">
+					{item.image && (
+						<div class="highlight__media" style={item.image.placeholder ? `background-color: ${item.image.placeholder}` : undefined}>
+							<img src={item.image.src} alt={item.image.alt} width={item.image.width} height={item.image.height} style={`object-position: ${item.image.position}`} loading="lazy" decoding="async" />
+						</div>
+					)}
+					<div class="highlight__body stack text-center" style="--stack-space: var(--space-2xs)">
+						<h2 class="highlight__title">{item.title}</h2>
+						<p>{item.text}</p>
+					</div>
+				</li>
+			))}
+		</ul>
+	</section>
+)}

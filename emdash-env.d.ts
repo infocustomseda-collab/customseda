@@ -138,6 +138,11 @@ export interface SiteSetting {
   instagram_url?: string;
   production_text?: PortableTextBlock[];
   shopify_source?: unknown;
+  slideshow?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "focal_x"?: number | null; "focal_y"?: number | null }[];
+  intro_title?: string;
+  intro_text?: PortableTextBlock[];
+  highlights?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "title": string; "text": string }[];
+  tiktok_url?: string;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -232,6 +237,10 @@ export interface ConjuntoReferences {
   bottom: ReferencePage<Product>;
 }
 
+export interface SiteSettingReferences {
+  featured_conjunto: ReferencePage<Conjunto>;
+}
+
 declare module "emdash" {
   interface EmDashCollections {
     products: Product;
@@ -250,5 +259,6 @@ declare module "emdash" {
   interface EmDashCollectionReferences {
     products: ProductReferences;
     conjuntos: ConjuntoReferences;
+    site_settings: SiteSettingReferences;
   }
 }
