@@ -2,8 +2,14 @@
 // Legal policies at the retained Shopify path /policies/<slug> (e.g. privacy-policy).
 import ContentPage from "../../components/ContentPage.astro";
 import Shop from "../../layouts/Shop.astro";
-import { loadShopPage } from "../../lib/shop/page";
+import { loadShopContent, loadShopPage } from "../../lib/shop/page";
+import { policyPaths } from "../../lib/shop/paths";
 import { pageHeading, plainText } from "../../lib/shop/site";
+
+export const prerender = true;
+export async function getStaticPaths() {
+	return policyPaths(await loadShopContent());
+}
 
 const { shop, site } = await loadShopPage(Astro);
 const page = shop.pages.find((entry) => entry.slug === Astro.params.slug && entry.slug.endsWith("-policy"));

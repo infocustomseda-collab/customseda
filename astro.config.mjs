@@ -13,6 +13,9 @@ const fontsource = (family, weight, style) => ({
 
 export default defineConfig({
 	output: "server",
+	// Public pages prerender to <path>.html so they keep the slash-free Shopify paths.
+	build: { format: "file" },
+	trailingSlash: "never",
 	i18n: {defaultLocale: "es", locales: ["es"]},
 	// Phase 6 adds build-time derivatives; avoid runtime image-transform usage now.
 	adapter: cloudflare({ imageService: "passthrough" }),
