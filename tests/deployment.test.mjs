@@ -101,13 +101,20 @@ test('the checked-in Wrangler config gates assets in both remote environments', 
   for (const name of ['staging', 'production']) assert.equal(validateTarget(wrangler, name).environment, name);
 });
 
-test('remote scripts load the CLI token from .env.deploy like fdag, and CI works without it', async () => {
+test('deploy scripts run like fdag: plain node, authenticated by wrangler login or the CI secret', async () => {
   const { readFile } = await import('node:fs/promises');
   const { scripts } = JSON.parse(await readFile('package.json', 'utf8'));
   for (const name of ['deploy:staging', 'deploy:production', 'migrate:status', 'snapshot']) {
-    assert.match(scripts[name], /^node --env-file-if-exists=\.env\.deploy /, name);
+    assert.doesNotMatch(scripts[name], /--env-file/, name);
   }
-  assert.equal(scripts['deploy:staging'], 'node --env-file-if-exists=.env.deploy scripts/deploy/run.mjs staging');
+  assert.equal(scripts['deploy:staging'], 'node scripts/deploy/run.mjs staging');
+});
+
+test('only the migration step requires an API token, with a clear message', async () => {
+  const { tokenRequired } = await import('../scripts/deploy/target.mjs');
+  assert.equal(tokenRequired({ CLOUDFLARE_API_TOKEN: 'x' }), null);
+  assert.match(tokenRequired({}), /emdash migrate.*CLOUDFLARE_API_TOKEN/s);
+  assert.match(tokenRequired({}), /wrangler login/);
 });
 
 test('the status command is the runner\'s own read-only first step', async () => {

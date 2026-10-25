@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
-import { validateTarget, deploymentCommands } from './target.mjs';
+import { validateTarget, deploymentCommands, tokenRequired } from './target.mjs';
 import { withDeploymentLock } from './lock.mjs';
 import { remoteCatalogModel } from '../cms/remote-model.mjs';
 import { writeSnapshot } from '../build/snapshot.mjs';
@@ -10,6 +10,9 @@ try {
   const [environment, ...flags] = process.argv.slice(2);
   if (flags.some(flag => flag !== '--allow-empty')) throw new Error('Usage: pnpm deploy:<staging|production> [--allow-empty]');
   const target = validateTarget(JSON.parse(await readFile('wrangler.jsonc', 'utf8')), environment);
+  // Checked first so a missing token never leaves a half-run deploy.
+  const missing = tokenRequired(process.env);
+  if (missing) throw new Error(missing);
   // CI passes the reviewed fingerprint; interactive runs leave it unset and confirm the target.
   const fingerprint = process.env.EMDASH_EXPECTED_TARGET_FINGERPRINT || undefined;
   const env = { ...process.env, CLOUDFLARE_ENV: target.environment, CLOUDFLARE_ACCOUNT_ID: target.accountId };

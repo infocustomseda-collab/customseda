@@ -19,11 +19,17 @@ All secret files are ignored by git, have owner-only permissions (`chmod 600`), 
 | --- | --- | --- |
 | `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | `pnpm dev`. Wrangler reads `.env` as the local Worker's secrets; copy `.env.example`. |
 | `.env.cloudflare-staging`, `.env.cloudflare-production` | Remote Worker secrets per environment | `wrangler secret bulk` on first deploy, see below. Not loaded automatically. |
-| `.env.deploy` | `CLOUDFLARE_API_TOKEN` for CLI deploys and `emdash migrate` | Loaded only by the scripts that reach Cloudflare (`pnpm deploy:<env>`, `pnpm migrate:status <env>`, `pnpm snapshot`) through `node --env-file-if-exists=.env.deploy`, like fdag's `.env.framer`/`.env.r2`. CI has no such file and uses the GitHub environment secret. |
 
-Keep the API token out of `.env` and the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
+Never put a Cloudflare API token in `.env` or the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
 
-`pnpm exec wrangler login` (OAuth) works for most Wrangler commands, but `emdash migrate` requires `CLOUDFLARE_API_TOKEN`. Use a custom token on this account with the "Edit Cloudflare Workers" template plus Account → D1 → Edit (and Workers R2 Storage → Edit if missing). Create two tokens with the same rights, one in `.env.deploy` and one as the GitHub `staging`/`production` environment secret, so either can be rotated or revoked alone.
+Manual deploys authenticate like fdag, with `pnpm exec wrangler login` (OAuth). The one exception is EmDash's core migrations. They run from the deploy, never inside the Worker, so they can't exceed Workers Free CPU limits (the problem fdag hit), and `emdash migrate` does not accept OAuth. `pnpm deploy:<env>` and `pnpm migrate:status <env>` therefore stop at once without `CLOUDFLARE_API_TOKEN`. Provide it for that shell only, without writing it to history:
+
+```sh
+read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN
+pnpm deploy:staging
+```
+
+When the variable is set, Wrangler uses it too, which is how CI works. Use a custom token on this account with the "Edit Cloudflare Workers" template plus Account → D1 → Edit (and Workers R2 Storage → Edit if missing). Keep one token for manual use, stored in a password manager, and a second one as the GitHub environment secret, so either can be revoked alone.
 
 Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN`, and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
 
@@ -60,7 +66,7 @@ The runner validates account, database and origin separation, then runs these st
 7. Deploy that build.
 8. Check core migration status against the build's manifest.
 
-A failed command stops the sequence. No generic `deploy` command targets an implicit environment. The `emdash migrate` steps need `CLOUDFLARE_API_TOKEN` in the environment; a Wrangler OAuth login is not enough.
+A failed command stops the sequence. No generic `deploy` command targets an implicit environment. The `emdash migrate` steps need `CLOUDFLARE_API_TOKEN` in the environment (see [Credentials](#credentials)); a Wrangler OAuth login is not enough.
 
 The runner uses an atomic local lock for the entire checkout. If interrupted, confirm its recorded PID is no longer running before manually removing the stale `.emdash/deploy.lock`. Run one deployment job at a time per database. Catalog migration also holds the database option `customseda.catalog.migration-lock` across its versioned steps; inspect its owner and timestamp before considering removal of a stale lock. EmDash's database migration lock is an additional guard; it is not a deployment queue. CI serializes deploys per environment (see [Continuous deployment](#continuous-deployment-github-actions)) and passes the reviewed fingerprint through `EMDASH_EXPECTED_TARGET_FINGERPRINT`. Do not automatically accept a newly reported fingerprint without inspecting its target. The checkout lock does not span machines: do not run a manual deploy while the same environment's workflow is deploying.
 

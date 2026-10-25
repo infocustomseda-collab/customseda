@@ -45,6 +45,15 @@ export function validateTarget(config, environment) {
  */
 const migrationCommand = target => ['emdash', 'migrate', '--account-id', target.accountId, '--d1', target.databaseId, '--wrangler-config', 'wrangler.jsonc', '--wrangler-env', target.environment];
 
+/**
+ * Everything else authenticates with `wrangler login` (or the CI token); EmDash's migration CLI alone
+ * refuses OAuth. Returns the message to show when the token is missing, or null.
+ */
+export function tokenRequired(env) {
+  if (env.CLOUDFLARE_API_TOKEN) return null;
+  return 'emdash migrate needs CLOUDFLARE_API_TOKEN (it does not accept `wrangler login`). Run, without saving it in shell history:\n  read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN\nthen repeat the command. CI gets it from the GitHub environment secret.';
+}
+
 /** Read-only migration status and target fingerprint, as the deploy's first step shows it. */
 export const statusCommand = target => [...migrationCommand(target), '--from-config', '--status'];
 

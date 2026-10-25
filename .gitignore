@@ -7,7 +7,7 @@ data.db
 data.db-*
 .wrangler
 
-# Environment / Wrangler secrets (fdag style: .env local, .env.cloudflare-<env> remote, .env.deploy CLI token)
+# Environment / Wrangler secrets (fdag style: .env local, .env.cloudflare-<env> remote)
 .env
 .env.*
 !.env.example
