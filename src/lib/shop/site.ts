@@ -70,3 +70,17 @@ export function plainText(value: unknown, max = 160): string {
 	if (text.length <= max) return text;
 	return `${text.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
 }
+
+/** Content pages use their menu label as heading when a menu links to them (e.g. "Sobre Seda"). */
+export function pageHeading(site: Pick<SiteChrome, "nav" | "footerLinks">, path: string, title: string): string {
+	return [...site.nav, ...site.footerLinks].find((item) => item.href === path)?.label ?? title;
+}
+
+const normalized = (text: string) => text.trim().toLocaleLowerCase("es");
+/** Imported pages repeat their title as the first paragraph; the template already renders it. */
+export function withoutLeadingTitle(value: unknown, title: string): unknown[] {
+	if (!Array.isArray(value)) return [];
+	const [first, ...rest] = value;
+	const text = first?._type === "block" ? (first.children ?? []).map((child: { text?: string }) => child.text ?? "").join("") : null;
+	return text !== null && normalized(text) === normalized(title) ? rest : value;
+}

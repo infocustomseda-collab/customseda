@@ -1,41 +1,11 @@
 ---
-import { getEmDashEntry, getSeoMeta, decodeSlug, getSiteSettings } from "emdash";
-import { PortableText } from "emdash/ui";
-import Base from "../layouts/Base.astro";
-import { resolveStarterSiteIdentity } from "../utils/site-identity";
+// The CMS pages collection still builds `/<slug>` links (admin previews, older references); send those
+// to the public /pages/<slug> path. Everything else is a 404.
+import { loadShopPage } from "../lib/shop/page";
 
-const slug = decodeSlug(Astro.params.slug);
-
-if (!slug) {
-	return Astro.rewrite("/404");
-}
-
-const { entry: page, cacheHint } = await getEmDashEntry("pages", slug);
-
-if (!page) {
-	return Astro.rewrite("/404");
-}
-
-if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
-const { siteTitle } = resolveStarterSiteIdentity(await getSiteSettings());
-
-const seo = getSeoMeta(page, {
-	siteTitle,
-	siteUrl: Astro.url.origin,
-	path: Astro.url.pathname.replace(/\/$/, ""),
-});
+const { shop } = await loadShopPage(Astro);
+const page = shop.pages.find((entry) => entry.slug === Astro.params.slug);
+if (!page) return Astro.rewrite("/404");
+const target = page.slug === "noticias" ? "/blogs/noticias" : page.slug.endsWith("-policy") ? `/policies/${page.slug}` : `/pages/${page.slug}`;
+return Astro.redirect(target, 301);
 ---
-
-<Base
-	title={seo.title}
-	pageTitle={seo.ogTitle}
-	description={seo.description}
-	canonical={seo.canonical}
-	content={{ collection: "pages", id: page.data.id, slug }}
->
-	<article>
-		<h1 {...page.edit.title}>{page.data.title}</h1>
-
-		<PortableText value={page.data.content} />
-	</article>
-</Base>

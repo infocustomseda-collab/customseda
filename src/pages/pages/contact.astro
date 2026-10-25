@@ -1,0 +1,43 @@
+---
+// Contact: the ways to reach Seda from Site Settings. The imported page body was the flattened
+// Shopify form (labels only) and there is no form backend, so it is not rendered.
+import Icon from "../../components/Icon.astro";
+import Shop from "../../layouts/Shop.astro";
+import { loadShopPage } from "../../lib/shop/page";
+import { pageHeading } from "../../lib/shop/site";
+
+const { shop, site, settings } = await loadShopPage(Astro);
+const page = shop.pages.find((entry) => entry.slug === "contact");
+const heading = pageHeading(site, Astro.url.pathname, String(page?.data.title ?? "Contacto"));
+const email = typeof settings?.data.contact_email === "string" && settings.data.contact_email.includes("@") ? settings.data.contact_email : null;
+const handle = (href: string) => `@${new URL(href).pathname.replaceAll("/", "").replace(/^@/, "")}`;
+const networkName = { instagram: "Instagram", tiktok: "TikTok" } as const;
+---
+
+<Shop title={heading} description="Cómo contactar con Seda." site={site}>
+	<article class="wrapper region content-page stack">
+		<h1>{heading}</h1>
+		{email || site.social.length > 0 ? (
+			<ul class="contact-list stack" role="list">
+				{email && (
+					<li>
+						<span class="contact-list__label">Correo electrónico</span>
+						<a href={`mailto:${email}`}>{email}</a>
+					</li>
+				)}
+				{site.social.map((link) => (
+					<li>
+						<span class="contact-list__label">{networkName[link.network]}</span>
+						<a href={link.href} rel="noopener" target="_blank">
+							<Icon name={link.network} size={18} />
+							{handle(link.href)}
+							<span class="visually-hidden"> (se abre en una pestaña nueva)</span>
+						</a>
+					</li>
+				))}
+			</ul>
+		) : (
+			<p>Pronto publicaremos nuestros datos de contacto.</p>
+		)}
+	</article>
+</Shop>

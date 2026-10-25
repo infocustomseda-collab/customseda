@@ -1,9 +1,20 @@
 ---
-import Base from "../layouts/Base.astro";
+// Branded "page not found". Routes with missing content rewrite here, keeping the 404 status.
+import Button from "../components/Button.astro";
+import Shop from "../layouts/Shop.astro";
+import { loadShopPage } from "../lib/shop/page";
+
+const { site } = await loadShopPage(Astro);
+Astro.response.status = 404;
 ---
 
-<Base title="Not Found">
-	<h1>Page not found</h1>
-	<p>The page you're looking for doesn't exist.</p>
-	<a href="/">Go home</a>
-</Base>
+<Shop title="Página no encontrada" site={site} noindex>
+	<section class="wrapper region not-found stack text-center">
+		<h1>No encontramos esta página</h1>
+		<p>Puede que el enlace haya cambiado o que la pieza ya no esté publicada.</p>
+		<div class="cluster" style="--cluster-justify: center; --cluster-space: var(--space-s)">
+			<Button href="/collections/bikinis">Ver bikinis</Button>
+			<Button href="/" variant="secondary">Volver al inicio</Button>
+		</div>
+	</section>
+</Shop>

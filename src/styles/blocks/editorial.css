@@ -260,3 +260,48 @@
 		justify-self: center;
 	}
 }
+
+/* Content pages, contact details and the not-found page. */
+@layer blocks {
+	.content-page {
+		--stack-space: var(--space-m-l);
+		max-inline-size: calc(48rem + 2 * var(--gutter));
+	}
+
+	.contact-list {
+		--stack-space: var(--space-m);
+		margin: 0;
+		padding: 0;
+	}
+
+	.contact-list li {
+		display: grid;
+		gap: var(--space-3xs);
+	}
+
+	.contact-list__label {
+		color: var(--color-text-subtle);
+		font-size: var(--step--1);
+		font-weight: var(--weight-body-strong);
+		letter-spacing: var(--tracking-ui);
+	}
+
+	.contact-list a {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2xs);
+		justify-self: start;
+		color: var(--color-text-strong);
+		font-size: var(--step-1);
+	}
+
+	.not-found {
+		--stack-space: var(--space-s-m);
+		align-items: center;
+		padding-block: var(--space-2xl);
+	}
+
+	.not-found p {
+		margin-inline: auto;
+	}
+}

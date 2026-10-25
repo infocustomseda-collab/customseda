@@ -60,3 +60,16 @@ test('plain text summaries come from paragraph blocks and are trimmed on a word 
  assert.equal(plainText(blocks,20),'MARGARITA nace en…');
  assert.equal(plainText(null),'');
 });
+
+test('content pages take the menu label as heading and drop a leading paragraph that repeats it',async()=>{
+ const {pageHeading,withoutLeadingTitle}=await import('../src/lib/shop/site.ts');
+ const site={nav:[{label:'Sobre Seda',href:'/blogs/noticias'}],footerLinks:[{label:'Política de privacidad',href:'/policies/privacy-policy'}]};
+ assert.equal(pageHeading(site,'/blogs/noticias','Noticias'),'Sobre Seda');
+ assert.equal(pageHeading(site,'/policies/privacy-policy','Política de privacidad'),'Política de privacidad');
+ assert.equal(pageHeading(site,'/pages/guia-de-tallas','Guía de tallas'),'Guía de tallas');
+ const block=text=>({_type:'block',style:'normal',children:[{_type:'span',text}]});
+ const blocks=[block('Envíos y Devoluciones '),block('En Custom Seda…')];
+ assert.deepEqual(withoutLeadingTitle(blocks,'envíos y devoluciones'),[blocks[1]]);
+ assert.deepEqual(withoutLeadingTitle(blocks,'Otra cosa'),blocks);
+ assert.deepEqual(withoutLeadingTitle(null,'x'),[]);
+});
