@@ -46,3 +46,14 @@ test('size-less pieces are flagged rather than given invented sizes',()=>{
  assert.equal(detail.purchasable,false);
  assert.equal(productDetail(shop,'top-tierra').purchasable,true);
 });
+
+test('a Conjunto offers each component its own sizes and needs both to be buyable',()=>{
+ const withSizeless={...shop,conjuntos:[...shop.conjuntos,entry('fuego',{price_cents:5500},{top:['top-fuego'],bottom:['braguita-flow']})]};
+ const tierra=productDetail(withSizeless,'tierra');
+ assert.deepEqual([tierra.top.item.sizes,tierra.bottom.item.sizes],[['S','M','L'],['XS','S','M']]);
+ assert.equal(tierra.purchasable,true);
+ assert.equal(tierra.item.price,5000);
+ const fuego=productDetail(withSizeless,'fuego');
+ assert.equal(fuego.purchasable,false);
+ assert.equal(fuego.sizeGuide.id,'guia-general');
+});

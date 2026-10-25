@@ -357,3 +357,39 @@
 		block-size: auto;
 	}
 }
+
+/* Conjunto: the two included pieces as small linked thumbnails. */
+@layer blocks {
+	.product-details__subtitle {
+		font-size: var(--step-0);
+		letter-spacing: var(--tracking-ui);
+	}
+
+	.includes {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--space-s);
+		margin: 0;
+		padding: 0;
+	}
+
+	.includes__item {
+		display: grid;
+		grid-template-columns: 4rem 1fr;
+		align-items: center;
+		gap: var(--space-xs);
+		color: var(--color-text-strong);
+		font-weight: var(--weight-body-strong);
+		text-decoration: none;
+	}
+
+	.includes__item img {
+		inline-size: 4rem;
+		aspect-ratio: var(--ratio-card);
+		object-fit: cover;
+	}
+
+	.includes__item:hover span {
+		text-decoration: underline;
+	}
+}

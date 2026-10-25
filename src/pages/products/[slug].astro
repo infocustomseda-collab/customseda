@@ -1,5 +1,6 @@
 ---
-// Product detail at the retained Shopify path /products/<slug>.
+// Product and Conjunto detail at the retained Shopify path /products/<slug>.
+// A Conjunto has its own price and gallery and one size choice per component.
 import BuyBox from "../../components/BuyBox.astro";
 import Disclosure from "../../components/Disclosure.astro";
 import Gallery from "../../components/Gallery.astro";
@@ -13,12 +14,22 @@ import { plainText } from "../../lib/shop/site";
 
 const { shop, site, settings } = await loadShopPage(Astro);
 const detail = productDetail(shop, Astro.params.slug ?? "");
-if (!detail || detail.kind !== "pieza") return new Response(null, { status: 404 });
+if (!detail) return new Response(null, { status: 404 });
 
 const { entry, item } = detail;
-const categoryHref = item.category === "braguita" ? "/collections/braguitas" : "/collections/top";
-const categoryName = item.category === "braguita" ? "Braguitas" : "Tops";
-const sizeLegend = item.category === "braguita" ? "Talla de braguita" : "Talla del top";
+const section =
+	detail.kind === "conjunto"
+		? { href: "/collections/conjuntos", name: "Conjuntos", label: "Conjunto" }
+		: item.category === "braguita"
+			? { href: "/collections/braguitas", name: "Braguitas", label: detail.categoryLabel ?? "Braguita" }
+			: { href: "/collections/top", name: "Tops", label: detail.categoryLabel ?? "Top" };
+const choices =
+	detail.kind === "conjunto"
+		? [
+				{ name: "talla_top", legend: "Talla del top", sizes: detail.top.item.sizes },
+				{ name: "talla_braguita", legend: "Talla de braguita", sizes: detail.bottom.item.sizes },
+			]
+		: [{ name: "talla", legend: item.category === "braguita" ? "Talla de braguita" : "Talla del top", sizes: item.sizes }];
 const production = settings?.data.production_text;
 ---
 
@@ -28,7 +39,7 @@ const production = settings?.data.production_text;
 			<nav class="breadcrumb" aria-label="Ruta de navegación">
 				<ol class="cluster" role="list">
 					<li><a href="/collections/bikinis">Bikinis</a></li>
-					<li><a href={categoryHref}>{categoryName}</a></li>
+					<li><a href={section.href}>{section.name}</a></li>
 					<li><span aria-current="page">{item.title}</span></li>
 				</ol>
 			</nav>
@@ -37,11 +48,26 @@ const production = settings?.data.production_text;
 				<div class="product-details stack">
 					<div class="stack" style="--stack-space: var(--space-3xs)">
 						<h1 class="product-details__title">{item.title}</h1>
-						{detail.colorLabel && <p class="product-details__meta">{detail.categoryLabel ?? categoryName} · color {detail.colorLabel}</p>}
+						<p class="product-details__meta">{section.label}{detail.colorLabel && ` · color ${detail.colorLabel}`}</p>
 					</div>
 					<Price cents={item.price} />
-					<BuyBox id={item.id} choices={[{ name: "talla", legend: sizeLegend, sizes: item.sizes }]} available={item.available} purchasable={detail.purchasable} />
+					<BuyBox id={item.id} choices={choices} available={item.available} purchasable={detail.purchasable} />
 					<RichText value={entry.data.description} />
+					{detail.kind === "conjunto" && (
+						<section class="stack" aria-labelledby="includes-title" style="--stack-space: var(--space-xs)">
+							<h2 class="product-details__subtitle" id="includes-title">Incluye</h2>
+							<ul class="includes" role="list">
+								{[detail.top, detail.bottom].map((piece) => (
+									<li>
+										<a class="includes__item" href={piece.item.card.href}>
+											{piece.item.card.images[0] && <img src={piece.item.card.images[0].src} alt="" width={piece.item.card.images[0].width} height={piece.item.card.images[0].height} style={`object-position: ${piece.item.card.images[0].position}`} loading="lazy" decoding="async" />}
+											<span>{piece.item.title}</span>
+										</a>
+									</li>
+								))}
+							</ul>
+						</section>
+					)}
 					<div>
 						{detail.sizeGuide && (
 							<Disclosure title={String(detail.sizeGuide.data.title ?? "Guía de tallas")} icon="ruler">
