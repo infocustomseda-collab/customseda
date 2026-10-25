@@ -1,6 +1,6 @@
 import handler, { createScheduledHandler, PluginBridge } from "@emdash-cms/cloudflare/worker";
 import { foundationAccess } from "./lib/foundation-access";
-import { publishedSinceQuery, rebuildConfig, requestRebuild } from "./lib/publish/rebuild";
+import { rebuildConfig, requestRebuild, scheduledRebuildReasons } from "./lib/publish/rebuild";
 
 export { PluginBridge };
 
@@ -15,13 +15,10 @@ export default {
 		return handler.fetch!(request, env, ctx);
 	},
 	async scheduled(controller, env, ctx) {
-		await maintenance(controller, env, ctx);
-		// Scheduled entries go live in EmDash's sweep, which runs no plugin hooks: rebuild if any did.
+		// Scheduled publishing and menu edits run no plugin hooks: note them before EmDash's sweep publishes.
 		const config = rebuildConfig(env as unknown as Record<string, unknown>);
-		if (!config) return;
-		const { sql, params } = publishedSinceQuery();
-		const since = new Date(controller.scheduledTime - 60 * 60 * 1000).toISOString();
-		const row = await env.DB.prepare(sql).bind(...params(since)).first<{ count: number }>();
-		if (row?.count) await requestRebuild(config, "scheduled publish").catch((error) => console.error("Rebuild request failed", error));
+		const reasons = config ? await scheduledRebuildReasons(env.DB, controller.scheduledTime).catch((error) => (console.error("Rebuild check failed", error), [])) : [];
+		await maintenance(controller, env, ctx);
+		if (config && reasons.length) await requestRebuild(config, reasons.join(", ")).catch((error) => console.error("Rebuild request failed", error));
 	},
 } satisfies ExportedHandler<Env & { FOUNDATION_ACCESS_TOKEN?: string }>;

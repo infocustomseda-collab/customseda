@@ -26,6 +26,25 @@ test('production runs only when enabled, and after staging on pushes',()=>{
  assert.match(block,/vars\.PRODUCTION_DEPLOY_ENABLED == 'true'/);
  assert.match(block,/needs: \[verify, staging\]/);
  assert.match(block,/needs\.staging\.result == 'success'/);
+ // A staging job replaced by a newer queued run (which deploys the same master) must not drop production.
+ assert.match(block,/needs\.staging\.result == 'cancelled'/);
+ // A cancelled run stops; always() would keep production running.
+ assert.doesNotMatch(workflow,/always\(\)/);
+ assert.match(block,/!cancelled\(\)/);
+});
+
+test('CMS dispatches coalesce before any job starts and skip the push-only verification',()=>{
+ assert.match(workflow,/\nconcurrency:\n  group: \$\{\{ github\.event_name == 'workflow_dispatch' && format\('dispatch-\{0\}', inputs\.environment\) \|\| format\('push-\{0\}', github\.run_id\) \}\}\n  cancel-in-progress: false/);
+ assert.match(job('verify'),/if: github\.event_name == 'push'/);
+ assert.match(job('staging'),/needs\.verify\.result == 'skipped'/);
+});
+
+test('deploy jobs deploy the current master, never an older run commit',()=>{
+ for(const name of ['staging','production']) assert.match(job(name),/uses: actions\/checkout@v4\n        with:\n          ref: master/,name);
+});
+
+test('pnpm comes from packageManager only (action-setup fails when both are set)',()=>{
+ assert.doesNotMatch(workflow,/pnpm\/action-setup@v4\n        with:\n          version:/);
 });
 
 test('secrets reach only the deploy step environment and are never printed',()=>{

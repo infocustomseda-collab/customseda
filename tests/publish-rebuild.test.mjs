@@ -5,7 +5,7 @@ import {createDialect} from 'emdash/db/sqlite';
 import {runMigrations} from 'emdash/db';
 import {ContentRepository} from 'emdash';
 import {applyModelMigrations} from '../src/lib/cms/model-migration.ts';
-import {REBUILD_COLLECTIONS,publishedSinceQuery,rebuildConfig,rebuildRequestAllowed,requestRebuild} from '../src/lib/publish/rebuild.ts';
+import {REBUILD_COLLECTIONS,rebuildConfig,rebuildRequestAllowed,requestRebuild,scheduledRebuildReasons} from '../src/lib/publish/rebuild.ts';
 
 const env={GITHUB_REBUILD_TOKEN:'github_pat_x',GITHUB_REPOSITORY:'infocustomseda-collab/customseda',DEPLOY_ENVIRONMENT:'staging'};
 
@@ -38,21 +38,35 @@ test('the rebuild route refuses non-admins and cross-origin calls',()=>{
  assert.equal(rebuildRequestAllowed({...ok,csrf:null}),false);
 });
 
-test('scheduled publications in shop collections are counted since a time',async t=>{
+// Minimal D1 surface over the in-memory SQLite database, as the Worker's scheduled handler uses it.
+const d1=db=>({prepare:sql=>{let params=[];const stmt={bind:(...values)=>{params=values;return stmt;},
+ all:async()=>({results:(await db.executeQuery({sql,parameters:params,query:{kind:'RawNode'}})).rows}),
+ first:async()=>(await db.executeQuery({sql,parameters:params,query:{kind:'RawNode'}})).rows[0]??null,
+ run:async()=>{await db.executeQuery({sql,parameters:params,query:{kind:'RawNode'}});return {success:true};}};return stmt;}});
+
+test('due scheduled changes and menu edits trigger the scheduled rebuild; quiet hours do not',async t=>{
  const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
  await runMigrations(db);await applyModelMigrations(db);
- // The model migration publishes lookup rows (sizes, categories); count only what follows.
- await new Promise(resolve=>setTimeout(resolve,20));
- const before=new Date().toISOString();
- const repo=new ContentRepository(db);
- const page=await repo.create({type:'pages',slug:'nueva',status:'published',data:{title:'Nueva'}});
- // As the scheduled sweep's publish does.
- await sql`UPDATE ec_pages SET published_at=${new Date().toISOString()} WHERE id=${page.id}`.execute(db);
- const count=async since=>{const {sql,params}=publishedSinceQuery();return Number((await db.executeQuery({sql,parameters:params(since),query:{kind:'RawNode'}})).rows[0].count);};
- assert.equal(await count(before),1);
- assert.equal(await count('2999-01-01T00:00:00.000Z'),0);
+ const now=Date.parse('2026-10-25T12:00:00.000Z');
+ const check=()=>scheduledRebuildReasons(d1(db),now);
+ // First run only records the menu fingerprint.
+ assert.deepEqual(await check(),[]);
+ assert.deepEqual(await check(),[]);
+ // A scheduled edit of a live product keeps its old published_at; scheduled_at is what is due.
+ const page=await new ContentRepository(db).create({type:'pages',slug:'nueva',status:'published',data:{title:'Nueva'}});
+ await sql`UPDATE ec_pages SET scheduled_at=${'2026-10-25T11:30:00.000Z'} WHERE id=${page.id}`.execute(db);
+ assert.deepEqual(await check(),['scheduled publish']);
+ await sql`UPDATE ec_pages SET scheduled_at=${'2026-10-25T13:00:00.000Z'} WHERE id=${page.id}`.execute(db);
+ assert.deepEqual(await check(),[]);
+ // Menu items have no updated_at: a label edit is caught by the fingerprint.
+ await sql`INSERT INTO _emdash_menus (id,name,label,locale,translation_group) VALUES ('m1','primary','Principal','es','m1')`.execute(db);
+ assert.deepEqual(await check(),['menu change']);
+ assert.deepEqual(await check(),[]);
+ await sql`INSERT INTO _emdash_menu_items (id,menu_id,sort_order,type,custom_url,label) VALUES ('i1','m1',0,'custom','/','Inicio')`.execute(db);
+ assert.deepEqual(await check(),['menu change']);
+ await sql`UPDATE _emdash_menu_items SET label='Portada' WHERE id='i1'`.execute(db);
+ assert.deepEqual(await check(),['menu change']);
  assert.ok(REBUILD_COLLECTIONS.includes('pages') && REBUILD_COLLECTIONS.includes('shipping_rules'));
- assert.ok(page.id);
 });
 
 test('publishing, unpublishing and deleting shop content requests a rebuild; drafts do not',async t=>{

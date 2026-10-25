@@ -20,14 +20,20 @@ on:
 permissions:
   contents: read
 
+# CMS dispatches for one environment coalesce here, before any job starts: at most one runs and one
+# waits per environment. Pushes are never grouped, so every push is verified.
+concurrency:
+  group: ${{ github.event_name == 'workflow_dispatch' && format('dispatch-{0}', inputs.environment) || format('push-{0}', github.run_id) }}
+  cancel-in-progress: false
+
 jobs:
   verify:
+    # Dispatches deploy master, which its push already verified.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11.25.0
       - uses: actions/setup-node@v4
         with:
           node-version: 24.21.0
@@ -38,17 +44,20 @@ jobs:
 
   staging:
     needs: [verify]
-    if: github.event_name == 'push' || inputs.environment == 'staging'
+    if: >-
+      !cancelled() && (needs.verify.result == 'success' || needs.verify.result == 'skipped') &&
+      (github.event_name == 'push' || inputs.environment == 'staging')
     runs-on: ubuntu-latest
     environment: staging
     concurrency:
       group: deploy-staging
       cancel-in-progress: false
     steps:
+      # Always the current master: a run that waited in the queue must not deploy an older commit.
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
         with:
-          version: 11.25.0
+          ref: master
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24.21.0
@@ -69,9 +78,11 @@ jobs:
   production:
     needs: [verify, staging]
     # Skipped (not failed) until the supervised first production setup turns this variable on.
+    # A staging job replaced by a newer queued run is "cancelled"; that run deploys the same master.
     if: >-
-      always() && vars.PRODUCTION_DEPLOY_ENABLED == 'true' && needs.verify.result == 'success' &&
-      ((github.event_name == 'push' && needs.staging.result == 'success') ||
+      !cancelled() && vars.PRODUCTION_DEPLOY_ENABLED == 'true' &&
+      ((github.event_name == 'push' && needs.verify.result == 'success' &&
+        (needs.staging.result == 'success' || needs.staging.result == 'cancelled')) ||
        (github.event_name == 'workflow_dispatch' && inputs.environment == 'production'))
     runs-on: ubuntu-latest
     environment: production
@@ -79,10 +90,11 @@ jobs:
       group: deploy-production
       cancel-in-progress: false
     steps:
+      # Always the current master: a run that waited in the queue must not deploy an older commit.
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
         with:
-          version: 11.25.0
+          ref: master
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24.21.0

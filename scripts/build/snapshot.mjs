@@ -6,15 +6,15 @@ import {SNAPSHOT_PATH,assertPublishable,createSnapshot} from '../../src/lib/shop
 const ENVIRONMENTS=['local','staging','production'];
 
 /** Reads one environment's published content and writes the build snapshot atomically. */
-export async function writeSnapshot({environment,allowEmpty=false,drafts=false,open=openBindings}) {
+export async function writeSnapshot({environment,allowEmpty=false,drafts=false,open=openBindings,path=SNAPSHOT_PATH}) {
  if(!ENVIRONMENTS.includes(environment)) throw new Error('Choose --env local, staging or production.');
  const bindings=await open(environment);
  try {
   const snapshot=await createSnapshot(bindings.db,environment,{drafts});
   assertPublishable(snapshot,{environment,allowEmpty});
-  await mkdir(dirname(SNAPSHOT_PATH),{recursive:true});
-  await writeFile(`${SNAPSHOT_PATH}.tmp`,JSON.stringify(snapshot));
-  await rename(`${SNAPSHOT_PATH}.tmp`,SNAPSHOT_PATH);
+  await mkdir(dirname(path),{recursive:true});
+  await writeFile(`${path}.tmp`,JSON.stringify(snapshot));
+  await rename(`${path}.tmp`,path);
   const {shop}=snapshot;
   console.log(`Snapshot ${environment}: ${shop.products.length} products, ${shop.conjuntos.length} Conjuntos, ${shop.pages.length} pages, ${shop.shipping_rules.length} shipping rules.`);
   return snapshot;

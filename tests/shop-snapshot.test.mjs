@@ -5,7 +5,7 @@ import {createDialect} from 'emdash/db/sqlite';
 import {runMigrations} from 'emdash/db';
 import {ContentRepository} from 'emdash';
 import {applyModelMigrations} from '../src/lib/cms/model-migration.ts';
-import {assertPublishable,createSnapshot} from '../src/lib/shop/snapshot.ts';
+import {assertBuildEnvironment,assertPublishable,createSnapshot} from '../src/lib/shop/snapshot.ts';
 
 async function database(t) {
  const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
@@ -55,4 +55,11 @@ test('assertPublishable refuses an empty catalog unless allowed',()=>{
  assert.throws(()=>assertPublishable(snap('production'),{environment:'production',allowEmpty:false}),/no published products/i);
  assert.doesNotThrow(()=>assertPublishable(snap('production'),{environment:'production',allowEmpty:true}));
  assert.doesNotThrow(()=>assertPublishable(snap('production',{conjuntos:[{}]}),{environment:'production',allowEmpty:false}));
+});
+
+test('a build refuses a snapshot from another environment than CLOUDFLARE_ENV',()=>{
+ assert.doesNotThrow(()=>assertBuildEnvironment(snap('staging',{products:[{}]}),'staging'));
+ assert.doesNotThrow(()=>assertBuildEnvironment(snap('local'),undefined));
+ assert.throws(()=>assertBuildEnvironment(snap('staging',{products:[{}]}),'production'),/staging snapshot.*production build/);
+ assert.throws(()=>assertBuildEnvironment(snap('local'),'staging'),/local snapshot/);
 });

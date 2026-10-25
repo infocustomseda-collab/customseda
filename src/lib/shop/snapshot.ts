@@ -57,3 +57,11 @@ export function assertPublishable(snapshot: ShopSnapshot, { environment, allowEm
 		throw new Error(`The ${environment} snapshot has no published products or Conjuntos; pass --allow-empty only for a first deploy.`);
 	}
 }
+
+/** Run before `astro build`: the snapshot on disk must come from the environment being built. */
+export function assertBuildEnvironment(snapshot: Pick<ShopSnapshot, "environment">, cloudflareEnv: string | undefined) {
+	const expected = cloudflareEnv || "local";
+	if (snapshot.environment !== expected) {
+		throw new Error(`The ${snapshot.environment} snapshot cannot go into a ${expected} build; run \`pnpm snapshot --env ${expected}\` first.`);
+	}
+}

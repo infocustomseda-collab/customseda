@@ -45,13 +45,14 @@ The runner validates account, database and origin separation, then runs these st
 2. Run core migration. It is interactive, unless `EMDASH_EXPECTED_TARGET_FINGERPRINT` holds the reviewed fingerprint, as in CI.
 3. Apply the versioned catalog model through the explicitly selected D1 binding.
 4. Write the published-content snapshot of that environment. The step refuses an empty catalog unless `--allow-empty` is passed, for a first deploy.
-5. Build.
-6. Deploy that build.
-7. Check core migration status against the build's manifest.
+5. Generate WebP image derivatives from that environment's R2 (see [Images and build budget](#images-and-build-budget)).
+6. Build. The build refuses a snapshot from another environment than `CLOUDFLARE_ENV` (`local` when unset).
+7. Deploy that build.
+8. Check core migration status against the build's manifest.
 
 A failed command stops the sequence. No generic `deploy` command targets an implicit environment. The `emdash migrate` steps need `CLOUDFLARE_API_TOKEN` in the environment; a Wrangler OAuth login is not enough.
 
-The runner uses an atomic local lock for the entire checkout. If interrupted, confirm its recorded PID is no longer running before manually removing the stale `.emdash/deploy.lock`. Run one deployment job at a time per database. Catalog migration also holds the database option `customseda.catalog.migration-lock` across its versioned steps; inspect its owner and timestamp before considering removal of a stale lock. EmDash's database migration lock is an additional guard; it is not a deployment queue. Any future CI must serialize by account + database UUID and provide the reviewed `--expected-target-fingerprint` for noninteractive migration. Do not automatically accept a newly reported fingerprint without inspecting its target.
+The runner uses an atomic local lock for the entire checkout. If interrupted, confirm its recorded PID is no longer running before manually removing the stale `.emdash/deploy.lock`. Run one deployment job at a time per database. Catalog migration also holds the database option `customseda.catalog.migration-lock` across its versioned steps; inspect its owner and timestamp before considering removal of a stale lock. EmDash's database migration lock is an additional guard; it is not a deployment queue. CI serializes deploys per environment (see [Continuous deployment](#continuous-deployment-github-actions)) and passes the reviewed fingerprint through `EMDASH_EXPECTED_TARGET_FINGERPRINT`. Do not automatically accept a newly reported fingerprint without inspecting its target. The checkout lock does not span machines: do not run a manual deploy while the same environment's workflow is deploying.
 
 For diagnosis or noninteractive jobs, use these version-matched CLI commands with the explicit account, UUID, and Wrangler environment from the config:
 
@@ -86,10 +87,10 @@ Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, `GI
 Public pages are prebuilt, so a CMS change appears after the next deploy of that environment. Three things trigger that deploy:
 
 - **Publish, unpublish, delete or restore** of shop content (products, Conjuntos, lookups, size guides, site settings, pages, popups, shipping rules). The catalog plugin dispatches `deploy.yml` for its own environment after the response, so the editor never waits.
-- **Scheduled publishing.** EmDash's hourly sweep runs no plugin hooks. The Worker's scheduled handler checks whether shop content was published in the last hour and dispatches a rebuild if so.
-- **Menu changes,** which have no CMS hook. An administrator calls `POST /_emdash/api/customseda/rebuild` from the admin session, or uses "Run workflow" in GitHub.
+- **Scheduled publishing and menu changes,** within the hour. EmDash's scheduled sweep runs no plugin hooks, and menus have no hook at all. Before each hourly sweep, the Worker's scheduled handler checks two things: shop entries whose `scheduled_at` is due, which includes scheduled edits of live entries, and a fingerprint of the menus kept in `options`. It dispatches a rebuild if either changed.
+- **On demand:** "Run workflow" in GitHub, or `POST /_emdash/api/customseda/rebuild` from an administrator session.
 
-Bursts coalesce in the workflow's concurrency queue. A failed build or deploy leaves the previous site serving; check the Actions tab.
+Bursts coalesce before any job starts: waiting dispatch runs for an environment replace each other. A deploy always checks out the current `master`. A failed build or deploy leaves the previous site serving; check the Actions tab.
 
 The workflow is dispatched with a **fine-grained personal access token**, scoped to the `infocustomseda-collab/customseda` repository with "Actions: read and write" permission and nothing else. Store it per environment as a Worker secret:
 
