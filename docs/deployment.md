@@ -63,6 +63,24 @@ pnpm exec emdash migrate --check --account-id ACCOUNT_ID --d1 DATABASE_UUID --wr
 
 The build writes `.emdash/migrations.json`; use it with the same installed dependencies and build artifact. Do not run `wrangler d1 migrations apply` as a substitute for EmDash's core migrations. Do not copy a local SQLite file or database dump over production as a deployment step.
 
+## Continuous deployment (GitHub Actions)
+
+`.github/workflows/deploy.yml` runs on every push to `master`:
+
+1. **verify:** `pnpm test` and `pnpm typecheck`.
+2. **staging:** `pnpm deploy:staging`.
+3. **production:** `pnpm deploy:production`, only after staging succeeds and only while the repository variable `PRODUCTION_DEPLOY_ENABLED` is `true`. Until then the job is **skipped**, not failed.
+
+"Run workflow" in the Actions tab deploys one chosen environment from `master`. CMS publishes use the same entry point, see [Publishing and rebuilds](#publishing-and-rebuilds). Each environment has a concurrency group (`deploy-staging`, `deploy-production`). A deploy never cancels a running one; at most one newer run waits, so several publishes in a row coalesce into one rebuild.
+
+One-time setup per environment, in GitHub → Settings → Environments (`staging`, later `production`):
+
+- **Secret `CLOUDFLARE_API_TOKEN`:** a Cloudflare API token on this account with Workers Scripts edit, D1 edit and R2 read/write rights. `emdash migrate` requires an API token; OAuth logins do not work in CI.
+- **Variable `EMDASH_TARGET_FINGERPRINT`:** the target fingerprint printed by `pnpm exec emdash migrate --from-config --status ...` for that environment, reviewed by a person. If the target changes, the deploy fails until someone reviews the new fingerprint and updates the variable.
+- **Repository variable `PRODUCTION_DEPLOY_ENABLED=true`:** set only after the supervised first production setup in phase 7 (secrets, administrator, reviewed fingerprint, Stripe keys).
+
+Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, `GITHUB_REBUILD_TOKEN`) stay in Cloudflare (`wrangler secret put --env …`) and are never copied to GitHub. Manual deploys from a developer machine keep working (`pnpm deploy:staging`). Do not run one while the same environment's workflow is deploying.
+
 ## Free-tier feasibility gate
 
 Test remote setup, passkey login, content create/edit/publish, relation writes, realistic image uploads, and redeployment. Inspect invocation CPU and outcome, not merely HTTP status or build success. Requests occasionally receive CPU headroom, so a request exceeding 10 ms that succeeds is not evidence of a sustainable Free workload. Cloudflare rejected an explicit CPU cap with error 100328 because custom CPU caps are unavailable on Workers Free. Staging therefore uses the platform default. Do not raise the budget by upgrading the plan without discussing it.
