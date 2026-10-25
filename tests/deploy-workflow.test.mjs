@@ -54,3 +54,7 @@ test('secrets reach only the deploy step environment and are never printed',()=>
  assert.match(job('verify'),/run: pnpm test\n/);
  assert.doesNotMatch(job('verify'),/secrets\./);
 });
+
+test('staging deploys only once enabled, so pushes stay green before the GitHub setup exists',()=>{
+ assert.match(job('staging'),/vars\.STAGING_DEPLOY_ENABLED == 'true'/);
+});
