@@ -16,6 +16,7 @@ data.db-*
 
 # Generated bindings, deployment artifacts and local backups
 worker-configuration.d.ts
+src/generated/
 .emdash/
 .superpowers/
 backups/

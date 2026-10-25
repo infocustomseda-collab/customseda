@@ -26,6 +26,7 @@
     "import:shopify:verify": "node scripts/import/shopify-verify.mjs",
     "design:fluid": "node scripts/design/fluid-scale.mjs",
     "cms:storefront": "node scripts/cms/storefront-content.mjs",
+    "snapshot": "node scripts/build/snapshot.mjs",
     "design:open-props": "node scripts/design/open-props.mjs"
   },
   "dependencies": {
