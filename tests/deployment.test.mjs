@@ -66,3 +66,20 @@ test('migrates the explicit database before uploading and checks afterwards', ()
   assert.deepEqual(commands[4], ['wrangler', 'deploy', '--env', 'staging']);
   assert.ok(commands[5].includes('--check'));
 });
+
+test('gated environments must route static assets through the Worker', () => {
+  const c = config();
+  c.env.staging.vars.FOUNDATION_LOCKED = 'true';
+  assert.throws(() => validateTarget(c, 'staging'), /Gated environments must run the Worker before static assets\./);
+  c.env.staging.assets = { run_worker_first: true };
+  assert.equal(validateTarget(c, 'staging').environment, 'staging');
+  // After launch the gate is off and assets may be served directly.
+  c.env.production.vars.FOUNDATION_LOCKED = 'false';
+  assert.equal(validateTarget(c, 'production').environment, 'production');
+});
+
+test('the checked-in Wrangler config gates assets in both remote environments', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const wrangler = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
+  for (const name of ['staging', 'production']) assert.equal(validateTarget(wrangler, name).environment, name);
+});

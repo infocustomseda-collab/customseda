@@ -21,6 +21,10 @@ export function validateTarget(config, environment) {
   if (!bucket?.bucket_name || database.database_id === other?.d1_databases?.find(x => x.binding === 'DB')?.database_id || bucket.bucket_name === other?.r2_buckets?.find(x => x.binding === 'MEDIA')?.bucket_name) {
     throw new Error('Staging and production require distinct databases and media buckets.');
   }
+  // The gate lives in the Worker; static assets bypass it unless the Worker runs first (launch switch).
+  if (selected?.vars?.FOUNDATION_LOCKED === 'true' && selected?.assets?.run_worker_first !== true) {
+    throw new Error('Gated environments must run the Worker before static assets.');
+  }
   const origin = selected?.vars?.EMDASH_SITE_URL;
   let url;
   try { url = new URL(origin); } catch { /* The check below reports the missing origin. */ }

@@ -25,6 +25,12 @@ pnpm exec wrangler secret bulk .dev.vars.production --env production
 
 Review the selected environment and secret file first. Subsequent deployments preserve remote secrets. The gate fails closed with 503 if locked and the access secret is missing. Do not turn it off until setup is complete and the intended exposure has been reviewed.
 
+### Static pages behind the gate
+
+Public pages are prerendered static assets. Cloudflare serves those without running the Worker, so the gate would not cover them. While `FOUNDATION_LOCKED` is `"true"`, each remote environment therefore sets `"assets": { "run_worker_first": true }` in `wrangler.jsonc`. Every request, pages and images included, then passes the gate, at the cost of one Worker invocation per request. `validateTarget` refuses a locked environment without it.
+
+**Launch switch (phase 7):** set `FOUNDATION_LOCKED` to `"false"` and remove `run_worker_first` together. Pages are then served directly from static assets.
+
 ## Build, migrate, deploy, check
 
 ```sh
