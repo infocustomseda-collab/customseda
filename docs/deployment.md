@@ -39,7 +39,17 @@ pnpm deploy:staging
 pnpm deploy:production
 ```
 
-The runner validates account/database/origin separation, builds with the selected `CLOUDFLARE_ENV`, displays the migration target, runs interactive core migration, applies the versioned catalog model from Node through the explicitly selected D1 binding, deploys that same build, and checks core migration status. A failed command stops the sequence. No generic `deploy` command targets an implicit environment.
+The runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV`:
+
+1. Show the migration target and status (manifest built from the Astro config with `--from-config`, since no build exists yet).
+2. Run core migration. It is interactive, unless `EMDASH_EXPECTED_TARGET_FINGERPRINT` holds the reviewed fingerprint, as in CI.
+3. Apply the versioned catalog model through the explicitly selected D1 binding.
+4. Write the published-content snapshot of that environment. The step refuses an empty catalog unless `--allow-empty` is passed, for a first deploy.
+5. Build.
+6. Deploy that build.
+7. Check core migration status against the build's manifest.
+
+A failed command stops the sequence. No generic `deploy` command targets an implicit environment. The `emdash migrate` steps need `CLOUDFLARE_API_TOKEN` in the environment; a Wrangler OAuth login is not enough.
 
 The runner uses an atomic local lock for the entire checkout. If interrupted, confirm its recorded PID is no longer running before manually removing the stale `.emdash/deploy.lock`. Run one deployment job at a time per database. Catalog migration also holds the database option `customseda.catalog.migration-lock` across its versioned steps; inspect its owner and timestamp before considering removal of a stale lock. EmDash's database migration lock is an additional guard; it is not a deployment queue. Any future CI must serialize by account + database UUID and provide the reviewed `--expected-target-fingerprint` for noninteractive migration. Do not automatically accept a newly reported fingerprint without inspecting its target.
 

@@ -3,13 +3,22 @@ import { spawnSync } from 'node:child_process';
 import { validateTarget, deploymentCommands } from './target.mjs';
 import { withDeploymentLock } from './lock.mjs';
 import { remoteCatalogModel } from '../cms/remote-model.mjs';
+import { writeSnapshot } from '../build/snapshot.mjs';
 
 try {
-  const target = validateTarget(JSON.parse(await readFile('wrangler.jsonc', 'utf8')), process.argv[2]);
+  const [environment, ...flags] = process.argv.slice(2);
+  if (flags.some(flag => flag !== '--allow-empty')) throw new Error('Usage: pnpm deploy:<staging|production> [--allow-empty]');
+  const target = validateTarget(JSON.parse(await readFile('wrangler.jsonc', 'utf8')), environment);
+  // CI passes the reviewed fingerprint; interactive runs leave it unset and confirm the target.
+  const fingerprint = process.env.EMDASH_EXPECTED_TARGET_FINGERPRINT || undefined;
   const env = { ...process.env, CLOUDFLARE_ENV: target.environment, CLOUDFLARE_ACCOUNT_ID: target.accountId };
   console.log(`Target: ${target.environment} | ${target.origin} | D1 ${target.databaseId}`);
   await withDeploymentLock('.emdash', target.environment, async () => {
-    for (const [tool, ...args] of deploymentCommands(target)) {
+    for (const [tool, ...args] of deploymentCommands(target, { fingerprint, allowEmpty: flags.includes('--allow-empty') })) {
+      if (tool === 'snapshot') {
+        await writeSnapshot({ environment: args[0], allowEmpty: args[1] });
+        continue;
+      }
       if (tool === 'catalog-model') {
         const model = await remoteCatalogModel(target);
         console.log(`${model.version}: ${model.applied ? 'applied' : 'present'}.`);

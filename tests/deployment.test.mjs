@@ -51,20 +51,36 @@ test('rejects missing or shared Worker names and normalized environment origins'
   assert.throws(() => validateTarget(c, 'production'), /distinct.*origin/);
 });
 
-test('migrates the explicit database before uploading and checks afterwards', () => {
+test('migrates the explicit database, then snapshots, builds, uploads and checks', () => {
   const target = validateTarget(config(), 'staging');
   const commands = deploymentCommands(target);
-  assert.deepEqual(commands.map(x => x[0]), ['astro', 'emdash', 'emdash', 'catalog-model', 'wrangler', 'emdash']);
-  assert.deepEqual(commands[0], ['astro', 'build']);
+  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'emdash', 'catalog-model', 'snapshot', 'astro', 'wrangler', 'emdash']);
   for (const args of commands.filter(x => x[0] === 'emdash')) {
     assert.equal(args[args.indexOf('--d1') + 1], target.databaseId);
     assert.equal(args[args.indexOf('--account-id') + 1], target.accountId);
     assert.equal(args[args.indexOf('--wrangler-env') + 1], 'staging');
   }
-  assert.ok(commands[1].includes('--status'));
-  assert.ok(!commands[2].includes('--check'));
-  assert.deepEqual(commands[4], ['wrangler', 'deploy', '--env', 'staging']);
-  assert.ok(commands[5].includes('--check'));
+  // Migrations run before any build exists, so they read the manifest from the Astro config.
+  assert.ok(commands[0].includes('--status') && commands[0].includes('--from-config'));
+  assert.ok(commands[1].includes('--from-config') && !commands[1].includes('--check'));
+  assert.deepEqual(commands[4], ['astro', 'build']);
+  assert.deepEqual(commands[5], ['wrangler', 'deploy', '--env', 'staging']);
+  assert.ok(commands[6].includes('--check') && !commands[6].includes('--from-config'));
+});
+
+test('the snapshot step targets the deploy environment', () => {
+  const target = validateTarget(config(), 'production');
+  assert.deepEqual(deploymentCommands(target)[3], ['snapshot', 'production', false]);
+  assert.deepEqual(deploymentCommands(target, { allowEmpty: true })[3], ['snapshot', 'production', true]);
+});
+
+test('passes a reviewed fingerprint only when provided', () => {
+  const target = validateTarget(config(), 'staging');
+  const flag = '--expected-target-fingerprint';
+  assert.ok(!deploymentCommands(target).some(args => args.includes(flag)));
+  const commands = deploymentCommands(target, { fingerprint: 'fp-reviewed' });
+  assert.deepEqual(commands.filter(args => args.includes(flag)).map(args => args[args.indexOf(flag) + 1]), ['fp-reviewed']);
+  assert.ok(!commands[0].includes(flag) && !commands[6].includes(flag));
 });
 
 test('gated environments must route static assets through the Worker', () => {
