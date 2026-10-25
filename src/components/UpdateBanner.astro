@@ -1,0 +1,31 @@
+---
+// Registers the service worker (deployed builds only) and offers a waiting update.
+---
+
+<div class="update-banner cluster" role="status" data-update-banner hidden>
+	<p>Nueva versión disponible</p>
+	<button class="button" type="button" data-update>Actualizar</button>
+</div>
+
+<script>
+	if ("serviceWorker" in navigator) {
+		const banner = document.querySelector<HTMLElement>("[data-update-banner]")!;
+		navigator.serviceWorker.register("/sw.js").then((registration) => {
+			const offer = () => {
+				if (registration.waiting && navigator.serviceWorker.controller) banner.hidden = false;
+			};
+			offer();
+			registration.addEventListener("updatefound", () => {
+				registration.installing?.addEventListener("statechange", offer);
+			});
+			banner.querySelector("[data-update]")!.addEventListener("click", () => registration.waiting?.postMessage({ type: "SKIP_WAITING" }));
+		});
+		let reloading = false;
+		navigator.serviceWorker.addEventListener("controllerchange", () => {
+			if (!reloading && !banner.hidden) {
+				reloading = true;
+				location.reload();
+			}
+		});
+	}
+</script>
