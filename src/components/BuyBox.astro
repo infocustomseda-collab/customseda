@@ -1,0 +1,33 @@
+---
+// Purchase form for a piece or a Conjunto: one size choice per component, quantity and the add button.
+// The cart arrives in phase 5; until then the button stays disabled with an explanation.
+import Button from "./Button.astro";
+import QuantityField from "./QuantityField.astro";
+import SizePicker from "./SizePicker.astro";
+
+interface Props {
+	id: string;
+	choices: { name: string; legend: string; sizes: readonly string[] }[];
+	available: boolean;
+	purchasable: boolean;
+	contactHref?: string;
+}
+
+const { id, choices, available, purchasable, contactHref = "/pages/contact" } = Astro.props;
+const missingSizes = available && !purchasable;
+---
+
+<form class="buy-box stack" data-product={id} onsubmit="event.preventDefault()" style="--stack-space: var(--space-s-m)">
+	{purchasable && choices.map((choice) => <SizePicker name={choice.name} legend={choice.legend} sizes={choice.sizes} />)}
+	{purchasable && <QuantityField id={`quantity-${id}`} />}
+	{!available && (
+		<p class="buy-box__state"><span class="badge buy-box__badge">No disponible</span> Esta pieza no está disponible ahora mismo.</p>
+	)}
+	{missingSizes && (
+		<p class="buy-box__state">Tallas por confirmar. <a href={contactHref}>Escríbenos</a> si quieres encargarla.</p>
+	)}
+	<Button type="submit" width="full" disabled aria-describedby={purchasable ? `buy-note-${id}` : undefined}>
+		{available ? "Añadir al carrito" : "No disponible"}
+	</Button>
+	{purchasable && <p class="field__hint" id={`buy-note-${id}`}>La compra online estará disponible muy pronto.</p>}
+</form>

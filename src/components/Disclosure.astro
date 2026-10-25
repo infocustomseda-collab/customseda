@@ -1,0 +1,23 @@
+---
+// Native disclosure (details/summary) with the shop's hairline accordion style.
+import Icon from "./Icon.astro";
+
+interface Props {
+	title: string;
+	icon?: "ruler";
+	open?: boolean;
+}
+
+const { title, icon, open = false } = Astro.props;
+---
+
+<details class="disclosure" open={open}>
+	<summary class="disclosure__summary">
+		{icon && <Icon name={icon} size={20} />}
+		<span>{title}</span>
+		<span class="disclosure__chevron"><Icon name="chevron-down" size={20} /></span>
+	</summary>
+	<div class="disclosure__body">
+		<slot />
+	</div>
+</details>
