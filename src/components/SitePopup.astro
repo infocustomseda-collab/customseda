@@ -62,6 +62,8 @@ const { popups } = Astro.props;
 				if (event.target === dialog) dialog.close();
 			});
 			window.setTimeout(() => {
+				// A page restored from the back/forward cache resumes this timer: recheck dismissals made elsewhere.
+				if (choosePopup(schedules, Date.now(), stored)?.id !== chosen.id) return;
 				if (!dialog.open && !document.querySelector("dialog[open], :popover-open")) dialog.showModal();
 			}, chosen.delaySeconds * 1000);
 		}

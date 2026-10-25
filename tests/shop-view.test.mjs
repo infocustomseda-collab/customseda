@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatPrice, galleryImages, orderSizes, SIZE_ORDER } from '../src/lib/shop/view.ts';
+import { formatPrice, galleryImages, orderSizes, SIZE_ORDER, transitionNames, uniqueTransitions } from '../src/lib/shop/view.ts';
 
 const row = (over = {}) => ({
  image: { id: 'm1', provider: 'local', width: 2792, height: 3490, dominantColor: 'rgb(131,113,101)', meta: { storageKey: '01ABC.jpg' } },
@@ -41,4 +41,20 @@ test('sizes follow XS–XL order regardless of source order and drop unknown cod
  assert.deepEqual(SIZE_ORDER, ['XS', 'S', 'M', 'L', 'XL']);
  assert.deepEqual(orderSizes(['M', 'S', 'XL', 'xs', 'XXL', 'S']), ['XS', 'S', 'M', 'XL']);
  assert.deepEqual(orderSizes(undefined), []);
+});
+
+test('transition names are stable and CSS-safe', () => {
+	assert.deepEqual(transitionNames('product-01M5R1TTTRDVSFZVXQZSGEJCQQ'), {
+		image: 'product-01m5r1tttrdvsfzvxqzsgejcqq-image',
+		title: 'product-01m5r1tttrdvsfzvxqzsgejcqq-title',
+	});
+	assert.equal(transitionNames('Product x/1 ñ').image, 'product-x-1---image');
+	assert.match(transitionNames('9 lives').title, /^[a-z_-]/);
+});
+
+test('duplicate cards on one page keep a single transition name', () => {
+	const card = (id) => ({ href: `/products/${id}`, title: id, priceCents: 1, images: [], available: true, transitionName: `product-${id}` });
+	const unique = uniqueTransitions([card('a'), card('b'), card('a')]);
+	assert.deepEqual(unique.map((c) => c.transitionName), ['product-a', 'product-b', undefined]);
+	assert.equal(unique[2].title, 'a');
 });

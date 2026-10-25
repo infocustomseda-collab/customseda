@@ -74,3 +74,20 @@ export function orderSizes(codes: readonly string[] | undefined): SizeCode[] {
 	const wanted = new Set((codes ?? []).map((code) => code.toUpperCase()));
 	return SIZE_ORDER.filter((code) => wanted.has(code));
 }
+
+/** Cross-document view-transition names for a card's photo and title (lowercase custom idents). */
+export function transitionNames(base: string): { image: string; title: string } {
+	const safe = base.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/^(?=[\d-])/, "t-");
+	return { image: `${safe}-image`, title: `${safe}-title` };
+}
+
+/** A transition name may appear once per page: later duplicates of the same product drop theirs. */
+export function uniqueTransitions<T extends { transitionName?: string }>(cards: T[]): T[] {
+	const seen = new Set<string>();
+	return cards.map((card) => {
+		if (!card.transitionName) return card;
+		if (seen.has(card.transitionName)) return { ...card, transitionName: undefined };
+		seen.add(card.transitionName);
+		return card;
+	});
+}

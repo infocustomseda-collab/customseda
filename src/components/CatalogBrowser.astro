@@ -2,6 +2,7 @@
 // Product grid with client-side filters (color, size, availability) and sorting. The server renders every
 // item in catalog order; the script hides, reorders and syncs the URL. Without JavaScript the full list shows.
 import type { CatalogItem } from "../lib/shop/catalog";
+import { uniqueTransitions } from "../lib/shop/view";
 import ProductCard from "./ProductCard.astro";
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 
 const { items, colors, sizes } = Astro.props;
 const data = items.map(({ card: _card, ...item }) => item);
+const cards = uniqueTransitions(items.map((item) => item.card));
 const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 ---
 
@@ -74,7 +76,7 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 	<ul class="grid" data-layout="products" role="list" data-grid>
 		{items.map((item, index) => (
 			<li data-id={item.id}>
-				<ProductCard product={item.card} eager={index < 3} headingLevel={2} />
+				<ProductCard product={cards[index]} eager={index < 3} headingLevel={2} />
 			</li>
 		))}
 	</ul>

@@ -13,6 +13,7 @@ import { productDetail } from "../../lib/shop/detail";
 import { loadShopContent, loadShopPage } from "../../lib/shop/page";
 import { productPaths } from "../../lib/shop/paths";
 import { plainText } from "../../lib/shop/site";
+import { transitionNames, uniqueTransitions } from "../../lib/shop/view";
 
 export const prerender = true;
 export async function getStaticPaths() {
@@ -38,6 +39,7 @@ const choices =
 			]
 		: [{ name: "talla", legend: item.category === "braguita" ? "Talla de braguita" : "Talla del top", sizes: item.sizes }];
 const production = settings?.data.production_text;
+const names = item.card.transitionName ? transitionNames(item.card.transitionName) : null;
 ---
 
 <Shop title={item.title} description={plainText(entry.data.description)} image={item.card.images[0]?.src} site={site}>
@@ -51,10 +53,10 @@ const production = settings?.data.production_text;
 				</ol>
 			</nav>
 			<div class="split">
-				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={item.card.transitionName} />
+				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={names?.image} />
 				<div class="product-details stack">
 					<div class="stack" style="--stack-space: var(--space-3xs)">
-						<h1 class="product-details__title">{item.title}</h1>
+						<h1 class="product-details__title" style={names ? `view-transition-name: ${names.title}` : undefined}>{item.title}</h1>
 						<p class="product-details__meta">{section.label}{detail.colorLabel && ` · color ${detail.colorLabel}`}</p>
 					</div>
 					<Price cents={item.price} />
@@ -95,7 +97,7 @@ const production = settings?.data.production_text;
 			<section class="stack" aria-labelledby="related-title" style="--stack-space: var(--space-m-l)">
 				<h2 id="related-title">También te puede gustar</h2>
 				<ul class="grid" data-layout="products" role="list" style="--grid-columns: 4">
-					{detail.related.map((related) => <li><ProductCard product={related.card} /></li>)}
+					{uniqueTransitions(detail.related.map((related) => related.card)).map((card) => <li><ProductCard product={card} /></li>)}
 				</ul>
 			</section>
 		)}

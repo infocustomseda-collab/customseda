@@ -103,6 +103,13 @@
 		border-radius: var(--radius-media);
 	}
 
+	/* Cross-document transitions (product card → detail); browsers without support navigate normally. */
+	@media (prefers-reduced-motion: no-preference) {
+		@view-transition {
+			navigation: auto;
+		}
+	}
+
 	hr {
 		border: 0;
 		border-block-start: var(--border-width) solid var(--color-border-subtle);
