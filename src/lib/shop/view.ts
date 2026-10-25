@@ -1,5 +1,6 @@
 // Presentational view models shared by the public shop components. Pages map CMS data
 // (live in development, the build-time snapshot in phase 6) into these shapes.
+import { srcsetOf } from "./images.ts";
 
 export type GalleryImage = {
 	id: string;
@@ -11,6 +12,8 @@ export type GalleryImage = {
 	position: string;
 	/** Dominant color shown while the photo loads. */
 	placeholder?: string;
+	/** Build-time WebP derivatives (srcset); absent when none were generated. */
+	srcset?: string;
 };
 
 export type ProductCardView = {
@@ -55,6 +58,7 @@ export function imageView(image: any, alt: string, focal: { x?: unknown; y?: unk
 		height: image.height,
 		position: `${percent(focal.x)} ${percent(focal.y)}`,
 		...(typeof color === "string" && SAFE_COLOR.test(color) ? { placeholder: color } : {}),
+		...(Array.isArray(image.derivatives) && image.derivatives.length ? { srcset: srcsetOf(image.derivatives) } : {}),
 	};
 }
 

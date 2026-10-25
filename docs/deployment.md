@@ -105,6 +105,21 @@ pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env staging
 
 When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
 
+## Images and build budget
+
+Each deploy writes WebP derivatives (480, 960 and 1440 px, never upscaled) for every image the snapshot references. The originals come from that environment's R2 through a binding, not over HTTP. The derivatives go to `public/media/` and the snapshot's image values are annotated, so pages get `srcset` and `sizes`. Results are cached by content hash in `.cache/media` (locally and through `actions/cache` in CI).
+
+- If an original is missing in R2 or sharp cannot decode it, it is reported and keeps its original `/_emdash/api/media/file/…` URL. The page still works, only heavier.
+- New uploads appear with derivatives after the rebuild that publishing triggers.
+
+The build fails above 15,000 derivative files, or for any file over 25 MiB (Free limits: 20,000 files and 25 MiB per asset).
+
+Measured locally on 2026-10-25 against the imported catalog (drafts, 11 products, 5 Conjuntos, 7 pages):
+
+- 94 originals produced 271 files, 22.2 MiB in total.
+- The cold run took 15.5 s and the cached run 1.9 s. `astro build` itself takes about 10 s.
+- One product photo: 3.1 MB original against 62 KB at 960 px.
+
 ## Free-tier feasibility gate
 
 Test remote setup, passkey login, content create/edit/publish, relation writes, realistic image uploads, and redeployment. Inspect invocation CPU and outcome, not merely HTTP status or build success. Requests occasionally receive CPU headroom, so a request exceeding 10 ms that succeeds is not evidence of a sustainable Free workload. Cloudflare rejected an explicit CPU cap with error 100328 because custom CPU caps are unavailable on Workers Free. Staging therefore uses the platform default. Do not raise the budget by upgrading the plan without discussing it.

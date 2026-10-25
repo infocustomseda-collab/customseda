@@ -21,7 +21,7 @@ const { popups } = Astro.props;
 				<Icon name="close" />
 			</button>
 			{popup.image && (
-				<img class="popup__image" src={popup.image.src} alt={popup.image.alt} width={popup.image.width} height={popup.image.height} loading="lazy" decoding="async" />
+				<img class="popup__image" src={popup.image.src} srcset={popup.image.srcset} sizes="(min-width: 40em) 30rem, 90vw" alt={popup.image.alt} width={popup.image.width} height={popup.image.height} loading="lazy" decoding="async" />
 			)}
 			<div class="popup__body stack text-center">
 				<h2 class="popup__title" id={`popup-title-${popup.id}`}>{popup.title}</h2>

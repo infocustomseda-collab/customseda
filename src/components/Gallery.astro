@@ -20,6 +20,8 @@ const { images, label, transitionName, variant = "product" } = Astro.props;
 			<li class="gallery__item" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
 				<img
 					src={image.src}
+					srcset={image.srcset}
+					sizes={variant === "product" ? "(min-width: 60em) 50vw, 100vw" : "100vw"}
 					alt={image.alt}
 					width={image.width}
 					height={image.height}

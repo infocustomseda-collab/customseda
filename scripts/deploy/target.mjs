@@ -41,7 +41,7 @@ export function validateTarget(config, environment) {
 
 /**
  * Migrations first (from the Astro config, since no build exists yet), so the snapshot reads the
- * migrated schema; then snapshot, build, upload and check against the build's manifest.
+ * migrated schema; then snapshot, image derivatives, build, upload and check against the build's manifest.
  */
 export function deploymentCommands(target, { fingerprint, allowEmpty = false } = {}) {
   const migration = ['emdash', 'migrate', '--account-id', target.accountId, '--d1', target.databaseId, '--wrangler-config', 'wrangler.jsonc', '--wrangler-env', target.environment];
@@ -50,6 +50,7 @@ export function deploymentCommands(target, { fingerprint, allowEmpty = false } =
     [...migration, '--from-config', ...(fingerprint ? ['--expected-target-fingerprint', fingerprint] : [])],
     ['catalog-model'],
     ['snapshot', target.environment, allowEmpty],
+    ['images', target.environment],
     ['astro', 'build'],
     ['wrangler', 'deploy', '--env', target.environment],
     [...migration, '--check'],

@@ -4,6 +4,7 @@ import { validateTarget, deploymentCommands } from './target.mjs';
 import { withDeploymentLock } from './lock.mjs';
 import { remoteCatalogModel } from '../cms/remote-model.mjs';
 import { writeSnapshot } from '../build/snapshot.mjs';
+import { buildImages } from '../build/images.mjs';
 
 try {
   const [environment, ...flags] = process.argv.slice(2);
@@ -17,6 +18,10 @@ try {
     for (const [tool, ...args] of deploymentCommands(target, { fingerprint, allowEmpty: flags.includes('--allow-empty') })) {
       if (tool === 'snapshot') {
         await writeSnapshot({ environment: args[0], allowEmpty: args[1] });
+        continue;
+      }
+      if (tool === 'images') {
+        await buildImages({ environment: args[0] });
         continue;
       }
       if (tool === 'catalog-model') {

@@ -67,7 +67,7 @@ const production = settings?.data.production_text;
 								{[detail.top, detail.bottom].map((piece) => (
 									<li>
 										<a class="includes__item" href={piece.item.card.href}>
-											{piece.item.card.images[0] && <img src={piece.item.card.images[0].src} alt="" width={piece.item.card.images[0].width} height={piece.item.card.images[0].height} style={`object-position: ${piece.item.card.images[0].position}`} loading="lazy" decoding="async" />}
+											{piece.item.card.images[0] && <img src={piece.item.card.images[0].src} srcset={piece.item.card.images[0].srcset} sizes="6rem" alt="" width={piece.item.card.images[0].width} height={piece.item.card.images[0].height} style={`object-position: ${piece.item.card.images[0].position}`} loading="lazy" decoding="async" />}
 											<span>{piece.item.title}</span>
 										</a>
 									</li>

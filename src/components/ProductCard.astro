@@ -19,6 +19,8 @@ const Heading = `h${headingLevel}` as "h2" | "h3";
 		{main && (
 			<img
 				src={main.src}
+				srcset={main.srcset}
+				sizes="(min-width: 60em) 25vw, 50vw"
 				alt={main.alt}
 				width={main.width}
 				height={main.height}
@@ -29,7 +31,7 @@ const Heading = `h${headingLevel}` as "h2" | "h3";
 			/>
 		)}
 		{hover && (
-			<img src={hover.src} alt="" width={hover.width} height={hover.height} style={`object-position: ${hover.position}`} loading="lazy" decoding="async" />
+			<img src={hover.src} srcset={hover.srcset} sizes="(min-width: 60em) 25vw, 50vw" alt="" width={hover.width} height={hover.height} style={`object-position: ${hover.position}`} loading="lazy" decoding="async" />
 		)}
 		{!product.available && <span class="product-card__badge badge">No disponible</span>}
 	</div>
