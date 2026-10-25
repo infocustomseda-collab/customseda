@@ -1,33 +1,91 @@
 ---
-// Purchase form for a piece or a Conjunto: one size choice per component, quantity and the add button.
-// The cart arrives in phase 5; until then the button stays disabled with an explanation.
+// Buy-now form for a piece or a Conjunto: one size choice per component, quantity, shipping destination.
+// It posts to /api/checkout, which validates against the database and opens Stripe Checkout, or returns
+// here with ?checkout=<reason>. The multi-item cart arrives in phase 8.
+import { checkoutMessage } from "../lib/commerce/messages";
+import type { ShippingRule } from "../lib/commerce/shipping";
+import { formatPrice } from "../lib/shop/view";
 import Button from "./Button.astro";
 import QuantityField from "./QuantityField.astro";
 import SizePicker from "./SizePicker.astro";
 
 interface Props {
 	id: string;
+	slug: string;
+	priceCents: number;
 	choices: { name: string; legend: string; sizes: readonly string[] }[];
+	shipping: ShippingRule[];
 	available: boolean;
 	purchasable: boolean;
+	/** ?checkout=<reason> when rendered on demand; prerendered pages fill it in the browser. */
+	checkoutError?: string | null;
 	contactHref?: string;
 }
 
-const { id, choices, available, purchasable, contactHref = "/pages/contact" } = Astro.props;
+const { id, slug, priceCents, choices, shipping, available, purchasable, checkoutError, contactHref = "/pages/contact" } = Astro.props;
+const message = checkoutMessage(checkoutError);
 const missingSizes = available && !purchasable;
+const canBuy = purchasable && shipping.length > 0;
+const shippingLabel = (rule: ShippingRule) =>
+	[rule.title, rule.priceCents ? formatPrice(rule.priceCents) : "gratis", rule.priceCents && rule.freeAboveCents !== null ? `gratis desde ${formatPrice(rule.freeAboveCents)}` : ""]
+		.filter(Boolean)
+		.join(" · ");
 ---
 
-<form class="buy-box stack" data-product={id} onsubmit="event.preventDefault()" style="--stack-space: var(--space-s-m)">
-	{purchasable && choices.map((choice) => <SizePicker name={choice.name} legend={choice.legend} sizes={choice.sizes} />)}
-	{purchasable && <QuantityField id={`quantity-${id}`} />}
+<form class="buy-box stack" id="comprar" data-product={id} method="post" action="/api/checkout" style="--stack-space: var(--space-s-m)">
+	<p class="field__error" role="alert" tabindex="-1" data-checkout-error hidden={!message}>{message}</p>
+	{canBuy && (
+		<>
+			<input type="hidden" name="id" value={id} />
+			<input type="hidden" name="slug" value={slug} />
+			<input type="hidden" name="price" value={priceCents} />
+			{choices.map((choice) => <SizePicker name={choice.name} legend={choice.legend} sizes={choice.sizes} />)}
+			<QuantityField id={`quantity-${id}`} />
+			<div class="field">
+				<label class="field__label" for={`shipping-${id}`}>Envío</label>
+				<select class="field__control" id={`shipping-${id}`} name="shipping" required aria-describedby={`shipping-hint-${id}`}>
+					<option value="">Elige el destino</option>
+					{shipping.map((rule) => <option value={rule.id}>{shippingLabel(rule)}</option>)}
+				</select>
+				<p class="field__hint" id={`shipping-hint-${id}`}>Elige el destino real del pedido: la dirección se confirma en el pago.</p>
+			</div>
+		</>
+	)}
 	{!available && (
 		<p class="buy-box__state"><span class="badge buy-box__badge">No disponible</span> Esta pieza no está disponible ahora mismo.</p>
 	)}
 	{missingSizes && (
 		<p class="buy-box__state">Tallas por confirmar. <a href={contactHref}>Escríbenos</a> si quieres encargarla.</p>
 	)}
-	<Button type="submit" width="full" disabled aria-describedby={purchasable ? `buy-note-${id}` : undefined}>
-		{available ? "Añadir al carrito" : "No disponible"}
+	<Button type="submit" width="full" disabled={!canBuy} aria-describedby={purchasable && !canBuy ? `buy-note-${id}` : undefined}>
+		{available ? "Comprar" : "No disponible"}
 	</Button>
-	{purchasable && <p class="field__hint" id={`buy-note-${id}`}>La compra online estará disponible muy pronto.</p>}
+	{purchasable && !canBuy && <p class="field__hint" id={`buy-note-${id}`}>La compra online estará disponible muy pronto.</p>}
+	{canBuy && <p class="field__hint">Pago seguro con Stripe. Confeccionamos cada pieza por encargo.</p>}
 </form>
+
+<script>
+	import { checkoutMessage } from "../lib/commerce/messages";
+
+	for (const form of document.querySelectorAll<HTMLFormElement>("form.buy-box")) {
+		const url = new URL(location.href);
+		const message = checkoutMessage(url.searchParams.get("checkout"));
+		const alert = form.querySelector<HTMLElement>("[data-checkout-error]")!;
+		if (message) {
+			alert.textContent = message;
+			alert.hidden = false;
+			alert.focus();
+			// A reload after fixing the problem should not repeat the old reason.
+			url.searchParams.delete("checkout");
+			history.replaceState(history.state, "", url);
+		}
+		// One Checkout Session per click; Back from Stripe restores the page from the cache, so re-enable.
+		const button = form.querySelector<HTMLButtonElement>("button[type=submit]");
+		form.addEventListener("submit", () => {
+			if (button) setTimeout(() => (button.disabled = true));
+		});
+		addEventListener("pageshow", (event) => {
+			if (event.persisted && button && form.querySelector("[name=id]")) button.disabled = false;
+		});
+	}
+</script>

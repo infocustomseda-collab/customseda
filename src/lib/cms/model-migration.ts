@@ -3,6 +3,7 @@ import { applySeed, validateSeed, type SeedFile } from 'emdash/seed';
 import seedJson from '../../../seed/seed.json' with {type:'json'};
 import storefrontJson from '../../../seed/storefront.json' with {type:'json'};
 import type { CatalogDb } from './catalog-store.ts';
+import { applyCheckoutModel, checkoutVersion } from '../commerce/payments.ts';
 
 export const modelVersion='customseda.catalog.v1';
 export async function applyCatalogModel(db:CatalogDb) {
@@ -38,7 +39,7 @@ export async function applyStorefrontModel(db:CatalogDb) {
 }
 
 /** Every application model version, in order. Deployment and the local route call this. */
-export const modelVersions=[modelVersion,storefrontVersion];
+export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion];
 export async function applyModelMigrations(db:CatalogDb) {
- return [await applyCatalogModel(db),await applyStorefrontModel(db)];
+ return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db)];
 }

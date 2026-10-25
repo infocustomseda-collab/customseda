@@ -1,0 +1,56 @@
+---
+// Stripe Checkout success URL. Reports the payment state Stripe confirms for the session, never the
+// redirect alone: card payments are paid, delayed methods stay "en proceso" until the webhook.
+import Button from "../../components/Button.astro";
+import Shop from "../../layouts/Shop.astro";
+import { stripeSecrets } from "../../lib/commerce/config";
+import { stripeRequest } from "../../lib/commerce/stripe";
+import { loadShopPage } from "../../lib/shop/page";
+import { formatPrice } from "../../lib/shop/view";
+
+export const prerender = false;
+
+type Session = { status: string; payment_status: string; metadata: Record<string, string> };
+
+const { site, settings } = await loadShopPage(Astro);
+Astro.response.headers.set("Cache-Control", "no-store");
+const id = Astro.url.searchParams.get("session_id") ?? "";
+const secretKey = stripeSecrets().STRIPE_SECRET_KEY;
+let session: Session | null = null;
+if (secretKey && /^cs_(test|live)_\w+$/.test(id)) {
+	session = await stripeRequest<Session>({ secretKey }, "GET", `/v1/checkout/sessions/${id}`).catch((error) => {
+		console.error("Stripe Checkout Session lookup failed", error);
+		return null;
+	});
+}
+const state = session?.payment_status === "paid" ? "paid" : session?.status === "complete" ? "processing" : "unknown";
+const copy = {
+	paid: { title: "¡Gracias por tu pedido!", text: "Hemos recibido el pago y empezaremos a confeccionar tu pieza. Te escribiremos al email que has indicado si necesitamos algo." },
+	processing: { title: "Pago en proceso", text: "Tu pedido está registrado y el pago se está confirmando. Empezaremos a confeccionarlo cuando se complete." },
+	unknown: { title: "No podemos confirmar el pago", text: "Si se ha realizado un cargo, escríbenos y lo revisamos contigo." },
+}[state];
+const meta = session?.metadata ?? {};
+const sizes = meta.item_kind === "conjunto" ? `Top: ${meta.top_size} · Braguita: ${meta.braguita_size}` : meta.piece_size ? `Talla: ${meta.piece_size}` : "";
+const email = typeof settings?.data.contact_email === "string" ? settings.data.contact_email : null;
+---
+
+<Shop title={copy.title} site={site} noindex>
+	<section class="wrapper region not-found stack text-center">
+		<h1>{copy.title}</h1>
+		<p>{copy.text}</p>
+		{state !== "unknown" && meta.item_title && (
+			<dl class="stack" style="--stack-space: var(--space-3xs)">
+				<dt class="visually-hidden">Pieza</dt>
+				<dd>{meta.quantity} × {meta.item_title}{sizes && ` (${sizes})`}</dd>
+				<dt class="visually-hidden">Envío</dt>
+				<dd>{meta.shipping_title}</dd>
+				<dt class="visually-hidden">Total</dt>
+				<dd>Total: {formatPrice(Number(meta.total_cents))}</dd>
+			</dl>
+		)}
+		{email && <p>¿Dudas? Escríbenos a <a href={`mailto:${email}`}>{email}</a>.</p>}
+		<div class="cluster" style="--cluster-justify: center; --cluster-space: var(--space-s)">
+			<Button href="/collections/bikinis">Seguir viendo bikinis</Button>
+		</div>
+	</section>
+</Shop>

@@ -30,6 +30,18 @@ export const popup={slug:'envio-gratis',data:{title:'Envío gratis',enabled:true
  ].map(([text,key])=>({_type:'block',_key:key,style:'normal',markDefs:[],children:[{_type:'span',_key:`${key}s`,text,marks:[]}]})),
 }};
 
+// Shipping from the source "Envíos y Devoluciones" page. Created as drafts for local checkout tests;
+// the merchant confirms amounts, EU rates and tax treatment before they are published (phase 5).
+const provinces=Array.from({length:52},(_,i)=>String(i+1).padStart(2,'0'));
+const EU=['AT','BE','BG','CY','CZ','DE','DK','EE','FI','FR','GR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
+export const shippingRules=[
+ {slug:'canarias',data:{title:'Canarias',enabled:true,zone:'canarias',country_codes:'ES',postal_prefixes:'35,38',price_cents:630,free_above_cents:4500,description:'Gran Canaria: 24/48 horas laborables. Resto de Islas Canarias: 2/3 días laborables.'}},
+ // Ceuta (51) and Melilla (52) are outside the source zones: their addresses are flagged for review.
+ {slug:'peninsula-baleares',data:{title:'Península y Baleares',enabled:true,zone:'peninsula_baleares',country_codes:'ES',postal_prefixes:provinces.filter(p=>!['35','38','51','52'].includes(p)).join(','),price_cents:1090,free_above_cents:7000,description:'3/5 días laborables. Precios sin IVA; impuestos de importación a cargo del cliente.'}},
+ {slug:'union-europea',data:{title:'Unión Europea',enabled:false,zone:'international',country_codes:EU.join(','),price_cents:0,free_above_cents:9000,description:'5/7 días laborables según destino. Tarifa por país pendiente de confirmar.'}},
+ {slug:'recogida-gran-canaria',data:{title:'Recogida en Gran Canaria',enabled:true,zone:'pickup',price_cents:0,description:'Gratis. Te contactamos para acordar día y hora de recogida.'}},
+];
+
 // Source header and footer links; paths keep the Shopify URLs (see docs/import/shopify-url-map.json).
 export const menus={
  primary:{label:'Principal',items:[['Inicio','/'],['Bikinis','/collections/bikinis'],['Colección','/pages/margarita'],['Sobre Seda','/blogs/noticias'],['Envíos y Devoluciones','/pages/envios-y-devoluciones'],['Contacto','/pages/contact']]},
@@ -99,6 +111,10 @@ async function main() {
  }
  const existingPopup=await api(`/_emdash/api/content/popups/${popup.slug}`).catch(()=>null);
  if(!existingPopup) await api('/_emdash/api/content/popups',{method:'POST',body:JSON.stringify({slug:popup.slug,status:'draft',locale:'es',data:popup.data})});
+ for(const rule of shippingRules) {
+  const existingRule=await api(`/_emdash/api/content/shipping_rules/${rule.slug}`).catch(()=>null);
+  if(!existingRule) await api('/_emdash/api/content/shipping_rules',{method:'POST',body:JSON.stringify({slug:rule.slug,status:'draft',locale:'es',data:rule.data})});
+ }
  console.log(`Homepage fields filled on ${settings.slug}; Margarita ${ordered?'reordered':'already in source order or edited — left unchanged'}. Local drafts only.`);
 }
 

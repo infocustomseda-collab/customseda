@@ -10,6 +10,7 @@ import {ContentRepository,OptionsRepository,SchemaRegistry} from 'emdash';
 import {CatalogD1Dialect} from '../../scripts/cms/d1-dialect.mjs';
 import {remoteCatalogModel} from '../../scripts/cms/remote-model.mjs';
 import {modelVersion,storefrontVersion} from '../../src/lib/cms/model-migration.ts';
+import {checkoutVersion} from '../../src/lib/commerce/payments.ts';
 
 test('remote-model orchestration applies and retries against isolated local D1, never a remote binding',async t=>{
  const directory=await mkdtemp(join(tmpdir(),'customseda-d1-test-'));
@@ -32,8 +33,8 @@ test('remote-model orchestration applies and retries against isolated local D1, 
  await assert.rejects(()=>remoteCatalogModel(target,{check:true,proxyFactory}),/has not been applied/);
  const first=await remoteCatalogModel(target,{proxyFactory});assert.equal(first.applied,true);
  const second=await remoteCatalogModel(target,{proxyFactory});assert.equal(second.applied,false);
- const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,storefrontVersion);
- assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion]);
+ const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,checkoutVersion);
+ assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion,checkoutVersion]);
  assert.equal((await new SchemaRegistry(db).getField('site_settings','highlights')).type,'repeater');
  assert.equal((await new ContentRepository(db).findMany('categories')).items.length,2);
  const options=new OptionsRepository(db);

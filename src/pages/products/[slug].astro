@@ -8,6 +8,7 @@ import Price from "../../components/Price.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import RichText from "../../components/RichText.astro";
 import Shop from "../../layouts/Shop.astro";
+import { shippingRules } from "../../lib/commerce/shipping";
 import { productDetail } from "../../lib/shop/detail";
 import { loadShopPage } from "../../lib/shop/page";
 import { plainText } from "../../lib/shop/site";
@@ -51,7 +52,7 @@ const production = settings?.data.production_text;
 						<p class="product-details__meta">{section.label}{detail.colorLabel && ` · color ${detail.colorLabel}`}</p>
 					</div>
 					<Price cents={item.price} />
-					<BuyBox id={item.id} choices={choices} available={item.available} purchasable={detail.purchasable} />
+					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available} purchasable={detail.purchasable} checkoutError={Astro.url.searchParams.get("checkout")} />
 					<RichText value={entry.data.description} />
 					{detail.kind === "conjunto" && (
 						<section class="stack" aria-labelledby="includes-title" style="--stack-space: var(--space-xs)">

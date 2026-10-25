@@ -17,6 +17,7 @@ export const shopTypes = {
 	site_settings: { featured_conjunto: "conjuntos" },
 	pages: {},
 	popups: {},
+	shipping_rules: {},
 } as const satisfies Record<string, Record<string, string>>;
 
 export type ShopType = keyof typeof shopTypes;
@@ -44,11 +45,12 @@ async function items(repo: ContentRepository, type: ShopType, drafts: boolean) {
 	}
 }
 
-export async function loadShop(db: Kysely<Database>, { drafts }: { drafts: boolean }): Promise<ShopContent> {
+/** `only` limits the read to some types; references into types left out resolve to nothing. */
+export async function loadShop(db: Kysely<Database>, { drafts, only }: { drafts: boolean; only?: ShopType[] }): Promise<ShopContent> {
 	const repo = new ContentRepository(db);
 	const revisions = new RevisionRepository(db);
 	const loaded: Loaded[] = [];
-	for (const type of Object.keys(shopTypes) as ShopType[]) {
+	for (const type of only ?? (Object.keys(shopTypes) as ShopType[])) {
 		for (const item of await items(repo, type, drafts)) {
 			let data = { ...item.data };
 			let staged: Record<string, unknown> | undefined;

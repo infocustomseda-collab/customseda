@@ -15,7 +15,7 @@
 
 `pnpm exec wrangler login` configures Wrangler authentication. EmDash's remote migration CLI additionally requires `CLOUDFLARE_API_TOKEN` in the deployment process; use a scoped token with D1 Edit for this account. Never put it in source or client code. The initial verification used existing Wrangler OAuth credentials only in child-process environment variables; no token was copied into the repository.
 
-Runtime secrets are `EMDASH_ENCRYPTION_KEY` and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Separate local/staging/production files were generated and are ignored, with owner-only file permissions. Back up encryption keys in a password manager before relying on encrypted settings.
+Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production) and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Separate local/staging/production files were generated and are ignored, with owner-only file permissions. Back up encryption keys in a password manager before relying on encrypted settings.
 
 For the first deployment of an environment, upload its secrets through Wrangler, for example:
 

@@ -1,5 +1,6 @@
 ---
 // Centered wordmark with cart on the right; nav row on wide screens, popover drawer on small ones.
+// The cart arrives in phase 8 (buy-now checkout until then), so its link renders only when given.
 import type { NavItem } from "../lib/shop/view";
 import Icon from "./Icon.astro";
 
@@ -8,7 +9,7 @@ interface Props {
 	cartHref?: string;
 }
 
-const { nav, cartHref = "/carrito" } = Astro.props;
+const { nav, cartHref } = Astro.props;
 ---
 
 <header class="site-header">
@@ -22,10 +23,12 @@ const { nav, cartHref = "/carrito" } = Astro.props;
 			<img src="/brand/seda-wordmark.png" alt="Seda — inicio" width="480" height="225" />
 		</a>
 		<div class="site-header__end">
-			<a class="icon-button" href={cartHref} aria-label="Carrito">
-				<Icon name="bag" />
-				<span class="icon-button__count" data-cart-count></span>
-			</a>
+			{cartHref && (
+				<a class="icon-button" href={cartHref} aria-label="Carrito">
+					<Icon name="bag" />
+					<span class="icon-button__count" data-cart-count></span>
+				</a>
+			)}
 		</div>
 	</div>
 	<nav class="site-nav" aria-label="Principal">
