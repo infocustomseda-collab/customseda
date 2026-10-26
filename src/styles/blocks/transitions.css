@@ -1,0 +1,96 @@
+/* Page transitions (src/components/PageTransitions.astro): menu pages slide like a carousel. */
+@layer blocks {
+	/* Jumps to #anchor are instant while a navigation runs: a smooth scroll would move the page
+	   under the animation. */
+	html[data-slide] {
+		scroll-behavior: auto;
+	}
+
+	/* The announcement and header stay in place above the sliding page. Named only while a
+	   transition runs: a named element would otherwise isolate its stacking for good. */
+	:active-view-transition .announcement {
+		view-transition-name: site-announcement;
+	}
+
+	:active-view-transition .site-header {
+		view-transition-name: site-header;
+	}
+
+	::view-transition-group(site-announcement),
+	::view-transition-group(site-header) {
+		z-index: 1;
+	}
+
+	/* Card photos and titles are named for the flight into their product page; while the page
+	   slides they must ride along with it instead of fading in on their own. */
+	html:is([data-slide="forward"], [data-slide="back"]) [style*="view-transition-name"] {
+		view-transition-name: none !important;
+	}
+
+	::view-transition-group(*) {
+		animation-duration: var(--duration-slow);
+		animation-timing-function: var(--ease-out);
+	}
+
+	/* Whole page (everything but the header) moves like a carousel. */
+	html:is([data-slide="forward"], [data-slide="back"])::view-transition-old(root),
+	html:is([data-slide="forward"], [data-slide="back"])::view-transition-new(root) {
+		animation-duration: var(--duration-slow);
+		animation-timing-function: var(--ease-out);
+		mix-blend-mode: normal;
+	}
+
+	html[data-slide="forward"]::view-transition-old(root) {
+		animation-name: page-out-left;
+	}
+
+	html[data-slide="forward"]::view-transition-new(root) {
+		animation-name: page-in-right;
+	}
+
+	html[data-slide="back"]::view-transition-old(root) {
+		animation-name: page-out-right;
+	}
+
+	html[data-slide="back"]::view-transition-new(root) {
+		animation-name: page-in-left;
+	}
+
+	html[data-slide="none"]::view-transition-group(*),
+	html[data-slide="none"]::view-transition-old(*),
+	html[data-slide="none"]::view-transition-new(*) {
+		animation: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		::view-transition-group(*),
+		::view-transition-old(*),
+		::view-transition-new(*) {
+			animation: none !important;
+		}
+	}
+
+	@keyframes page-out-left {
+		to {
+			translate: -100vw 0;
+		}
+	}
+
+	@keyframes page-out-right {
+		to {
+			translate: 100vw 0;
+		}
+	}
+
+	@keyframes page-in-right {
+		from {
+			translate: 100vw 0;
+		}
+	}
+
+	@keyframes page-in-left {
+		from {
+			translate: -100vw 0;
+		}
+	}
+}

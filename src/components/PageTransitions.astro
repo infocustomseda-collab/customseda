@@ -1,0 +1,42 @@
+---
+// Client-side navigation with directional page slides, ordered like the header menu (see
+// src/lib/shop/slide.ts). The header stays put; product pages crossfade while the card photo and
+// title fly into place. Styles live in src/styles/blocks/transitions.css.
+import { ClientRouter } from "astro:transitions";
+---
+
+<ClientRouter />
+
+<script>
+	import { normalizePath, slideFor, type Slide } from "../lib/shop/slide";
+
+	// Matches the breakpoint that shows .site-nav (src/styles/blocks/chrome.css).
+	const menuVisible = matchMedia("(min-width: 60rem)");
+
+	// Menu order comes from the page being left: the menu is edited in the CMS.
+	const menuOrder = () =>
+		[...document.querySelectorAll<HTMLAnchorElement>(".site-nav a")]
+			.map((link) => new URL(link.href, location.origin))
+			.filter((url) => url.origin === location.origin)
+			.map((url) => normalizePath(url.pathname));
+
+	let slide: Slide = "none";
+
+	document.addEventListener("astro:before-preparation", (event) => {
+		slide = slideFor(menuOrder(), normalizePath(event.from.pathname), normalizePath(event.to.pathname), {
+			historyBack: event.direction === "back",
+			menuVisible: menuVisible.matches,
+		});
+		// The page being left is captured before the swap: mark it too, so its cards slide with it.
+		document.documentElement.dataset.slide = slide;
+	});
+
+	// The router replaces <html> attributes with the incoming page's, so mark the new document.
+	document.addEventListener("astro:before-swap", (event) => {
+		const root = event.newDocument.documentElement;
+		root.dataset.slide = slide;
+		event.viewTransition.finished.finally(() => {
+			if (document.documentElement.dataset.slide === slide) delete document.documentElement.dataset.slide;
+		});
+	});
+</script>

@@ -2,8 +2,8 @@
 // Public storefront layout. Purely presentational: pages pass the site chrome as props, so the
 // same markup serves live development data now and the build-time snapshot in phase 6.
 import { Font } from "astro:assets";
-import { ClientRouter } from "astro:transitions";
 import AnnouncementBar from "../components/AnnouncementBar.astro";
+import PageTransitions from "../components/PageTransitions.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import SitePopup from "../components/SitePopup.astro";
@@ -53,7 +53,7 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 		{image && <meta property="og:image" content={image} />}
 		<Font cssVariable="--font-cormorant" preload={[{ weight: 500, style: "normal" }]} />
 		<Font cssVariable="--font-montserrat" preload />
-		<ClientRouter />
+		<PageTransitions />
 	</head>
 	<body>
 		<a class="skip-link" href="#contenido">Saltar al contenido</a>
