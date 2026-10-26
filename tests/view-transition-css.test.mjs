@@ -5,9 +5,10 @@ import {readFile} from 'node:fs/promises';
 const read=path=>readFile(path,'utf8');
 
 test('pages navigate with Astro ClientRouter, not the native cross-document rule',async()=>{
- const layout=await read('src/layouts/Shop.astro');
- assert.match(layout,/import \{ ClientRouter \} from "astro:transitions";/);
- assert.match(layout,/<ClientRouter \/>/);
+ assert.match(await read('src/layouts/Shop.astro'),/<PageTransitions \/>/);
+ const transitions=await read('src/components/PageTransitions.astro');
+ assert.match(transitions,/import \{ ClientRouter \} from "astro:transitions";/);
+ assert.match(transitions,/<ClientRouter \/>/);
  assert.doesNotMatch(await read('src/styles/global/global.css'),/@view-transition \{/);
 });
 

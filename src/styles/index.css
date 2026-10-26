@@ -15,4 +15,5 @@
 @import "./blocks/catalog.css";
 @import "./blocks/chrome.css";
 @import "./blocks/editorial.css";
+@import "./blocks/transitions.css";
 @import "./utilities/utilities.css";
