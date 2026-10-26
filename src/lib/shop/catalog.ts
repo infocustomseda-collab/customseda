@@ -2,7 +2,7 @@
 // Filtering, sorting and URL state live in filters.ts, which the client script also imports.
 import type { ShopContent, ShopEntry } from "./content.ts";
 import { productCard } from "./site.ts";
-import { orderSizes, SIZE_ORDER } from "./view.ts";
+import { orderSizes } from "./view.ts";
 import type { CatalogItem } from "./filters.ts";
 
 export * from "./filters.ts";
@@ -15,6 +15,10 @@ const code = (entries: ShopEntry[], id: string | undefined) => {
 };
 
 export function buildCatalog(shop: Lookups): CatalogItem[] {
+	const metadata = (category: string, color: string | null) => {
+		const label = shop.colors.find(entry => entry.data.code === color)?.data.title;
+		return [category, typeof label === "string" ? label : null].filter(Boolean).join(" · ");
+	};
 	const pieces = shop.products.map((entry) => {
 		const category = code(shop.categories, entry.refs.category?.[0]);
 		return {
@@ -37,7 +41,7 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
 		color: piece.color,
 		collection: piece.collection,
 		sizes: piece.sizes,
-		card: productCard(piece.entry),
+		card: { ...productCard(piece.entry), metadata: metadata(piece.category === "top" ? "Top" : "Braguita", piece.color) },
 	});
 	// A Conjunto needs both components; it inherits their color and collection and is available only
 	// when it and both components are.
@@ -57,15 +61,15 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
 			available,
 			color: top.color,
 			collection: top.collection,
-			// Each piece's size is chosen separately, so the set matches any size either piece offers.
+			// Informational only: purchase sizes are chosen separately for each component.
 			sizes: orderSizes([...top.sizes, ...bottom.sizes]),
-			card: { ...card, available },
+			card: { ...card, available, metadata: metadata("Conjunto", top.color) },
 		}];
 	});
 	return [...sets, ...pieces.filter((p) => p.category === "top").map(pieceItem), ...pieces.filter((p) => p.category === "braguita").map(pieceItem)];
 }
 
-export type CatalogView = { handle: string; title: string; description?: unknown; items: (all: CatalogItem[]) => CatalogItem[] };
+export type CatalogView = { handle: string; title: string; description?: unknown; items: (all: CatalogItem[]) => CatalogItem[]	};
 
 export function catalogViews(shop: Pick<ShopContent, "collections">): CatalogView[] {
 	return [
@@ -86,13 +90,11 @@ export const catalogView = (handle: string, shop: Pick<ShopContent, "collections
 
 export function facetOptions(items: CatalogItem[], shop: Pick<ShopContent, "colors">) {
 	const colors = new Set(items.map((item) => item.color));
-	const sizes = new Set(items.flatMap((item) => item.sizes));
 	return {
 		colors: shop.colors.flatMap((entry) => {
 			const value = entry.data.code;
 			return typeof value === "string" && colors.has(value) ? [{ code: value, label: String(entry.data.title ?? value) }] : [];
 		}),
-		sizes: SIZE_ORDER.filter((size) => sizes.has(size)),
 	};
 }
 

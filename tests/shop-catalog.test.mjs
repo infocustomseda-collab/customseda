@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,featuredItem} from '../src/lib/shop/catalog.ts';
+import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,featuredItem,categoryHref} from '../src/lib/shop/catalog.ts';
 
 const entry=(type,id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
 const lookups={
@@ -51,15 +51,14 @@ test('views cover the combined catalog, categories and collections; unknown hand
  assert.equal(catalogView('top',shop).title,'Tops');
 });
 
-test('filters combine as AND across groups and OR within a group',()=>{
+test('filters combine color and availability, without size filtering',()=>{
  const items=buildCatalog(shop);
  const slugs=f=>filterItems(items,f).map(i=>i.slug);
- assert.deepEqual(slugs({colors:['rojo'],sizes:[],available:false}),['fuego','top-fuego','braguita-flow']);
- assert.deepEqual(slugs({colors:[],sizes:['XL'],available:false}),['fuego','top-fuego']);
- assert.deepEqual(slugs({colors:[],sizes:['XS'],available:false}),['tierra','braguita-curve']);
- assert.deepEqual(slugs({colors:[],sizes:['XS','L'],available:false}),['tierra','fuego','top-tierra','top-fuego','braguita-curve']);
- assert.deepEqual(slugs({colors:['caoba'],sizes:['M'],available:true}),['tierra','top-tierra','braguita-curve']);
- assert.deepEqual(slugs({colors:['rojo'],sizes:['XS'],available:true}),[]);
+ assert.deepEqual(slugs({colors:['rojo'],available:false}),['fuego','top-fuego','braguita-flow']);
+ assert.deepEqual(slugs({colors:['caoba','rojo'],available:true}),['tierra','top-tierra','braguita-curve','braguita-flow']);
+ assert.deepEqual(slugs({colors:['rojo'],available:true}),['braguita-flow']);
+ // Old bookmarked size selections must not constrain the catalog invisibly.
+ assert.equal(slugs({colors:[],sizes:['XS'],available:false}).length,6);
 });
 
 test('sorting by price or name is stable and the default keeps catalog order',()=>{
@@ -72,9 +71,9 @@ test('sorting by price or name is stable and the default keeps catalog order',()
 
 test('filters round-trip through the query string and ignore unknown values',()=>{
  const filters=parseFilters('?color=rojo&color=nada&talla=m&talla=XL&disponible=1&orden=precio-asc&x=1',{colors:['caoba','rojo']});
- assert.deepEqual(filters,{colors:['rojo'],sizes:['M','XL'],available:true,sort:'precio-asc'});
- assert.equal(filtersQuery(filters),'?color=rojo&talla=M&talla=XL&disponible=1&orden=precio-asc');
- assert.equal(filtersQuery({colors:[],sizes:[],available:false,sort:'destacados'}),'');
+ assert.deepEqual(filters,{category:'todos',colors:['rojo'],available:true,sort:'precio-asc'});
+ assert.equal(filtersQuery(filters),'?category=todos&color=rojo&disponible=1&orden=precio-asc');
+ assert.equal(filtersQuery({colors:[],available:false,sort:'destacados'}),'');
  assert.equal(parseFilters('?orden=raro',{colors:[]}).sort,'destacados');
 });
 
@@ -82,7 +81,7 @@ test('facet options list only values present in the view, in lookup order',()=>{
  const items=buildCatalog(shop);
  const facets=facetOptions(items.filter(i=>i.category==='top'),shop);
  assert.deepEqual(facets.colors,[{code:'caoba',label:'Caoba'},{code:'rojo',label:'Rojo'}]);
- assert.deepEqual(facets.sizes,['S','M','L','XL']);
+ assert.equal(facets.sizes,undefined);
 });
 
 test('the featured Conjunto resolves through catalog rules and disappears without a component',()=>{
@@ -90,4 +89,33 @@ test('the featured Conjunto resolves through catalog rules and disappears withou
  assert.equal(featuredItem(shop,'huerfano'),null);
  assert.equal(featuredItem(shop,'top-tierra'),null);
  assert.equal(featuredItem(shop,undefined),null);
+});
+
+test('category links keep the catalog path and current refinements',()=>{
+ const filters={category:'todos',colors:['rojo','caoba'],available:true,sort:'precio-desc'};
+ assert.equal(categoryHref('/collections/bikinis',filters,'tops'),'/collections/bikinis?category=tops&color=rojo&color=caoba&disponible=1&orden=precio-desc');
+ assert.equal(categoryHref('/collections/bikinis',filters,'conjuntos'),'/collections/bikinis?category=conjuntos&color=rojo&color=caoba&disponible=1&orden=precio-desc');
+ assert.equal(categoryHref('/collections/bikinis',{colors:[],available:false},'todos'),'/collections/bikinis?category=todos');
+});
+
+test('category queries filter the same catalog and combine with color and availability',()=>{
+ const items=buildCatalog(shop);
+ const slugs=query=>filterItems(items,parseFilters(query,{colors:['rojo','caoba']})).map(item=>item.slug);
+ assert.deepEqual(slugs('?category=tops'),['top-tierra','top-fuego']);
+ assert.deepEqual(slugs('?category=conjuntos'),['tierra','fuego']);
+ assert.deepEqual(slugs('?category=braguitas'),['braguita-curve','braguita-flow']);
+ assert.equal(slugs('?category=todos').length,6);
+ assert.deepEqual(slugs('?category=tops&color=rojo&disponible=1'),[]);
+ assert.deepEqual(slugs('?category=braguitas&color=rojo&disponible=1'),['braguita-flow']);
+ assert.equal(slugs('?category=unknown').length,6);
+ assert.equal(parseFilters('',{colors:[],defaultCategory:'tops'}).category,'tops');
+ assert.equal(parseFilters('?category=todos',{colors:[],defaultCategory:'tops'}).category,'todos');
+});
+
+test('catalog cards identify the product type and localized color without changing titles',()=>{
+ const items=buildCatalog(shop);
+ assert.equal(items.find(i=>i.slug==='tierra').card.metadata,'Conjunto · Caoba');
+ assert.equal(items.find(i=>i.slug==='top-tierra').card.metadata,'Top · Caoba');
+ assert.equal(items.find(i=>i.slug==='braguita-flow').card.metadata,'Braguita · Rojo');
+ assert.equal(items.find(i=>i.slug==='tierra').card.title,'TIERRA');
 });

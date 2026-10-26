@@ -19,6 +19,7 @@ export type GalleryImage = {
 export type ProductCardView = {
 	href: string;
 	title: string;
+	metadata?: string;
 	priceCents: number;
 	images: GalleryImage[];
 	available: boolean;
