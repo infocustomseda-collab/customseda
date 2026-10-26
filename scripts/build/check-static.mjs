@@ -17,7 +17,8 @@ export async function checkStaticBuild(dir='dist/client') {
  const broken=[];
  for(const file of files) {
   const html=await readFile(file,'utf8');
-  if(ERROR_TEXT.test(html)||!/<html[\s>]/i.test(html)) broken.push(relative(dir,file));
+  // Astro's redirect documents use a doctype and omit the optional <html> tag.
+  if(ERROR_TEXT.test(html)||!/(<html[\s>]|^\s*<!doctype\s+html>)/i.test(html)) broken.push(relative(dir,file));
  }
  if(broken.length) throw new Error(`Prerendered pages are not documents (EmDash error responses?): ${broken.slice(0,10).join(', ')}${broken.length>10?` and ${broken.length-10} more`:''}.`);
  return {pages:files.length};

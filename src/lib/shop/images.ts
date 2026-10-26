@@ -46,6 +46,17 @@ export function collectImages(snapshot: unknown): ImageRef[] {
 	return [...found.values()];
 }
 
+/** Reuse prepared files in live local previews, matching immutable R2 storage keys. */
+export function generatedImages(snapshot: unknown): Map<string, Generated> {
+	const generated = new Map<string, Generated>();
+	walk(snapshot, (image, key) => {
+		if (image.width > 0 && image.height > 0 && Array.isArray(image.derivatives) && image.derivatives.length) {
+			generated.set(key, { width: image.width, height: image.height, derivatives: image.derivatives });
+		}
+	});
+	return generated;
+}
+
 /** A copy of the snapshot whose image values list their derivatives (and measured size when missing). */
 export function annotateImages<T>(snapshot: T, generated: Map<string, Generated>): T {
 	return walk(snapshot, (image, key) => {

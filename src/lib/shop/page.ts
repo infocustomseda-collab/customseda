@@ -4,6 +4,7 @@ import { getMenu } from "emdash";
 import { getDb } from "emdash/runtime";
 import type { SiteChrome } from "../../layouts/Shop.astro";
 import { loadShop, type ShopContent, type ShopEntry } from "./content.ts";
+import { annotateImages, generatedImages } from "./images.ts";
 import { popupViews, settingsOf, siteChrome } from "./site.ts";
 import type { ShopSnapshot } from "./snapshot.ts";
 
@@ -20,7 +21,12 @@ function snapshot(): ShopSnapshot {
 
 /** Content for getStaticPaths and pages: live with drafts in development, the snapshot otherwise. */
 export async function loadShopContent(): Promise<ShopContent> {
-	return import.meta.env.DEV ? loadShop(await getDb(), { drafts: true }) : snapshot().shop;
+	if (!import.meta.env.DEV) return snapshot().shop;
+	const live = await loadShop(await getDb(), { drafts: true });
+	const prepared = Object.values(snapshots)[0];
+	// Never borrow derivatives from another environment. CMS edits remain live; newly
+	// uploaded media falls back to its original until the next local image preparation.
+	return prepared?.environment === "local" ? annotateImages(live, generatedImages(prepared)) : live;
 }
 
 export async function loadShopPage(Astro: { url: URL }): Promise<ShopPage> {
