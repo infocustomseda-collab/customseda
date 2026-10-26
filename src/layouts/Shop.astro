@@ -53,6 +53,18 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 		{image && <meta property="og:image" content={image} />}
 		<Font cssVariable="--font-cormorant" preload={[{ weight: 500, style: "normal" }]} />
 		<Font cssVariable="--font-montserrat" preload />
+		{/* Install before ClientRouter's module: same-catalog history updates its grid. */}
+		<script is:inline>
+			if (!window.__sedaCatalogHistory) {
+				window.__sedaCatalogHistory = true;
+				window.addEventListener("popstate", (event) => {
+					const catalog = document.querySelector("catalog-browser");
+					if (!event.state?.sedaCatalog || !catalog || catalog.dataset.basePath !== location.pathname) return;
+					event.stopImmediatePropagation();
+					catalog.dispatchEvent(new Event("seda:catalog-history"));
+				}, true);
+			}
+		</script>
 		<PageTransitions />
 	</head>
 	<body>

@@ -17,32 +17,39 @@ export async function getStaticPaths() {
 const { shop, site } = await loadShopPage(Astro);
 const view = catalogView(Astro.params.handle ?? "", shop);
 if (!view) return Astro.rewrite("/404");
-const items = view.items(buildCatalog(shop));
+// Retained category URLs initialize the same complete grid. Collection pages keep
+// their collection scope; category selection is then another query refinement.
+const legacyCategories = { bikinis: "todos", conjuntos: "conjuntos", top: "tops", braguitas: "braguitas" } as const;
+const initialCategory = legacyCategories[view.handle as keyof typeof legacyCategories] ?? "todos";
+const listing = view.handle in legacyCategories ? catalogView("bikinis", shop)! : view;
+const basePath = `/collections/${listing.handle}`;
+const catalog = buildCatalog(shop);
+const items = listing.items(catalog);
 const facets = facetOptions(items, shop);
 const tabs = [
-	{ handle: "bikinis", label: "Todo" },
-	{ handle: "conjuntos", label: "Conjuntos" },
-	{ handle: "top", label: "Tops" },
-	{ handle: "braguitas", label: "Braguitas" },
+	{ category: "todos", label: "Todo" },
+	{ category: "conjuntos", label: "Conjuntos" },
+	{ category: "tops", label: "Tops" },
+	{ category: "braguitas", label: "Braguitas" },
 ];
 ---
 
-<Shop title={view.title} description={plainText(view.description) || `${view.title} de Seda`} site={site}>
-	<div class="wrapper region stack" style="--stack-space: var(--space-m-l)">
-		<header class="stack" style="--stack-space: var(--space-s)">
-			<h1>{view.title}</h1>
-			<RichText value={view.description} />
+<Shop title={listing.title} description={plainText(listing.description) || `${listing.title} de Seda`} site={site}>
+	<div class="catalog-page wrapper region stack" style="--stack-space: var(--space-m-l)">
+		<header class="catalog-page__header stack" style="--stack-space: var(--space-s)">
+			<h1>{listing.title}</h1>
+			<RichText value={listing.description} />
 			<nav aria-label="Categorías">
 				<ul class="cluster category-tabs" role="list">
 					{tabs.map((tab) => (
-						<li><a class="choice__label" href={`/collections/${tab.handle}`} aria-current={tab.handle === view.handle ? "page" : undefined}>{tab.label}</a></li>
+						<li><a class="category-tabs__link" data-category={tab.category} href={`${basePath}?category=${tab.category}`} aria-current={tab.category === initialCategory ? "true" : undefined}>{tab.label}</a></li>
 					))}
 				</ul>
 			</nav>
 		</header>
 
 		{items.length > 0 ? (
-			<CatalogBrowser items={items} colors={facets.colors} sizes={facets.sizes} />
+			<CatalogBrowser items={items} colors={facets.colors} basePath={basePath} initialCategory={initialCategory} />
 		) : (
 			<div class="catalog__empty stack text-center">
 				<p>Todavía no hay piezas en esta sección. Vuelve pronto.</p>

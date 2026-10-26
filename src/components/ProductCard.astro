@@ -36,8 +36,11 @@ const Heading = `h${headingLevel}` as "h2" | "h3";
 		)}
 		{!product.available && <span class="product-card__badge badge">No disponible</span>}
 	</div>
+	<div class="product-card__details">
 	<Heading class="product-card__title">
 		<a class="product-card__link" href={product.href} style={names ? `view-transition-name: ${names.title}` : undefined}>{product.title}</a>
 	</Heading>
+	{product.metadata && <p class="product-card__metadata">{product.metadata}</p>}
 	<Price cents={product.priceCents} size="small" />
+	</div>
 </article>

@@ -1,31 +1,50 @@
 ---
-// Product grid with client-side filters (color, size, availability) and sorting. The server renders every
-// item in catalog order; the script hides, reorders and syncs the URL. Without JavaScript the full list shows.
-import type { CatalogItem } from "../lib/shop/catalog";
+// Progressive enhancement: all cards remain browsable without JavaScript.
+import type { CatalogItem, Category } from "../lib/shop/catalog";
 import { uniqueTransitions } from "../lib/shop/view";
+import Icon from "./Icon.astro";
 import ProductCard from "./ProductCard.astro";
 
 interface Props {
 	items: CatalogItem[];
 	colors: { code: string; label: string }[];
-	sizes: string[];
+	basePath: string;
+	initialCategory: Category;
 }
-
-const { items, colors, sizes } = Astro.props;
+const { items, colors, basePath, initialCategory } = Astro.props;
 const data = items.map(({ card: _card, ...item }) => item);
 const cards = uniqueTransitions(items.map((item) => item.card));
 const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 ---
 
-<catalog-browser class="catalog">
+<catalog-browser class="catalog" data-base-path={basePath} data-initial-category={initialCategory}>
 	<div class="catalog__toolbar" data-enhanced hidden>
-		<button class="filters__toggle button" data-variant="secondary" type="button" aria-expanded="false" aria-controls="catalog-filters">
-			Filtrar
-		</button>
+		<details class="catalog__refinements">
+			<summary class="filters__toggle"><span data-filter-label>Filtrar</span><Icon name="chevron-down" /></summary>
+			<form class="filters" id="catalog-filters" aria-label="Filtros">
+				{colors.length > 0 && (
+					<fieldset class="choice-group">
+						<legend class="choice-group__legend">Color</legend>
+						<div class="choice-group__options cluster">
+							{colors.map(color => (
+								<label class="choice">
+									<input class="choice__input" type="checkbox" name="color" value={color.code} data-label={color.label} />
+									<span class="choice__label">{color.label}</span>
+								</label>
+							))}
+						</div>
+					</fieldset>
+				)}
+				<label class="filters__availability">
+					<input type="checkbox" name="disponible" value="1" data-label="Solo disponibles" />
+					<span>Solo disponibles</span>
+				</label>
+			</form>
+		</details>
 		<p class="catalog__count" aria-live="polite" data-count>{count(items.length)}</p>
 		<label class="catalog__sort">
-			<span>Ordenar por</span>
-			<select class="field__control" name="orden" form="catalog-filters">
+			<span class="visually-hidden">Ordenar por</span>
+			<select name="orden" form="catalog-filters">
 				<option value="destacados">Destacados</option>
 				<option value="precio-asc">Precio: menor a mayor</option>
 				<option value="precio-desc">Precio: mayor a menor</option>
@@ -33,109 +52,142 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 			</select>
 		</label>
 	</div>
-
-	<form class="filters" id="catalog-filters" data-enhanced hidden aria-label="Filtros">
-		{colors.length > 1 && (
-			<fieldset class="choice-group">
-				<legend class="choice-group__legend">Color</legend>
-				<div class="choice-group__options cluster">
-					{colors.map((color) => (
-						<label class="choice">
-							<input class="choice__input" type="checkbox" name="color" value={color.code} />
-							<span class="choice__label">{color.label}</span>
-						</label>
-					))}
-				</div>
-			</fieldset>
-		)}
-		{sizes.length > 1 && (
-			<fieldset class="choice-group">
-				<legend class="choice-group__legend">Talla</legend>
-				<div class="choice-group__options cluster">
-					{sizes.map((size) => (
-						<label class="choice">
-							<input class="choice__input" type="checkbox" name="talla" value={size} />
-							<span class="choice__label">{size}</span>
-						</label>
-					))}
-				</div>
-			</fieldset>
-		)}
-		<fieldset class="choice-group">
-			<legend class="choice-group__legend">Disponibilidad</legend>
-			<div class="choice-group__options cluster">
-				<label class="choice">
-					<input class="choice__input" type="checkbox" name="disponible" value="1" />
-					<span class="choice__label">Solo disponibles</span>
-				</label>
-			</div>
-		</fieldset>
-		<button class="filters__clear" type="reset">Quitar filtros</button>
-	</form>
-
+	<div class="catalog__active cluster" data-active hidden>
+		<div class="cluster" data-selected role="group" aria-label="Filtros seleccionados"></div>
+		<button class="filters__clear" type="button" data-clear>Quitar filtros</button>
+	</div>
 	<ul class="grid" data-layout="products" role="list" data-grid>
 		{items.map((item, index) => (
-			<li data-id={item.id}>
-				<ProductCard product={cards[index]} eager={index < 3} headingLevel={2} />
-			</li>
+			<li data-id={item.id}><ProductCard product={cards[index]} eager={index < 3} headingLevel={2} /></li>
 		))}
 	</ul>
-
 	<div class="catalog__empty stack text-center" data-empty hidden>
 		<p>Ninguna pieza coincide con estos filtros.</p>
 		<button class="button" data-variant="secondary" type="button" data-clear>Quitar filtros</button>
 	</div>
-
+	<template data-remove-icon><Icon name="close" size={14} /></template>
 	<script type="application/json" data-items set:html={JSON.stringify(data).replaceAll("<", "\\u003c")} />
 </catalog-browser>
 
 <script>
-	import { filterItems, filtersQuery, parseFilters, sortItems, type CatalogItem } from "../lib/shop/filters";
-
+	import { CatalogGridMotion } from "../lib/shop/catalog-motion";
+	import { categoryHref, filterItems, filtersQuery, parseFilters, sortItems, type CatalogItem, type Category } from "../lib/shop/filters";
 	class CatalogBrowser extends HTMLElement {
+		controller?: AbortController;
+		motion?: CatalogGridMotion;
 		connectedCallback() {
+			this.controller?.abort();
+			this.motion?.cancel();
+			this.controller = new AbortController();
+			const { signal } = this.controller;
 			const items = JSON.parse(this.querySelector("[data-items]")!.textContent || "[]") as CatalogItem[];
 			const form = this.querySelector<HTMLFormElement>("form")!;
 			const grid = this.querySelector<HTMLElement>("[data-grid]")!;
-			const cards = new Map([...grid.children].map((li) => [(li as HTMLElement).dataset.id, li as HTMLElement]));
+			const cards = new Map([...grid.children].map(li => [(li as HTMLElement).dataset.id!, li as HTMLElement]));
+			const style = getComputedStyle(grid);
+			const duration = (name: string) => {
+				const value = style.getPropertyValue(name).trim();
+				return parseFloat(value) * (value.endsWith("ms") ? 1 : 1000);
+			};
+			const motion = this.motion = new CatalogGridMotion(grid, cards, {
+				exit: duration("--duration-quick"), move: duration("--duration-slow"),
+				enter: duration("--duration-moderate"), easing: style.getPropertyValue("--ease-out").trim(),
+			});
 			const empty = this.querySelector<HTMLElement>("[data-empty]")!;
 			const counter = this.querySelector<HTMLElement>("[data-count]")!;
-			const toggle = this.querySelector<HTMLButtonElement>(".filters__toggle")!;
+			const details = this.querySelector<HTMLDetailsElement>("details")!;
+			const toggle = this.querySelector<HTMLElement>("summary")!;
+			const filterLabel = this.querySelector<HTMLElement>("[data-filter-label]")!;
+			const active = this.querySelector<HTMLElement>("[data-active]")!;
+			const selected = this.querySelector<HTMLElement>("[data-selected]")!;
+			const removeIcon = this.querySelector<HTMLTemplateElement>("[data-remove-icon]")!;
 			const sort = this.querySelector("select") as HTMLSelectElement;
-			const colors = [...form.querySelectorAll<HTMLInputElement>('[name="color"]')].map((input) => input.value);
-
-			const initial = parseFilters(location.search, { colors });
-			for (const input of form.querySelectorAll<HTMLInputElement>("input")) {
-				input.checked =
-					(input.name === "color" && initial.colors.includes(input.value)) ||
-					(input.name === "talla" && initial.sizes.includes(input.value)) ||
-					(input.name === "disponible" && initial.available);
-			}
-			sort.value = initial.sort;
-
-			const apply = () => {
-				const filters = parseFilters(`?${new URLSearchParams(new FormData(form) as unknown as Record<string, string>)}`, { colors });
+			const inputs = [...form.querySelectorAll<HTMLInputElement>("input")];
+			const colors = [...new Set(items.flatMap(item => item.color ? [item.color] : []))];
+			const basePath = this.dataset.basePath!;
+			const links = [...this.closest(".catalog-page")!.querySelectorAll<HTMLAnchorElement>("[data-category]")];
+			let category: Category = "todos";
+			const restore = (defaultCategory: Category = "todos") => {
+				const state = parseFilters(location.search, { colors, defaultCategory });
+				category = state.category;
+				for (const input of inputs) input.checked = input.name === "color" ? state.colors.includes(input.value) : state.available;
+				sort.value = state.sort;
+			};
+			const apply = (historyMode: "replace" | "push" | "none" = "replace", animate = true) => {
+				const filters = { ...parseFilters(`?${new URLSearchParams(new FormData(form) as unknown as Record<string, string>)}`, { colors }), category };
 				const visible = sortItems(filterItems(items, filters), filters.sort);
-				const shown = new Set(visible.map((item) => item.id));
-				for (const item of visible) grid.appendChild(cards.get(item.id)!);
-				for (const [id, li] of cards) li.hidden = !shown.has(id!);
+				const shown = new Set(visible.map(item => item.id));
+
 				counter.textContent = `${visible.length} ${visible.length === 1 ? "producto" : "productos"}`;
 				empty.hidden = visible.length > 0;
-				history.replaceState(history.state, "", `${location.pathname}${filtersQuery(filters)}${location.hash}`);
+				if (historyMode !== "none") {
+					const href = `${basePath}${filtersQuery(filters)}${location.hash}`;
+					if (historyMode === "push" && href !== `${location.pathname}${location.search}${location.hash}`) history.pushState({ ...history.state, sedaCatalog: true }, "", href);
+					else history.replaceState({ ...history.state, sedaCatalog: true }, "", href);
+				}
+				for (const link of links) {
+					link.href = categoryHref(basePath, filters, link.dataset.category as Category);
+					if (link.dataset.category === category) link.setAttribute("aria-current", "true");
+					else link.removeAttribute("aria-current");
+				}
+				const checked = inputs.filter(input => input.checked);
+				filterLabel.textContent = checked.length ? `Filtros (${checked.length})` : "Filtrar";
+				active.hidden = checked.length === 0;
+				selected.replaceChildren();
+				for (const input of checked) {
+					const button = document.createElement("button");
+					button.type = "button";
+					button.className = "filters__selected";
+					button.textContent = input.dataset.label || input.value;
+					button.setAttribute("aria-label", `Quitar filtro: ${button.textContent}`);
+					button.appendChild(removeIcon.content.cloneNode(true));
+					button.addEventListener("click", () => {
+						const index = [...selected.children].indexOf(button);
+						input.checked = false;
+						apply();
+						// Removing a focused chip must leave keyboard users at a useful control.
+						((selected.children[Math.min(index, selected.children.length - 1)] as HTMLElement) || toggle).focus();
+					});
+					selected.appendChild(button);
+				}
+				motion.update([...shown], animate && !matchMedia("(prefers-reduced-motion: reduce)").matches);
 			};
-
-			form.addEventListener("change", apply);
-			sort.addEventListener("change", apply);
-			form.addEventListener("reset", () => requestAnimationFrame(() => { sort.value = "destacados"; apply(); }));
-			this.querySelector("[data-clear]")!.addEventListener("click", () => form.reset());
-			toggle.addEventListener("click", () => {
-				const open = toggle.getAttribute("aria-expanded") !== "true";
-				toggle.setAttribute("aria-expanded", String(open));
-				this.toggleAttribute("data-open", open);
-			});
+			for (const link of links) link.addEventListener("click", event => {
+				if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+				event.preventDefault();
+				event.stopPropagation(); // Category changes belong to this grid, not ClientRouter.
+				category = link.dataset.category as Category;
+				details.open = false;
+				apply("push");
+			}, { signal });
+			this.addEventListener("seda:catalog-history", () => {
+				if (location.pathname !== basePath) return;
+				restore();
+				apply("none");
+			}, { signal });
+			form.addEventListener("submit", event => event.preventDefault(), { signal });
+			form.addEventListener("change", () => apply(), { signal });
+			sort.addEventListener("change", () => apply(), { signal });
+			for (const button of this.querySelectorAll<HTMLButtonElement>("[data-clear]")) button.addEventListener("click", () => {
+				inputs.forEach(input => input.checked = false);
+				apply();
+				toggle.focus();
+			}, { signal });
+			document.addEventListener("pointerdown", event => {
+				if (event.target instanceof Node && !details.contains(event.target)) details.open = false;
+			}, { signal });
+			details.addEventListener("keydown", event => {
+				if (event.key === "Escape") { details.open = false; toggle.focus(); }
+			}, { signal });
 			for (const element of this.querySelectorAll<HTMLElement>("[data-enhanced]")) element.hidden = false;
-			apply();
+			// connectedCallback can run during a body swap, before Astro updates the
+			// address bar. Initialize only once the destination URL is in place.
+			document.addEventListener("astro:page-load", () => {
+				restore(this.dataset.initialCategory as Category);
+				apply("replace", false);
+			}, { signal });
 		}
+		disconnectedCallback() { this.controller?.abort(); this.motion?.cancel(); }
 	}
 	if (!customElements.get("catalog-browser")) customElements.define("catalog-browser", CatalogBrowser);
 </script>

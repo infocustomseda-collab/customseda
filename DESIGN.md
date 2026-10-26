@@ -252,13 +252,20 @@ Soft, rounded and quietly tactile.
 ### Size pills (chips)
 - **Style:** native radios behind pill labels, 2.5rem tall and at least 3.25rem wide, with a 1px `ink-70` border and Cormorant 700 ink text.
 - **State:** hover darkens the border to ink. Selected fills with ink and paper text. An unavailable size has a dashed border, subtle text and a line-through. The group's error state gives every pill a terracotta border.
-- Category tabs on catalog pages reuse the same pill, with the current tab filled.
+- Catalog categories use a separate row of text navigation with an underline for the current category. Attribute pills are reserved for color choices inside the filter disclosure.
+
+### Catalog navigation and refinements
+- Categories remain visible as text links, with a brown underline identifying the current selection. They refine the existing grid through `?category=todos|conjuntos|tops|braguitas`, without a page swap.
+- A compact toolbar contains a native filter disclosure, result count and sort select. Color and availability are secondary; no catalog size filter is offered.
+- Grid changes use a short exit fade followed by FLIP movement into the new positions; returning cards fade in. Motion uses existing 200/600/300ms timing tokens and is immediate for reduced motion or initial rendering.
+- Active filters remain visible as removable chips with a reset when the disclosure is closed. Color, availability and sorting remain selected across category changes, including empty combinations. Direct URLs and browser Back/Forward restore the grid state.
 
 ### Product cards
 - **Corner style:** square, with no border or shadow.
 - **Media:** 4:5 on a sand placeholder. On hover-capable devices the second photo fades in over 0.3s.
 - **Content:** centered title (Montserrat 700, step 0) and price (Cormorant 700, step 0, tabular figures). The whole card is one link, and focus outlines the whole card.
 - **Badge:** a paper pill, bottom-left on the photo, for availability states.
+- **Catalog metadata:** a quiet Cormorant line identifies product type and color below the unchanged merchant title.
 
 ### Inputs / Fields
 - **Style:** paper background, 1px `ink-70` border, 2px radius, 3.25rem tall, ink text, `ink-85` placeholder.
