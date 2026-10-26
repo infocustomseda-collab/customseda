@@ -3,6 +3,7 @@ import type { SiteChrome } from "../../layouts/Shop.astro";
 import type { ShopContent, ShopEntry } from "./content.ts";
 import type { PopupSchedule } from "./popup.ts";
 import { galleryImages, imageView, type NavItem, type ProductCardView, type SocialLink } from "./view.ts";
+import { menuIndex, normalizePath } from "./slide.ts";
 
 type Menu = { items: { label: string; url: string }[] } | null | undefined;
 
@@ -27,12 +28,17 @@ export function linkHref(value: unknown): string | undefined {
 	return localHref(value);
 }
 
-const isCurrent =(href: string, path: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
-const navItems = (menu: Menu, path: string): NavItem[] =>
-	(menu?.items ?? []).flatMap((item) => {
+// Astro's file-format prerender supplies /index.html and /pages/<slug>.html.
+const navigationPath = (path: string) => normalizePath(path.split(/[?#]/)[0].replace(/^\/index\.html$/, "/").replace(/\.html$/, ""));
+const navItems = (menu: Menu, path: string): NavItem[] => {
+	const items = (menu?.items ?? []).flatMap((item) => {
 		const href = localHref(item.url);
-		return href ? [{ label: item.label, href, current: isCurrent(href, path) }] : [];
+		return href ? [{ label: item.label, href }] : [];
 	});
+	const paths = items.map(({ href }) => navigationPath(href));
+	const current = menuIndex(paths, navigationPath(path));
+	return items.map((item, index) => ({ ...item, current: index === current }));
+};
 
 export const settingsOf = (shop: Pick<ShopContent, "site_settings">): ShopEntry | undefined => shop.site_settings[0];
 

@@ -16,12 +16,21 @@
 		view-transition-name: site-header;
 	}
 
+	/* One shared underline travels between the old and new current menu links. */
+	:active-view-transition .site-nav__indicator {
+		view-transition-name: site-nav-indicator;
+	}
+
+	::view-transition-group(site-nav-indicator) {
+		z-index: 2;
+	}
+
 	::view-transition-group(site-announcement),
 	::view-transition-group(site-header) {
 		z-index: 1;
 	}
 
-	/* Card photos and titles are named for the flight into their product page; while the page
+	/* Card photos, titles, metadata and prices fly into their product page; while the page
 	   slides they must ride along with it instead of fading in on their own. */
 	html:is([data-slide="forward"], [data-slide="back"]) [style*="view-transition-name"] {
 		view-transition-name: none !important;

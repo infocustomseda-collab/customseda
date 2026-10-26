@@ -40,7 +40,7 @@ const Heading = `h${headingLevel}` as "h2" | "h3";
 	<Heading class="product-card__title">
 		<a class="product-card__link" href={product.href} style={names ? `view-transition-name: ${names.title}` : undefined}>{product.title}</a>
 	</Heading>
-	{product.metadata && <p class="product-card__metadata">{product.metadata}</p>}
-	<Price cents={product.priceCents} size="small" />
+	{product.metadata && <p class="product-card__metadata" style={names ? `view-transition-name: ${names.metadata}` : undefined}>{product.metadata}</p>}
+	<Price cents={product.priceCents} size="small" transitionName={names?.price} />
 	</div>
 </article>

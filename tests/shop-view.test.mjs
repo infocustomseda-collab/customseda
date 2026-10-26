@@ -47,6 +47,8 @@ test('transition names are stable and CSS-safe', () => {
 	assert.deepEqual(transitionNames('product-01M5R1TTTRDVSFZVXQZSGEJCQQ'), {
 		image: 'product-01m5r1tttrdvsfzvxqzsgejcqq-image',
 		title: 'product-01m5r1tttrdvsfzvxqzsgejcqq-title',
+		metadata: 'product-01m5r1tttrdvsfzvxqzsgejcqq-metadata',
+		price: 'product-01m5r1tttrdvsfzvxqzsgejcqq-price',
 	});
 	assert.equal(transitionNames('Product x/1 ñ').image, 'product-x-1---image');
 	assert.match(transitionNames('9 lives').title, /^[a-z_-]/);
