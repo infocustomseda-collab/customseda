@@ -18,39 +18,43 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 ---
 
 <catalog-browser class="catalog" data-base-path={basePath} data-initial-category={initialCategory}>
-	<div class="catalog__toolbar" data-enhanced hidden>
-		<details class="catalog__refinements">
-			<summary class="filters__toggle"><span data-filter-label>Filtrar</span><Icon name="chevron-down" /></summary>
-			<form class="filters" id="catalog-filters" aria-label="Filtros">
-				{colors.length > 0 && (
-					<fieldset class="choice-group">
-						<legend class="choice-group__legend">Color</legend>
-						<div class="choice-group__options cluster">
-							{colors.map(color => (
-								<label class="choice">
-									<input class="choice__input" type="checkbox" name="color" value={color.code} data-label={color.label} />
-									<span class="choice__label">{color.label}</span>
-								</label>
-							))}
-						</div>
-					</fieldset>
-				)}
-				<label class="filters__availability">
-					<input type="checkbox" name="disponible" value="1" data-label="Solo disponibles" />
-					<span>Solo disponibles</span>
-				</label>
-			</form>
-		</details>
-		<p class="catalog__count" aria-live="polite" data-count>{count(items.length)}</p>
-		<label class="catalog__sort">
-			<span class="visually-hidden">Ordenar por</span>
-			<select name="orden" form="catalog-filters">
-				<option value="destacados">Destacados</option>
-				<option value="precio-asc">Precio: menor a mayor</option>
-				<option value="precio-desc">Precio: mayor a menor</option>
-				<option value="nombre">Nombre</option>
-			</select>
-		</label>
+	<div class="catalog__tools" data-enhanced hidden>
+		<div class="catalog__toolbar">
+			<button class="filters__toggle" type="button" aria-expanded="false" aria-controls="catalog-filter-panel"><span data-filter-label>Filtrar</span><Icon name="chevron-down" /></button>
+			<p class="catalog__count" aria-live="polite" data-count>{count(items.length)}</p>
+			<label class="catalog__sort">
+				<span class="visually-hidden">Ordenar por</span>
+				<select name="orden" form="catalog-filters">
+					<option value="destacados">Destacados</option>
+					<option value="precio-asc">Precio: menor a mayor</option>
+					<option value="precio-desc">Precio: mayor a menor</option>
+					<option value="nombre">Nombre</option>
+				</select>
+			</label>
+		</div>
+		<div class="filters__panel" id="catalog-filter-panel" inert>
+			<div class="filters__clip">
+				<form class="filters" id="catalog-filters" aria-label="Filtros">
+					{colors.length > 0 && (
+						<fieldset class="choice-group">
+							<legend class="choice-group__legend">Color</legend>
+							<div class="choice-group__options cluster">
+								{colors.map(color => (
+									<label class="choice">
+										<input class="choice__input" type="checkbox" name="color" value={color.code} data-label={color.label} />
+										<span class="choice__label">{color.label}</span>
+									</label>
+								))}
+							</div>
+						</fieldset>
+					)}
+					<label class="filters__availability">
+						<input type="checkbox" name="disponible" value="1" data-label="Solo disponibles" />
+						<span>Solo disponibles</span>
+					</label>
+				</form>
+			</div>
+		</div>
 	</div>
 	<div class="catalog__active cluster" data-active hidden>
 		<div class="cluster" data-selected role="group" aria-label="Filtros seleccionados"></div>
@@ -95,8 +99,15 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 			});
 			const empty = this.querySelector<HTMLElement>("[data-empty]")!;
 			const counter = this.querySelector<HTMLElement>("[data-count]")!;
-			const details = this.querySelector<HTMLDetailsElement>("details")!;
-			const toggle = this.querySelector<HTMLElement>("summary")!;
+			const tools = this.querySelector<HTMLElement>(".catalog__tools")!;
+			const panel = this.querySelector<HTMLElement>(".filters__panel")!;
+			const toggle = this.querySelector<HTMLButtonElement>(".filters__toggle")!;
+			const setFiltersOpen = (open: boolean) => {
+				toggle.setAttribute("aria-expanded", String(open));
+				panel.toggleAttribute("data-open", open);
+				panel.inert = !open;
+			};
+			toggle.addEventListener("click", () => setFiltersOpen(toggle.getAttribute("aria-expanded") !== "true"), { signal });
 			const filterLabel = this.querySelector<HTMLElement>("[data-filter-label]")!;
 			const active = this.querySelector<HTMLElement>("[data-active]")!;
 			const selected = this.querySelector<HTMLElement>("[data-selected]")!;
@@ -157,7 +168,7 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 				event.preventDefault();
 				event.stopPropagation(); // Category changes belong to this grid, not ClientRouter.
 				category = link.dataset.category as Category;
-				details.open = false;
+				setFiltersOpen(false);
 				apply("push");
 			}, { signal });
 			this.addEventListener("seda:catalog-history", () => {
@@ -173,11 +184,8 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 				apply();
 				toggle.focus();
 			}, { signal });
-			document.addEventListener("pointerdown", event => {
-				if (event.target instanceof Node && !details.contains(event.target)) details.open = false;
-			}, { signal });
-			details.addEventListener("keydown", event => {
-				if (event.key === "Escape") { details.open = false; toggle.focus(); }
+			tools.addEventListener("keydown", event => {
+				if (event.key === "Escape") { setFiltersOpen(false); toggle.focus(); }
 			}, { signal });
 			for (const element of this.querySelectorAll<HTMLElement>("[data-enhanced]")) element.hidden = false;
 			// connectedCallback can run during a body swap, before Astro updates the

@@ -27,6 +27,19 @@ test('disabled or empty announcements and missing settings render no chrome extr
  assert.deepEqual([none.nav,none.social,none.announcement],[[],[],null]);
 });
 
+test('the current menu item ignores query strings and trailing slashes and uses the closest section',()=>{
+ const primary=menu([['Inicio','/'],['Shop','/collections/'],['Bikinis','/collections/bikinis?category=todos']]);
+ const nav=siteChrome({settings,primary,footer:null,path:'/collections/bikinis/'}).nav;
+ assert.deepEqual(nav.map(item=>item.current),[false,false,true]);
+ assert.deepEqual(siteChrome({settings,primary,footer:null,path:'/'}).nav.map(item=>item.current),[true,false,false]);
+});
+
+test('file-format prerender URLs highlight their public menu paths',()=>{
+ const primary=menu([['Inicio','/'],['Colección','/pages/margarita']]);
+ assert.deepEqual(siteChrome({settings,primary,footer:null,path:'/index.html'}).nav.map(item=>item.current),[true,false]);
+ assert.deepEqual(siteChrome({settings,primary,footer:null,path:'/pages/margarita.html'}).nav.map(item=>item.current),[false,true]);
+});
+
 test('links to the old storefront domain become site paths; other links are kept or dropped',()=>{
  assert.equal(localHref('https://www.customseda.com/collections/bikinis'),'/collections/bikinis');
  assert.equal(localHref('https://customseda.com/pages/contact?x=1#a'),'/pages/contact?x=1#a');

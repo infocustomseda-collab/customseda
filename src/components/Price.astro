@@ -5,11 +5,12 @@ interface Props {
 	cents: number;
 	size?: "small";
 	class?: string;
+	transitionName?: string;
 }
 
-const { cents, size, class: className } = Astro.props;
+const { cents, size, class: className, transitionName } = Astro.props;
 ---
 
-<p class:list={["price", className]} data-size={size}>
+<p class:list={["price", className]} data-size={size} style={transitionName ? `view-transition-name: ${transitionName}` : undefined}>
 	<data value={(cents / 100).toFixed(2)}>{formatPrice(cents)}</data>
 </p>

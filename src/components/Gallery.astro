@@ -1,5 +1,5 @@
 ---
-// Product gallery: swipeable strip with counter on small screens, stacked grid on wide ones.
+// Product gallery: swipeable strip on small screens, shortest-column masonry on wide ones.
 // The slideshow variant stays a full-bleed strip at every width.
 import type { GalleryImage } from "../lib/shop/view";
 import Icon from "./Icon.astro";
@@ -49,12 +49,47 @@ const eager = variant === "product";
 </product-gallery>
 
 <script>
+	import { masonryLayout } from "../lib/shop/gallery-layout";
+
 	class ProductGallery extends HTMLElement {
 		connectedCallback() {
 			const list = this.querySelector<HTMLElement>(".gallery__list")!;
+			const items = [...list.children] as HTMLElement[];
+			if (!this.classList.contains("gallery--slideshow")) {
+				const dimensions = items.map((item) => {
+					const image = item.querySelector("img")!;
+					return { width: Number(image.getAttribute("width")), height: Number(image.getAttribute("height")) };
+				});
+				const desktop = matchMedia("(min-width: 60rem)");
+				const layout = () => {
+					if (!desktop.matches) {
+						list.removeAttribute("data-masonry");
+						list.style.removeProperty("height");
+						for (const item of items) {
+							for (const property of ["left", "top", "width"]) item.style.removeProperty(property);
+						}
+						return;
+					}
+					const result = masonryLayout(dimensions, list.clientWidth, parseFloat(getComputedStyle(list).columnGap));
+					list.dataset.masonry = "";
+					list.style.height = `${result.height}px`;
+					result.items.forEach((position, index) => {
+						Object.assign(items[index].style, { left: `${position.left}px`, top: `${position.top}px`, width: `${position.width}px` });
+					});
+				};
+				let previousWidth = -1;
+				this.resizeObserver = new ResizeObserver(() => {
+					if (list.clientWidth === previousWidth) return;
+					previousWidth = list.clientWidth;
+					layout();
+				});
+				this.resizeObserver.observe(list);
+				this.abort = new AbortController();
+				desktop.addEventListener("change", layout, { signal: this.abort.signal });
+				layout();
+			}
 			const controls = this.querySelector<HTMLElement>(".gallery__controls");
 			if (!controls) return;
-			const items = [...list.children] as HTMLElement[];
 			const current = controls.querySelector<HTMLElement>("[data-current]")!;
 			const [previous, next] = controls.querySelectorAll<HTMLButtonElement>("button");
 			let index = 0;
@@ -82,8 +117,12 @@ const eager = variant === "product";
 		}
 		disconnectedCallback() {
 			this.observer?.disconnect();
+			this.resizeObserver?.disconnect();
+			this.abort?.abort();
 		}
 		observer?: IntersectionObserver;
+		resizeObserver?: ResizeObserver;
+		abort?: AbortController;
 	}
 	if (!customElements.get("product-gallery")) customElements.define("product-gallery", ProductGallery);
 </script>

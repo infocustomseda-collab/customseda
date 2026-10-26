@@ -117,8 +117,22 @@
 
 	/* WCAG 2.5.8: at least 24px tall targets for standalone links. */
 	.site-nav a {
+		position: relative;
 		display: inline-block;
 		padding-block: var(--space-3xs);
+	}
+
+	.site-nav__indicator {
+		position: absolute;
+		inset-inline: 0;
+		/* Align with the text underline, above the link's padded hit area. */
+		inset-block-end: calc(var(--space-3xs) + 0.3em);
+		block-size: calc(2 * var(--border-width));
+		background: currentcolor;
+	}
+
+	.site-nav a:hover {
+		text-decoration-thickness: var(--border-width);
 	}
 
 	.site-nav a,
@@ -127,9 +141,9 @@
 		text-decoration-color: transparent;
 	}
 
-	.site-nav a:hover,
-	.site-nav a[aria-current="page"],
+	.site-nav a:not([aria-current="page"]):hover,
 	.nav-drawer a[aria-current="page"] {
+		text-decoration-line: underline;
 		text-decoration-color: currentcolor;
 	}
 

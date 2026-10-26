@@ -76,10 +76,10 @@ export function orderSizes(codes: readonly string[] | undefined): SizeCode[] {
 	return SIZE_ORDER.filter((code) => wanted.has(code));
 }
 
-/** Cross-document view-transition names for a card's photo and title (lowercase custom idents). */
-export function transitionNames(base: string): { image: string; title: string } {
+/** Shared card/detail view-transition names (lowercase custom idents). */
+export function transitionNames(base: string): { image: string; title: string; metadata: string; price: string } {
 	const safe = base.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/^(?=[\d-])/, "t-");
-	return { image: `${safe}-image`, title: `${safe}-title` };
+	return { image: `${safe}-image`, title: `${safe}-title`, metadata: `${safe}-metadata`, price: `${safe}-price` };
 }
 
 /** A transition name may appear once per page: later duplicates of the same product drop theirs. */
