@@ -28,6 +28,18 @@ This applies the versioned catalog model to local D1 and regenerates CMS types. 
 
 The current public Shopify catalog is imported locally as Spanish drafts, with original media in local R2. Run `pnpm import:shopify --dry-run`, `pnpm import:shopify --apply`, or `pnpm import:shopify:verify` in the second terminal. See the [import workflow and verified results](docs/import/shopify-local-import.md); retries preserve existing editorial entries.
 
+`pnpm dev` prepares responsive WebP images from local draft content before starting. CMS text and settings still update live. After uploading new images, run `pnpm images:local` in the second terminal to prepare their derivatives; until then those images use their originals. The preparation reuses cached derivatives for unchanged photos.
+
+For Lighthouse, use a local production build so development scripts and live CMS queries do not distort the result:
+
+```sh
+# Stop pnpm dev first; both servers use the same local runtime state.
+pnpm build:local-preview
+pnpm preview
+```
+
+This preview includes drafts, stays local, and needs rebuilding after edits. `pnpm build` continues to include published content only. Test the URL printed by the preview server in Chrome with the same Lighthouse device/settings for each run.
+
 Development uses real workerd with locally emulated D1, R2, and the Astro session KV. Local state persists in `.wrangler/`. Do not run multiple dev servers against that directory. Astro can start in the background: `pnpm exec astro dev status`, `pnpm exec astro dev logs`, and `pnpm exec astro dev stop` manage it.
 
 ```sh
@@ -36,7 +48,7 @@ pnpm typecheck
 pnpm build
 ```
 
-`typecheck` regenerates ignored binding types first. Cloudflare/Astro automatically adds the session KV binding required by EmDash; this is separate from an optional content object cache. Image transformation is temporarily passthrough; build-time optimization belongs to phase 6.
+`typecheck` regenerates ignored binding types first. Cloudflare/Astro automatically adds the session KV binding required by EmDash; this is separate from an optional content object cache. Runtime image transformation stays passthrough; the image preparation step generates static WebP derivatives.
 
 ## Remote environments
 

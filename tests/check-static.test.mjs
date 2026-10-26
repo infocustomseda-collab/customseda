@@ -5,6 +5,11 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {checkStaticBuild} from '../scripts/build/check-static.mjs';
 
+test('accepts Astro redirect documents with an omitted html start tag',async t=>{
+ const redirect='<!doctype html><title>Redirecting to: /pages/conjuntos</title><meta http-equiv="refresh" content="0;url=/pages/conjuntos"><body><a href="/pages/conjuntos">Redirecting</a></body>';
+ assert.deepEqual(await checkStaticBuild(await site(t,{'index.html':page('Inicio'),'404.html':page('x'),'conjuntos.html':redirect})),{pages:3});
+});
+
 async function site(t,pages) {
  const dir=await mkdtemp(join(tmpdir(),'customseda-static-'));t.after(()=>rm(dir,{recursive:true,force:true}));
  for(const [path,html] of Object.entries(pages)) {await mkdir(join(dir,path,'..'),{recursive:true});await writeFile(join(dir,path),html);}

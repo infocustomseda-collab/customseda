@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {IMAGE_WIDTHS,annotateImages,collectImages,derivativeSrc,derivativeWidths,srcsetOf} from '../src/lib/shop/images.ts';
+import {IMAGE_WIDTHS,generatedImages,annotateImages,collectImages,derivativeSrc,derivativeWidths,srcsetOf} from '../src/lib/shop/images.ts';
 import {imageView} from '../src/lib/shop/view.ts';
 
 const media=(key,width=2000,height=1500)=>({id:`m-${key}`,provider:'local',width,height,meta:{storageKey:key}});
@@ -44,4 +44,14 @@ test('annotated images gain srcset; missing derivatives fall back to the origina
  assert.deepEqual([story.width,story.height,story.derivatives.length],[1200,800,1]);
  // The input snapshot is not mutated.
  assert.equal(snapshot.shop.products[0].data.gallery[0].image.derivatives,undefined);
+});
+
+test('live preview reuses generated derivatives by storage key without replacing current CMS content',()=>{
+ const prepared=annotateImages(snapshot,new Map([['a.jpg',{width:2000,height:1500,derivatives:[{width:480,src:'/media/a-480.webp'}]}]]));
+ const live={title:'Just edited',image:media('a.jpg'),newImage:media('new.jpg')};
+ const result=annotateImages(live,generatedImages(prepared));
+ assert.equal(result.title,'Just edited');
+ assert.equal(imageView(result.image,'').srcset,'/media/a-480.webp 480w');
+ assert.equal(imageView(result.newImage,'').srcset,undefined);
+ assert.equal(live.image.derivatives,undefined);
 });
