@@ -199,10 +199,9 @@ export interface Post {
 
 export interface ProductReferences {
   collection: ReferencePage<Collection>;
-  color: ReferencePage<Color>;
-  sizes: ReferencePage<Size>;
   size_guide: ReferencePage<SizeGuide>;
   components: ReferencePage<Product>;
+  material: ReferencePage<Material>;
 }
 
 export interface MaterialReferences {
