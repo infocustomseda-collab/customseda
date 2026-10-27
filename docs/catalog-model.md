@@ -1,6 +1,6 @@
 # Local catalog model
 
-Phase 2 supplies the CMS model. Public shop pages, Shopify import, Stripe, and the approved visual system follow in later phases. Work stays on `master`.
+Phase 2 supplies the CMS model. Public shop pages, Shopify import, Stripe, and the approved visual system follow in later phases.
 
 ## Start and update locally
 
@@ -44,13 +44,13 @@ Components cannot be deleted or unpublished while referenced. Recategorization o
 
 No sample products, bundles, merchant shipping prices, or source images are imported by the model migration. Initial lookup records retain the current database locale; field labels are Spanish. The import must settle the site's locale configuration before loading the Spanish catalog.
 
-The [local Shopify import](import/shopify-local-import.md) now supplies the actual catalog and supporting content in Spanish (`es`), the configured site default. A separate `customseda.shopify-source.v1` migration adds optional source JSON fields and permits missing size references at the schema layer for native incomplete drafts. Catalog REST validation and publication still require valid sizes. Two source bottoms intentionally remain size-less drafts; no supported sizes were invented. All 16 imported catalog entries are drafts, while imported color lookup labels are published locally. Existing seeded lookup IDs remain intact and resolve through EmDash's reference fallback.
+The local Spanish catalog contains 11 Products and 5 Conjuntos. The completed import has been retired: `customseda.catalog-cleanup.v1` removes original-source fields, revision metadata and import mappings, and renames the settings slug to `home`. Existing content IDs, prices, galleries, relationships and publication states are retained. Native drafts may omit sizes; catalog write/publication validation continues to enforce supported sizes. Original photographs are preserved under `assets/originals/`; see [content maintenance](content-maintenance.md).
 
 ## Storefront model and homepage content
 
-`customseda.storefront.v1` (`seed/storefront.json`) extends Site Settings with the homepage sections: featured Conjunto (single reference), slideshow (ordered images with alt text and focal point), intro title and rich text, process cards (image, alt, title, text) and a TikTok link. It runs after the catalog model through `applyModelMigrations`, both from `pnpm cms:model` locally and from the deployment runner remotely. It upserts only those fields; import-only fields such as `shopify_source` are kept. The applied v1 catalog seed is unchanged.
+`customseda.storefront.v1` (`seed/storefront.json`) extends Site Settings with the homepage sections: featured Conjunto (single reference), slideshow (ordered images with alt text and focal point), intro title and rich text, process cards (image, alt, title, text) and a TikTok link. It runs after the catalog model through `applyModelMigrations`, both from `pnpm cms:model` locally and from the deployment runner remotely. It upserts only those fields. The cleanup migration removes the retired source fields separately; the catalog seed no longer creates source IDs.
 
-`pnpm cms:storefront` (local only, with `pnpm dev` running) fills those fields from the audited Shopify homepage. It also sets the source announcement, the primary and footer menus, and restores the Margarita page's source order (photo rows between paragraphs, final "Ver colección" link). All writes go through EmDash's REST API as drafts. Rerunning leaves already-ordered or editor-changed content alone.
+`pnpm cms:storefront` (local only, with `pnpm dev` running) fills those fields from the approved storefront copy. It also sets the source announcement, the primary and footer menus, and restores the Margarita page's source order (photo rows between paragraphs, final "Ver colección" link). All writes go through EmDash's REST API as drafts. Rerunning leaves already-ordered or editor-changed content alone.
 
 Public pages read content through `src/lib/shop/content.ts`. Production reads published rows only. Development also shows drafts with their pending revision and staged references, because the imported catalog is still unpublished. Phase 6 replaces this live read with the build-time snapshot.
 

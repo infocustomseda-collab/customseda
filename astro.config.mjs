@@ -15,7 +15,7 @@ const fontsource = (family, weight, style) => ({
 
 export default defineConfig({
 	output: "server",
-	// Public pages prerender to <path>.html so they keep the slash-free Shopify paths.
+	// Public pages prerender to <path>.html so they keep the existing slash-free public paths.
 	build: { format: "file" },
 	trailingSlash: "never",
 	i18n: {defaultLocale: "es", locales: ["es"]},
@@ -78,11 +78,6 @@ export default defineConfig({
                     injectRoute({
                         pattern: "/_emdash/api/customseda/rebuild",
                         entrypoint: "./src/lib/cms/rebuild-route.ts",
-                        prerender: false,
-                    });
-                    injectRoute({
-                        pattern: "/_emdash/api/customseda/import",
-                        entrypoint: "./src/lib/cms/import-route.ts",
                         prerender: false,
                     });
                 },

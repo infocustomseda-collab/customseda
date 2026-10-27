@@ -1,7 +1,5 @@
 # Custom Seda
 
-Work in this checkout on `master`, as explicitly requested by the user.
-
 ## Scope and source of truth
 
 - Follow `docs/superpowers/plans/2026-10-24-custom-seda.md` phase by phase.

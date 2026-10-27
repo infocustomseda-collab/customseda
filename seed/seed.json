@@ -95,12 +95,6 @@
           "defaultValue": true
         },
         {
-          "slug": "shopify_id",
-          "label": "ID original de Shopify",
-          "type": "string",
-          "unique": true
-        },
-        {
           "slug": "category",
           "label": "Categoría",
           "type": "reference",
@@ -239,12 +233,6 @@
           "label": "Disponible",
           "type": "boolean",
           "defaultValue": true
-        },
-        {
-          "slug": "shopify_id",
-          "label": "ID original de Shopify",
-          "type": "string",
-          "unique": true
         },
         {
           "slug": "top",

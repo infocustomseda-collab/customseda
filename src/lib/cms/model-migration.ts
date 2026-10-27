@@ -4,6 +4,7 @@ import seedJson from '../../../seed/seed.json' with {type:'json'};
 import storefrontJson from '../../../seed/storefront.json' with {type:'json'};
 import type { CatalogDb } from './catalog-store.ts';
 import { applyCheckoutModel, checkoutVersion } from '../commerce/payments.ts';
+import {retireImport,cleanupVersion} from './retire-import.ts';
 
 export const modelVersion='customseda.catalog.v1';
 export async function applyCatalogModel(db:CatalogDb) {
@@ -24,8 +25,7 @@ export async function applyCatalogModel(db:CatalogDb) {
  return {version:modelVersion,applied:true,result,lookups};
 }
 
-// Homepage sections on site settings. A separate seed keeps the applied v1 seed unchanged;
-// applySeed's update mode upserts only the fields it names, so import-only fields survive.
+// Homepage sections on site settings. The seed upserts only the fields it names.
 export const storefrontVersion='customseda.storefront.v1';
 export async function applyStorefrontModel(db:CatalogDb) {
  const options=new OptionsRepository(db);
@@ -39,7 +39,7 @@ export async function applyStorefrontModel(db:CatalogDb) {
 }
 
 /** Every application model version, in order. Deployment and the local route call this. */
-export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion];
+export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion];
 export async function applyModelMigrations(db:CatalogDb) {
- return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db)];
+ return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db)];
 }

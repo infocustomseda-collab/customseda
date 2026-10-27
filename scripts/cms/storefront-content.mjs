@@ -1,4 +1,4 @@
-// Local only: fills the customseda.storefront.v1 homepage fields from the audited Shopify homepage and
+// Local only: fills the customseda.storefront.v1 homepage fields from the approved storefront copy and
 // restores the Margarita page's source order (text rows between photo rows). Re-running is idempotent.
 // Requires `pnpm dev` and `pnpm cms:model`. Writes drafts through EmDash's REST API and validators.
 const origin='http://localhost:4321';
@@ -7,7 +7,7 @@ export const homepage={
  featured:'tierra',
  slideshow:['N3A6591.jpg','N3A6628.jpg','N3A6517.jpg','N3A6788.jpg','N3A6447_e05dc5e4-d747-47cf-a92e-0e30a619f200.jpg'],
  introTitle:'Primera colección',
- // Source: rich_text_H3AiQD on the Shopify homepage, bold run preserved.
+ // Source: rich_text_H3AiQD in the approved homepage copy, bold run preserved.
  introText:[{_type:'block',_key:'intro0',style:'normal',markDefs:[],children:[
   {_type:'span',_key:'s0',text:'Nace de la idea de crear un bikini diferente: uno con el que las mujeres se sientan ',marks:[]},
   {_type:'span',_key:'s1',text:'seguras, cómodas y atractivas',marks:['strong']},
@@ -42,9 +42,9 @@ export const shippingRules=[
  {slug:'recogida-gran-canaria',data:{title:'Recogida en Gran Canaria',enabled:true,zone:'pickup',price_cents:0,description:'Gratis. Te contactamos para acordar día y hora de recogida.'}},
 ];
 
-// Source header and footer links; paths keep the Shopify URLs (see docs/import/shopify-url-map.json).
+// Approved header and footer links; keep existing public URLs.
 export const menus={
- primary:{label:'Principal',items:[['Inicio','/'],['Bikinis','/collections/bikinis'],['Colección','/pages/margarita'],['Sobre Seda','/blogs/noticias'],['Envíos y Devoluciones','/pages/envios-y-devoluciones'],['Contacto','/pages/contact']]},
+ primary:{label:'Principal',items:[['Inicio','/'],['Bikini','/collections/bikinis'],['Colección','/pages/margarita'],['Sobre Seda','/blogs/noticias'],['Envíos y Devoluciones','/pages/envios-y-devoluciones'],['Contacto','/pages/contact']]},
  footer:{label:'Pie de página',items:[['Envíos y Devoluciones','/pages/envios-y-devoluciones'],['Guía de tallas','/pages/guia-de-tallas'],['Contacto','/pages/contact'],['Política de privacidad','/policies/privacy-policy']]},
 };
 
@@ -82,11 +82,11 @@ async function main() {
  }
  const image=file=>{
   const m=media.get(file);
-  if(!m) throw new Error(`Local media missing: ${file}. Run pnpm import:shopify --apply first.`);
+  if(!m) throw new Error(`Local media missing: ${file}. Restore the original media to local R2 first.`);
   return {id:m.id,provider:'local',url:m.url??`/_emdash/api/media/file/${m.storageKey}`,filename:m.filename,mimeType:m.mimeType};
  };
  const tierra=(await api(`/_emdash/api/content/conjuntos/${homepage.featured}`)).item;
- const settings=(await api('/_emdash/api/content/site_settings/shopify-home')).item;
+ const settings=(await api('/_emdash/api/content/site_settings/home')).item;
  await api(`/_emdash/api/content/site_settings/${settings.id}`,{method:'PUT',body:JSON.stringify({
   data:{
    slideshow:homepage.slideshow.map((file,i)=>({image:image(file),alt:`Colección Margarita, foto de campaña ${i+1}`})),

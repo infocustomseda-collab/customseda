@@ -9,7 +9,7 @@ type Menu = { items: { label: string; url: string }[] } | null | undefined;
 
 const OLD_HOSTS = new Set(["customseda.com", "www.customseda.com"]);
 
-/** Keeps site paths and external http(s) links; rewrites links to the old Shopify domain to paths. */
+/** Keeps site paths and external http(s) links; rewrites links to the storefront domain to paths. */
 export function localHref(value: unknown): string | undefined {
 	if (typeof value !== "string" || !value) return undefined;
 	if (value.startsWith("/") && !value.startsWith("//")) return value;
@@ -59,7 +59,7 @@ export function siteChrome({ settings, primary, footer, path }: { settings: Shop
 	};
 }
 
-/** Products and Conjuntos keep their Shopify paths (/products/<slug>). */
+/** Products and Conjuntos keep their public paths (/products/<slug>). */
 export function productCard(entry: ShopEntry): ProductCardView {
 	return {
 		href: `/products/${entry.slug}`,

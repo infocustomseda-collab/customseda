@@ -61,7 +61,7 @@
 ## 2. Define the content model
 
 - [x] Define Products, Conjuntos, Categories, Collections, Sizes, and Colors with stable IDs/slugs and explicit cardinality.
-- [x] Add product descriptions, integer-cent EUR prices, publication status, availability default Yes, SEO metadata, and source Shopify IDs.
+- [x] Add product descriptions, integer-cent EUR prices, publication status, availability default Yes, SEO metadata, and native catalog IDs (obsolete source IDs retired after import).
 - [x] Define ordered gallery items with media reference, alt text, optional focal point, and first-image main-image behavior.
 - [x] Define separate Top/Braguita links for Conjuntos and independent component size selections.
 - [x] Implement server-side validation for wrong-category links, missing components, unsupported sizes, self/cyclic references, and invalid prices.
@@ -75,7 +75,7 @@
 
 ## 3. Audit and import Shopify content
 
-**Progress — 2026-10-25:** Public-source inventory recorded locally: 16 products (5 Conjuntos, 5 Tops, 6 Braguitas), 98 variants, 81 gallery positions / 74 distinct gallery images, six collection records, and supporting pages/navigation/SEO. See [audit and unresolved mappings](../../import/shopify-audit.md) and [structured source inventory](../../import/shopify-public-inventory.json). Public completeness is cross-checked against pagination and sitemaps; private/export completeness, supported-size decisions, canonical colors, bundle links, and import remain pending. No CMS writes or staging operations were performed.
+**Progress — 2026-10-25:** Public-source inventory recorded locally: 16 products (5 Conjuntos, 5 Tops, 6 Braguitas), 98 variants, 81 gallery positions / 74 distinct gallery images, six collection records, and supporting pages/navigation/SEO. The one-time inventory and reports were retired after the completed migration; their earlier versions remain in Git history. Public completeness is cross-checked against pagination and sitemaps; private/export completeness, supported-size decisions, canonical colors, bundle links, and import remain pending. No CMS writes or staging operations were performed.
 
 **Merchant clarification — 2026-10-25:** Explicit Shopify sizes are correct and must be preserved. The user subsequently instructed importing the public website as it stands. Missing sizes and set/component differences are preserved in source metadata on drafts; they do not block the local import. Publication/checkout must resolve the source/model differences before selling those items.
 
@@ -83,15 +83,15 @@
 - [x] Use public storefront data as explicitly requested; do not infer private/draft Shopify records. Reconcile an authenticated export if later supplied.
 - [x] Map pieces and sets to separate draft types, preserving source component-size options and independent set prices.
 - [x] Audit duplicate/missing component mappings, color names, XS/XL options, unavailable items, and inconsistent source copy.
-- [x] Implement a restartable importer with dry-run reporting and stable Shopify-ID mapping to avoid duplicate records/media.
+- [x] Implement and run a restartable importer (retired after the completed import on 2026-10-27).
 - [x] Import supporting lookup records and individual products before linking draft Conjuntos.
 - [x] Copy original catalog/supporting images into local R2 with gallery order, original alt provenance, fallback alt labels, and a source-to-local asset manifest.
 - [x] Compare local counts, descriptions, prices, relationships, sizes, gallery order, and all local media bytes against source data.
 - [x] Record source-to-CMS and preferred retained public URL mappings; implement actual public routes/redirects in phases 4 and 7.
 
-**Local import result:** 11 Products, 5 Conjuntos, 7 Pages, 1 Size Guide, 6 color lookups, and 1 homepage/settings record. The 106 source image URLs deduplicate into 95 local media files (210,164,752 bytes), all verified by SHA-256. All catalog and supporting content remains draft except the color lookup labels. A retry retained all 31 content records without duplicates. See [workflow](../../import/shopify-local-import.md), [verified result](../../import/shopify-local-result.json), and [URL map](../../import/shopify-url-map.json). Source gaps are preserved for later publication/checkout work; no staging operation occurred.
+**Local import result:** 11 Products, 5 Conjuntos, 7 Pages, 1 Size Guide, 6 color lookups, and 1 homepage/settings record. The 106 source image URLs deduplicate into 95 local media files (210,164,752 bytes), all verified by SHA-256. All catalog and supporting content remains draft except the color lookup labels. A retry retained all 31 content records without duplicates. The importer and source metadata were retired on 2026-10-27; see [content maintenance](../../content-maintenance.md) for current originals and cleanup behavior. Source gaps are preserved for later publication/checkout work; no staging operation occurred.
 
-**Exit condition:** A verified local catalog and content set can be recreated or updated through a repeatable import. Rehearse the import on staging in phase 7.
+**Exit condition:** A verified local catalog and content set can be recreated or updated through a repeatable import. Plan the approved catalog transfer to staging in phase 7 using the current EmDash content and originals; do not restore the retired source importer or copy the whole local database.
 
 ## 4. Build the reusable visual system and public pages
 
@@ -214,7 +214,7 @@ Moved from phase 5 by the user on 2026-10-25; buy-now checkout covers launch.
 - `src/pages/api/`: checkout, webhook, and rebuild-trigger endpoints.
 - `src/pages/`, `src/layouts/`, `src/components/`: routes, layouts, and reusable presentation.
 - `src/styles/`: tokens, foundations, compositions, blocks, and exceptions.
-- `scripts/import/`: source normalization, import, media copying, and reconciliation reports.
+- `scripts/media/` and `assets/originals/`: local media originals and their verified manifest.
 - `scripts/deploy/`: target inspection, migrations, deployment checks, and recovery helpers.
 - `tests/`: focused business-rule tests and essential browser/payment flows.
 - `docs/`: source mapping, deployment evidence, decisions, and operating instructions.
