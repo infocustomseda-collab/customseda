@@ -17,19 +17,19 @@ test('each published color gets one published material available in every size; 
  const brillante=await color(f,'rojo-brillante','Rojo Brillante');
  await color(f,'borrador','Borrador',false);
  const result=await applyMaterials(f.db);
- assert.equal(result.applied,true);assert.equal(result.created,2);
+ // The fixture already has material rosa for color rosa.
+ assert.equal(result.applied,true);assert.equal(result.created,1);
 
  const materials=(await f.repo.findMany('materials')).items;
  assert.deepEqual(materials.map(m=>m.slug).sort(),['rojo-brillante','rosa']);
  const sizes=(await f.repo.findMany('sizes')).items.map(size=>size.id).sort();
- for(const material of materials) {
-  const entry=await readCatalogEntry(f.db,'materials',material.id,false);
-  assert.equal(entry.status,'published');
-  assert.deepEqual(entry.refs.sizes.sort(),sizes);
-  assert.deepEqual(entry.refs.color,[material.slug==='rosa'?f.colorId:brillante]);
-  assert.equal(entry.data.special_edition,material.slug==='rojo-brillante');
- }
- assert.equal((await f.repo.findByIdOrSlug('materials','rosa')).data.title,'Rosa');
+ const created=await readCatalogEntry(f.db,'materials',materials.find(m=>m.slug==='rojo-brillante').id,false);
+ assert.equal(created.status,'published');assert.equal(created.data.title,'Rojo Brillante');
+ assert.deepEqual(created.refs.sizes.sort(),sizes);
+ assert.deepEqual(created.refs.color,[brillante]);
+ assert.equal(created.data.special_edition,true);
+ // The fixture's own material is left as it was.
+ assert.equal((await readCatalogEntry(f.db,'materials',f.materialId,false)).refs.sizes.length,4);
  assert.equal((await applyMaterials(f.db)).applied,false);
  // A color used only by a material is protected like one used by products.
  assert.equal(await removalAllowed(f.db,'colors',brillante),false);

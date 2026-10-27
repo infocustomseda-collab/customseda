@@ -19,7 +19,9 @@ export function bundleAvailable(bundle: CatalogEntry, ...components: CatalogEntr
  return [bundle,...components].every(e => e.status === 'published' && e.data.available !== false);
 }
 const money = (n: unknown) => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
-export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntries, {publish=false,references=true}: {publish?:boolean;references?:boolean}={}): string[] {
+// componentMaterials: check conjunto pieces against the conjunto's material. Only the conjunto's own
+// publication does; edits to a piece never block on its conjunto.
+export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntries, {publish=false,references=true,componentMaterials=true}: {publish?:boolean;references?:boolean;componentMaterials?:boolean}={}): string[] {
  const errors: string[]=[];
  const {type,data,refs}=entry;
  const fail=(message:string)=>errors.push(message);
@@ -57,18 +59,18 @@ export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntrie
   // Publication requires exactly one category, independent of bundle behavior.
   if(publish) ref('category','category');
   if(refs.size_guide?.length) ref('size_guide','size_guides');
+  // Color and sizes come from the material; drafts may omit it.
+  if(publish || refs.material?.length) ref('material','materials');
   if(data.bundle===true) {
    const components=ref('components','products',true);
    if((refs.components?.length??0)<2) fail('Un conjunto necesita al menos dos productos diferentes.');
    for(const component of components) {
     if(component.id===entry.id || component.data.bundle===true) fail('Los productos incluidos deben ser productos individuales; no se permiten conjuntos anidados.');
+    if(publish && componentMaterials && (!component.refs.material?.length || component.refs.material[0]!==refs.material?.[0])) fail(`Las piezas del conjunto deben usar el material del conjunto («${component.data.title??component.id}»).`);
    }
   } else {
    if(refs.components?.length) fail('Activa Bundle product para seleccionar productos incluidos.');
-   ref('collection','collections');ref('color','colors');
-   const sizes=ref('sizes','sizes',true);
-   const category=refs.category?.[0];
-   for(const size of sizes) if(category && size.refs.category?.[0]!==category) fail(`Talla «${size.data.title??size.id}»: pertenece a otra categoría; elige tallas de la categoría del producto.`);
+   ref('collection','collections');
   }
  }
  if(type==='materials') {

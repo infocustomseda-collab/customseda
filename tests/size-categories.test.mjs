@@ -15,6 +15,11 @@ async function legacyCatalog(t) {
  const sizes=legacy.collections.find(c=>c.slug==='sizes');
  sizes.fields=[...sizes.fields.filter(f=>f.slug!=='label'),{slug:'code',label:'Código estable',type:'string',required:true,unique:true,indexed:true}];
  legacy.taxonomies[0].collections=['products'];
+ // Products still carried their own color and sizes then.
+ const products=legacy.collections.find(c=>c.slug==='products');
+ products.fields=[...products.fields.filter(f=>f.slug!=='material'),
+  {slug:'color',label:'Color',type:'reference',validation:{targetCollection:'colors',multiple:false}},
+  {slug:'sizes',label:'Tallas disponibles',type:'reference',validation:{targetCollection:'sizes',multiple:true}}];
  legacy.content.sizes=['XS','S','M','L','XL'].map((code,i)=>({id:`sizes-${code}`,slug:code.toLowerCase(),status:'published',data:{title:code,code,sort_order:i}}));
  const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
  await runMigrations(db);await applySeed(db,legacy,{includeContent:true,onConflict:'skip'});
@@ -57,11 +62,13 @@ test('shared sizes become Braguita sizes, Top gets its own and Top products are 
  assert.deepEqual(await category('braguita-xs'),[await term('braguita')]);
  assert.deepEqual(await category('top-xl'),[await term('top')]);
 
- const selected=async id=>(await readCatalogEntry(db,'products',id,false)).refs.sizes.sort();
+ // Legacy product sizes are outside the current catalog model; read their edges and staged selection directly.
+ const selected=async id=>(await sql`SELECT e.child_group AS id FROM _emdash_content_references e INNER JOIN _emdash_relations r ON r.id=e.relation_id
+  WHERE r.slug='products_sizes' AND e.parent_group=${id}`.execute(db)).rows.map(row=>row.id).sort();
  assert.deepEqual(await selected(top),[sizes.get('top-s').id,sizes.get('top-m').id].sort());
  assert.deepEqual(await selected(bottom),[ids.XS,ids.S].sort());
  assert.deepEqual(await selected(draft),[sizes.get('top-l').id]);
- assert.deepEqual((await readCatalogEntry(db,'products',draft,true)).refs.sizes,[sizes.get('top-xl').id]);
+ assert.deepEqual(JSON.parse((await sql`SELECT r.data FROM ec_products p INNER JOIN revisions r ON r.id=p.draft_revision_id WHERE p.id=${draft}`.execute(db)).rows[0].data)._references.sizes,[sizes.get('top-xl').id]);
 
  // The native slug replaces the code: field, column and revision copies are gone.
  assert.equal(await new SchemaRegistry(db).getField('sizes','code'),null);

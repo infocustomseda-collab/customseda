@@ -105,23 +105,13 @@
           }
         },
         {
-          "slug": "color",
-          "label": "Color",
+          "slug": "material",
+          "label": "Material",
           "type": "reference",
           "required": false,
           "validation": {
-            "targetCollection": "colors",
+            "targetCollection": "materials",
             "multiple": false
-          }
-        },
-        {
-          "slug": "sizes",
-          "label": "Tallas disponibles",
-          "type": "reference",
-          "required": false,
-          "validation": {
-            "targetCollection": "sizes",
-            "multiple": true
           }
         },
         {

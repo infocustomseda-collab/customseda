@@ -4,7 +4,7 @@ import { catalogTypes, validateCatalogEntry, type CatalogEntry } from './catalog
 
 export type CatalogDb = Kysely<Database>;
 const targets: Record<string, Record<string,string>> = {
- products:{collection:'collections',color:'colors',sizes:'sizes',size_guide:'size_guides',components:'products'},
+ products:{collection:'collections',material:'materials',size_guide:'size_guides',components:'products'},
  materials:{color:'colors',sizes:'sizes'},
 };
 // Collections whose entries carry one native category term.
@@ -38,7 +38,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
        WHERE rel.slug=${`${type}_${field}`} AND e.parent_group=${item.translationGroup??item.id}
        AND e.child_group=child.translation_group)`;
   // The model defines only parent-side references. A UNION has at most five
-  // terms (Products' five fields), matching D1's compound SELECT limit.
+  // terms (Products have four fields), matching D1's compound SELECT limit.
   return sql<{field:string;id:string}>`SELECT ${field} AS field, child.id
    FROM ${sql.table(`ec_${target}`)} child WHERE child.deleted_at IS NULL
     AND ${draft?sql`1=1`:sql`child.status='published'`} AND ${membership}`;
@@ -129,7 +129,7 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
     related.set(candidate.id,candidate);
     // Candidate may point at a different category/collection/color; load those too.
     for(const [key,value] of graph) related.set(key,value);
-    const failures=validateCatalogEntry(bundle,related,{publish:!draft&&bundle.status==='published'});
+    const failures=validateCatalogEntry(bundle,related,{publish:!draft&&bundle.status==='published',componentMaterials:false});
     if(failures.length) filtered.push(`El cambio rompería el conjunto «${bundle.data.title??bundle.id}»: ${failures[0]}`);
    }
   }

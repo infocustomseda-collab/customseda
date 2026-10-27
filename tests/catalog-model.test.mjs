@@ -17,7 +17,9 @@ test('catalog seed exposes one product collection and native category taxonomy',
  assert.equal(seed.collections.length,10);
  const product=seed.collections.find(c=>c.slug==='products');
  assert.equal(product.fields.find(f=>f.slug==='available').defaultValue,true);
- assert.equal(product.fields.find(f=>f.slug==='sizes').validation.multiple,true);
+ assert.equal(product.fields.find(f=>f.slug==='material').validation.targetCollection,'materials');
+ assert.equal(product.fields.find(f=>f.slug==='material').validation.multiple,false);
+ assert.ok(!product.fields.some(f=>['color','sizes'].includes(f.slug)));
  assert.equal(product.fields.find(f=>f.slug==='components').validation.multiple,true);
  assert.ok(!product.fields.some(f=>f.slug==='category'));
  assert.deepEqual(seed.taxonomies[0].collections,['products','sizes']);
@@ -33,7 +35,7 @@ test('model installation is idempotent and preserves editorial content and taxon
  assert.equal((await repo.findMany('sizes')).items.length,9);
  assert.ok(await new OptionsRepository(db).get(modelVersion));
  const relations=await db.selectFrom('_emdash_relations').selectAll().where('parent_collection','=','products').execute();
- assert.equal(relations.length,5);
+ assert.equal(relations.length,4);
  assert.ok(relations.some(r=>r.child_collection==='products'&&r.slug==='products_components'));
 });
 

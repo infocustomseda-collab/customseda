@@ -43,11 +43,14 @@ export async function fixture(t,{onContentChange}={}) {
  for(const term of await taxonomy.findByName('category')) lookups[term.slug]=term.id;
  const color=await handleContentCreate(db,'colors',{slug:'rosa',data:{title:'Rosa'}});assert.equal(color.success,true,JSON.stringify(color));
  const colorId=color.data.item.id;await handleContentPublish(db,'colors',colorId);
+ // Products take color and sizes from their material. These sizes leave Top XL unused.
+ const material=await handleContentCreate(db,'materials',{slug:'rosa',data:{title:'Rosa'},references:{color:[colorId],sizes:['top-s','top-m','braguita-xs','braguita-xl'].map(slug=>lookups[slug])}});
+ assert.equal(material.success,true,JSON.stringify(material));
+ const materialId=material.data.item.id;await handleContentPublish(db,'materials',materialId);
  const image=await new MediaRepository(db).create({filename:'test.jpg',mimeType:'image/jpeg',storageKey:'test.jpg'});
  const data={title:'Test',price_cents:5000,available:true,gallery:[{image:{id:image.id},alt:'Bikini de prueba'}]};
- async function product(slug,category,sizes=['S','M']) {
-  // Seeded size slugs are per category: top-s, braguita-xs.
-  const references={collection:[lookups.margarita],color:[colorId],sizes:sizes.map(s=>lookups[`${category}-${s.toLowerCase()}`])};
+ async function product(slug,category,mat=materialId) {
+  const references={collection:[lookups.margarita],material:[mat]};
   const result=await runtime.handleContentCreate('products',{slug,data:{...data,title:slug},references});
   assert.equal(result.success,true,JSON.stringify(result));
   const id=result.data.item.id;
@@ -55,9 +58,9 @@ export async function fixture(t,{onContentChange}={}) {
   const published=await runtime.handleContentPublish('products',id);assert.equal(published.success,true,JSON.stringify(published));
   return id;
  }
- const top=await product('top-test','top'),bottom=await product('bottom-test','braguita',['XS','XL']);
- const bundle=await runtime.handleContentCreate('products',{slug:'test-set',data:{...data,bundle:true,price_cents:8500},references:{components:[top,bottom]}});
+ const top=await product('top-test','top'),bottom=await product('bottom-test','braguita');
+ const bundle=await runtime.handleContentCreate('products',{slug:'test-set',data:{...data,bundle:true,price_cents:8500},references:{material:[materialId],components:[top,bottom]}});
  assert.equal(bundle.success,true,JSON.stringify(bundle));
  await taxonomy.setTermsForEntry('products',bundle.data.item.id,'category',[lookups.conjuntos]);
- return {db,runtime,repo,taxonomy,lookups,colorId,image,data,top,bottom,bundle:bundle.data.item.id,product};
+ return {db,runtime,repo,taxonomy,lookups,colorId,materialId,image,data,top,bottom,bundle:bundle.data.item.id,product};
 }
