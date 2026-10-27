@@ -6,12 +6,12 @@ Phase 5 uses **buy-now checkout**: each product or Conjunto page buys one item d
 
 1. The product page form posts the item ID, size(s), quantity (1–10), shipping rule and the displayed price to `/api/checkout`. The form works without JavaScript.
 2. The endpoint reloads the item from D1. Local development reads drafts; deployed Workers read published entries only. It refuses the purchase and returns to the product page with `?checkout=<reason>` when:
-   - the item, or either Conjunto component, is unavailable or unpublished (`unavailable`);
+   - the item, or any included bundle component, is unavailable or unpublished (`unavailable`);
    - a size is not supported by that piece (`size`);
    - the database price differs from the price the page showed (`price`);
    - the shipping rule is disabled or unknown (`shipping`);
    - Stripe is not configured (`config`) or did not answer (`stripe`).
-3. Otherwise it creates a Stripe Checkout Session with one line item. For example, "Conjunto Fuego" has the description "Top: M · Braguita: S". The session uses the database price, a fixed shipping charge (free from the rule's threshold), Spanish locale and EUR. Stripe collects the address (countries from the rule), phone number and payment. Pickup sends no Stripe shipping option and collects no address. Items priced below Stripe's 0,50 € minimum count as unavailable.
+3. Otherwise it creates a Stripe Checkout Session with one line item. For example, "Conjunto Fuego" has the description "Top Fuego: M · Braguita Flow: S". The session uses the database price, a fixed shipping charge (free from the rule's threshold), Spanish locale and EUR. Stripe collects the address (countries from the rule), phone number and payment. Pickup sends no Stripe shipping option and collects no address. Items priced below Stripe's 0,50 € minimum count as unavailable.
 4. Stripe redirects to `/checkout/gracias`. That page asks Stripe for the session state and shows paid, "en proceso" (delayed methods), or unconfirmed. `/checkout/cancelado` links back to the piece.
 5. `/api/stripe/webhook` verifies the signature and records each Checkout Session event once in `customseda_payment_events`.
 
@@ -22,8 +22,8 @@ Every payment carries the same snapshot on the Checkout Session and on the payme
 | Metadata | Meaning |
 | --- | --- |
 | `source` | Always `customseda`. The webhook ignores sessions without it, such as Payment Links or Dashboard checkouts in the same account |
-| `item_title`, `item_kind`, `item_id`, `item_slug` | What was bought (`pieza` or `conjunto`) |
-| `piece_size` or `top_title`/`top_size` and `braguita_title`/`braguita_size` | Sizes to produce |
+| `item_title`, `item_kind`, `item_id`, `item_slug` | What was bought (`pieza` or `bundle`) |
+| `piece_size` or indexed `component_1_title`/`component_1_size`, `component_2_title`/`component_2_size`, etc. (large bundles use ordered `components_N` JSON chunks) | Sizes to produce |
 | `quantity`, `unit_price_cents`, `subtotal_cents`, `shipping_cents`, `total_cents`, `currency` | Charged amounts |
 | `shipping_title`, `shipping_zone`, `shipping_rule_id` | Shipping zone the buyer chose |
 

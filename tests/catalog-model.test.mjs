@@ -12,34 +12,29 @@ export async function database() {
  const db=new Kysely({dialect:createDialect({url:':memory:'})});
  await runMigrations(db);await applyCatalogModel(db);return db;
 }
-test('catalog seed is valid and exposes the approved separate bundle schema',()=>{
+test('catalog seed exposes one product collection and native category taxonomy',()=>{
  assert.deepEqual(validateSeed(seed).errors,[]);
- assert.equal(seed.collections.length,11);
+ assert.equal(seed.collections.length,9);
  const product=seed.collections.find(c=>c.slug==='products');
- const bundle=seed.collections.find(c=>c.slug==='conjuntos');
  assert.equal(product.fields.find(f=>f.slug==='available').defaultValue,true);
  assert.equal(product.fields.find(f=>f.slug==='sizes').validation.multiple,true);
- assert.equal(product.fields.find(f=>f.slug==='category').validation.multiple,false);
- assert.ok(!bundle.fields.some(f=>['sizes','color','collection','stock'].includes(f.slug)));
+ assert.equal(product.fields.find(f=>f.slug==='components').validation.multiple,true);
+ assert.ok(!product.fields.some(f=>f.slug==='category'));
+ assert.deepEqual(seed.taxonomies[0].collections,['products']);
 });
-test('model migration is idempotent and preserves existing content, IDs and editorial changes',async t=>{
+test('model installation is idempotent and preserves editorial content and taxonomy terms',async t=>{
  const db=await database();t.after(()=>db.destroy());
  const repo=new ContentRepository(db);
- const first=await repo.findMany('categories');
- const top=first.items.find(c=>c.data.code==='top');
- await repo.update('categories',top.id,{data:{title:'My Top'}});
- const result=await applyCatalogModel(db);
- assert.equal(result.applied,false);
- assert.equal((await repo.findById('categories',top.id)).data.title,'My Top');
- assert.equal((await repo.findMany('categories')).items.length,2);
+ const item=await repo.create({type:'products',slug:'editorial',data:{title:'Original'}});
+ await repo.update('products',item.id,{data:{title:'Edited'}});
+ const result=await applyCatalogModel(db);assert.equal(result.applied,false);
+ assert.equal((await repo.findById('products',item.id)).data.title,'Edited');
+ assert.equal((await db.selectFrom('taxonomies').selectAll().where('name','=','category').execute()).length,6);
  assert.equal((await repo.findMany('sizes')).items.length,5);
  assert.ok(await new OptionsRepository(db).get(modelVersion));
- const registry=new SchemaRegistry(db);
- const product=await registry.getCollectionWithFields('products');
- assert.equal(product.fields.filter(f=>f.type==='reference').length,5);
  const relations=await db.selectFrom('_emdash_relations').selectAll().where('parent_collection','=','products').execute();
  assert.equal(relations.length,5);
- assert.equal(relations.find(r=>r.child_collection==='categories').max_children_per_parent,1);
+ assert.ok(relations.some(r=>r.child_collection==='products'&&r.slug==='products_components'));
 });
 
 test('an interrupted model installation repairs missing fields without replacing content',async t=>{

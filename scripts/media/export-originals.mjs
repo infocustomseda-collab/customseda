@@ -17,7 +17,7 @@ async function main() {
    if(typeof value.id==='string') productIds.add(value.id);
    for(const child of Object.values(value)) walk(child);
   };
-  walk([...shop.products,...shop.conjuntos]);
+  walk(shop.products);
   const rows=await bindings.db.selectFrom('media').selectAll().orderBy('id').execute();
   const manifest=[];
   for(const row of rows) {

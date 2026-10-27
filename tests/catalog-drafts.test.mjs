@@ -6,8 +6,9 @@ import {applyModelMigrations} from '../src/lib/cms/model-migration.ts';
 test('native incomplete drafts are editable but cannot be published without supported sizes',async t=>{
  const f=await fixture(t);await applyModelMigrations(f.db);
  const result=await f.runtime.handleContentCreate('products',{slug:'needs-sizes',status:'draft',locale:'es',data:f.data,
-  references:{category:[f.lookups.braguita],collection:[f.lookups.margarita],color:[f.colorId],sizes:[]}});
+  references:{collection:[f.lookups.margarita],color:[f.colorId],sizes:[]}});
  assert.equal(result.success,true,JSON.stringify(result));
+ await f.taxonomy.setTermsForEntry('products',result.data.item.id,'category',[f.lookups.braguita]);
  const saved=await f.repo.findById('products',result.data.item.id);
  assert.equal(saved.status,'draft');
  assert.equal((await f.runtime.handleContentPublish('products',saved.id)).success,false);
@@ -16,10 +17,12 @@ test('native incomplete drafts are editable but cannot be published without supp
 test('Spanish native drafts expose seeded category and size selections through CMS reads',async t=>{
  const f=await fixture(t);await applyModelMigrations(f.db);
  const created=await f.runtime.handleContentCreate('products',{slug:'spanish-top',status:'draft',locale:'es',data:f.data,
-  references:{category:[f.lookups.top],collection:[f.lookups.margarita],color:[f.colorId],sizes:[f.lookups.S,f.lookups.M]}});
+  references:{collection:[f.lookups.margarita],color:[f.colorId],sizes:[f.lookups.S,f.lookups.M]}});
  assert.equal(created.success,true,JSON.stringify(created));
+ await f.taxonomy.setTermsForEntry('products',created.data.item.id,'category',[f.lookups.top]);
  const result=await f.runtime.handleContentGet('products',created.data.item.id,'es',{includeDrafts:true});
  assert.equal(result.success,true);
- assert.deepEqual(result.data.item.references.category.children.map(x=>x.id),[f.lookups.top]);
+ const {readCatalogEntry}=await import('../src/lib/cms/catalog-store.ts');
+ assert.deepEqual((await readCatalogEntry(f.db,'products',created.data.item.id)).refs.category,[f.lookups.top]);
  assert.deepEqual(result.data.item.references.sizes.children.map(x=>x.id),[f.lookups.S,f.lookups.M]);
 });

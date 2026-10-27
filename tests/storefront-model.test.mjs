@@ -37,7 +37,7 @@ test('storefront migration adds homepage fields to an existing catalog database 
  const slugs=collection.fields.map(f=>f.slug);
  for(const slug of [...fields,'hero_title','hero_image','editor_notes']) assert.ok(slugs.includes(slug),slug);
  const relation=await db.selectFrom('_emdash_relations').selectAll().where('parent_collection','=','site_settings').executeTakeFirstOrThrow();
- assert.equal(relation.child_collection,'conjuntos');
+ assert.equal(relation.child_collection,'products');
  assert.equal(relation.max_children_per_parent,1);
  assert.equal((await repo.findById('site_settings',settings.id)).data.hero_title,'MARGARITA');
 

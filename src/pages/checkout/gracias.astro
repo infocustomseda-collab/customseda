@@ -3,6 +3,7 @@
 // redirect alone: card payments are paid, delayed methods stay "en proceso" until the webhook.
 import Button from "../../components/Button.astro";
 import Shop from "../../layouts/Shop.astro";
+import { orderSizeSummary } from "../../lib/commerce/checkout";
 import { stripeSecrets } from "../../lib/commerce/config";
 import { stripeRequest } from "../../lib/commerce/stripe";
 import { loadShopPage } from "../../lib/shop/page";
@@ -30,7 +31,7 @@ const copy = {
 	unknown: { title: "No podemos confirmar el pago", text: "Si se ha realizado un cargo, escríbenos y lo revisamos contigo." },
 }[state];
 const meta = session?.metadata ?? {};
-const sizes = meta.item_kind === "conjunto" ? `Top: ${meta.top_size} · Braguita: ${meta.braguita_size}` : meta.piece_size ? `Talla: ${meta.piece_size}` : "";
+const sizes = orderSizeSummary(meta);
 const email = typeof settings?.data.contact_email === "string" ? settings.data.contact_email : null;
 ---
 

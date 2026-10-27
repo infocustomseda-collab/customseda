@@ -13,7 +13,7 @@ type Common = {
 	/** Available and every required size choice has options; otherwise the buy form stays disabled. */
 	purchasable: boolean;
 };
-export type ProductDetail = (Common & { kind: "pieza"; categoryLabel: string | null }) | (Common & { kind: "conjunto"; top: Piece; bottom: Piece });
+export type ProductDetail = Common & { kind: "pieza" | "bundle"; categoryLabel: string | null; components: Piece[] };
 
 const label = (entries: ShopEntry[], key: string | null, field = "code") => {
 	const found = entries.find((entry) => entry.data[field] === key);
@@ -41,28 +41,12 @@ export function productDetail(shop: Omit<ShopContent, "pages" | "site_settings" 
 		collectionLabel: label(shop.collections, item.collection),
 		related: related(items, item),
 	};
-	if (item.kind === "conjunto") {
-		const entry = shop.conjuntos.find((set) => set.id === item.id)!;
-		const top = piece(entry.refs.top?.[0])!;
-		const bottom = piece(entry.refs.bottom?.[0])!;
-		return {
-			...common,
-			kind: "conjunto",
-			entry,
-			top,
-			bottom,
-			sizeGuide: guideFor(top.entry),
-			purchasable: item.available && top.item.sizes.length > 0 && bottom.item.sizes.length > 0,
-		};
-	}
-	const entry = shop.products.find((product) => product.id === item.id)!;
-	const category = shop.categories.find((candidate) => candidate.id === entry.refs.category?.[0]);
-	return {
-		...common,
-		kind: "pieza",
-		entry,
-		categoryLabel: typeof category?.data.title === "string" ? category.data.title : null,
-		sizeGuide: guideFor(entry),
-		purchasable: item.available && item.sizes.length > 0,
+	const entry = shop.products.find(product=>product.id===item.id)!;
+	const components=item.kind==='bundle'?(entry.refs.components??[]).flatMap(id=>piece(id)??[]):[];
+	const category=shop.categories.find(candidate=>candidate.id===entry.refs.category?.[0]);
+	return {...common,kind:item.kind,entry,components,
+		categoryLabel:typeof category?.data.title==='string'?category.data.title:null,
+		sizeGuide:guideFor(entry)??(components[0]?guideFor(components[0].entry):undefined),
+		purchasable:item.available&&(item.kind==='bundle'?components.length>=2&&components.every(component=>component.item.sizes.length>0):item.sizes.length>0),
 	};
 }

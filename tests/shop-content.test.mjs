@@ -7,7 +7,7 @@ import {loadShop} from '../src/lib/shop/content.ts';
 test('production reads published entries with live values and resolved references only',async t=>{
  const f=await fixture(t);
  const shop=await loadShop(f.db,{drafts:false});
- assert.deepEqual(shop.conjuntos,[]);
+ assert.equal(shop.products.some(entry=>entry.data.bundle),false);
  assert.deepEqual(shop.products.map(e=>e.slug).sort(),['bottom-test','top-test']);
  const top=shop.products.find(p=>p.slug==='top-test');
  assert.deepEqual(top.refs.category,[f.lookups.top]);
@@ -31,8 +31,9 @@ test('development preview adds drafts, pending revisions and staged references',
 
  const preview=await loadShop(f.db,{drafts:true});
  assert.equal(preview.products.find(p=>p.id===f.top).data.title,'Top editado');
- const bundle=preview.conjuntos.find(c=>c.id===f.bundle);
- assert.deepEqual([bundle.refs.top,bundle.refs.bottom],[[f.top],[f.bottom]]);
+ const bundle=preview.products.find(c=>c.id===f.bundle);
+ assert.deepEqual(bundle.refs.components,[f.top,f.bottom]);
+ assert.equal(bundle.data.bundle,true);
  const [settings]=preview.site_settings;
  assert.equal(settings.data.intro_title,'Primera colección');
  assert.deepEqual(settings.refs.featured_conjunto,[f.bundle]);

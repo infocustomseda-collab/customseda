@@ -15,7 +15,7 @@ export type ShopSnapshot = {
 };
 
 // Public paths of referenced content; the CMS url_pattern values predate the existing public paths.
-const PUBLIC_PATHS: Record<string, string> = { products: "/products/", conjuntos: "/products/", pages: "/pages/", collections: "/collections/" };
+const PUBLIC_PATHS: Record<string, string> = { products: "/products/", pages: "/pages/", collections: "/collections/" };
 
 type ItemRow = { id: string; sort_order: number; type: string; custom_url: string | null; reference_collection: string | null; reference_id: string | null; label: string; title_attr: string | null; target: string | null; css_classes: string | null };
 
@@ -53,8 +53,8 @@ export async function createSnapshot(db: Kysely<Database>, environment: Snapshot
 /** Refuses a snapshot from another environment, or an empty catalog unless explicitly allowed. */
 export function assertPublishable(snapshot: ShopSnapshot, { environment, allowEmpty }: { environment: string; allowEmpty: boolean }) {
 	if (snapshot.environment !== environment) throw new Error(`Snapshot is from ${snapshot.environment}, not ${environment}; refusing to build.`);
-	if (!allowEmpty && !snapshot.shop.products.length && !snapshot.shop.conjuntos.length) {
-		throw new Error(`The ${environment} snapshot has no published products or Conjuntos; pass --allow-empty only for a first deploy.`);
+	if (!allowEmpty && !snapshot.shop.products.length) {
+		throw new Error(`The ${environment} snapshot has no published products; pass --allow-empty only for a first deploy.`);
 	}
 }
 

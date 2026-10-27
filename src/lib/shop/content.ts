@@ -7,14 +7,12 @@ import type { Kysely } from "kysely";
 
 /** Shop collections and their parent-side reference fields → target collection. */
 export const shopTypes = {
-	products: { category: "categories", collection: "collections", color: "colors", sizes: "sizes", size_guide: "size_guides" },
-	conjuntos: { top: "products", bottom: "products" },
-	categories: {},
+	products: { collection: "collections", color: "colors", sizes: "sizes", size_guide: "size_guides", components: "products" },
 	collections: {},
 	colors: {},
 	sizes: {},
 	size_guides: {},
-	site_settings: { featured_conjunto: "conjuntos" },
+	site_settings: { featured_conjunto: "products" },
 	pages: {},
 	popups: {},
 	shipping_rules: {},
@@ -29,9 +27,9 @@ export type ShopEntry = {
 	/** Referenced entry IDs per reference field, in display order. */
 	refs: Record<string, string[]>;
 };
-export type ShopContent = Record<ShopType, ShopEntry[]>;
+export type ShopContent = Record<ShopType, ShopEntry[]> & { categories: ShopEntry[] };
 
-const BOOLEAN_FIELDS = ["available", "enabled", "announcement_enabled"];
+const BOOLEAN_FIELDS = ["available", "bundle", "enabled", "announcement_enabled"];
 
 type Loaded = ShopEntry & { type: ShopType; group: string; staged?: Record<string, unknown> };
 
@@ -91,6 +89,18 @@ export async function loadShop(db: Kysely<Database>, { drafts, only }: { drafts:
 			entry.refs[field] = groups.flatMap((child) => byGroup.get(`${target}:${child}`) ?? []);
 		}
 		content[type].push(entry);
+	}
+	// Native terms remain taxonomy data; this normalizes them for the static snapshot.
+	const terms = await db.selectFrom('taxonomies').selectAll().where('name','=','category').orderBy('sort_order').orderBy('locale','desc').execute();
+	content.categories = [...new Map(terms.map(term => [term.translation_group ?? term.id, {
+		id: term.translation_group ?? term.id, slug: term.slug, status: 'published',
+		data: { title: term.label, code: term.slug, parent: term.parent_id }, refs: {},
+	}])).values()];
+	const assignments = await db.selectFrom('content_taxonomies').select(['entry_id','taxonomy_id']).where('collection','=','products').execute();
+	const categories = new Set(content.categories.map(term => term.id));
+	for (const product of content.products) {
+		const group = loaded.find(entry => entry.type === 'products' && entry.id === product.id)!.group;
+		product.refs.category = [...new Set(assignments.filter(link => link.entry_id === group && categories.has(link.taxonomy_id)).map(link => link.taxonomy_id))];
 	}
 	return content;
 }

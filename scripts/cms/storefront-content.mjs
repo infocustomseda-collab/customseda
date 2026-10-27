@@ -85,7 +85,7 @@ async function main() {
   if(!m) throw new Error(`Local media missing: ${file}. Restore the original media to local R2 first.`);
   return {id:m.id,provider:'local',url:m.url??`/_emdash/api/media/file/${m.storageKey}`,filename:m.filename,mimeType:m.mimeType};
  };
- const tierra=(await api(`/_emdash/api/content/conjuntos/${homepage.featured}`)).item;
+ const tierra=(await api(`/_emdash/api/content/products/${homepage.featured}`)).item;
  const settings=(await api('/_emdash/api/content/site_settings/home')).item;
  await api(`/_emdash/api/content/site_settings/${settings.id}`,{method:'PUT',body:JSON.stringify({
   data:{

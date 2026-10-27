@@ -30,21 +30,32 @@ export async function fixture(t,{onContentChange}={}) {
  const db=runtime.db;t.after(()=>db.destroy());await applyCatalogModel(db);
  const repo=new ContentRepository(db);
  const lookups={};
- for(const type of ['categories','collections','sizes']) for(const entry of (await repo.findMany(type)).items) lookups[entry.data.code]=entry.id;
+ for(const type of ['collections','sizes']) for(const entry of (await repo.findMany(type)).items) lookups[entry.data.code]=entry.id;
+ const taxonomy={
+  findByName:async name=>(await db.selectFrom('taxonomies').selectAll().where('name','=',name).execute()),
+  setTermsForEntry:async(type,id,name,ids)=>{
+   const entry=await repo.findById(type,id);const group=entry.translationGroup??id;
+   await db.deleteFrom('content_taxonomies').where('collection','=',type).where('entry_id','=',group).execute();
+   for(const term of ids)await db.insertInto('content_taxonomies').values({collection:type,entry_id:group,taxonomy_id:term}).execute();
+  },
+ };
+ for(const term of await taxonomy.findByName('category')) lookups[term.slug]=term.id;
  const color=await handleContentCreate(db,'colors',{slug:'rosa',data:{title:'Rosa',code:'rosa'}});assert.equal(color.success,true,JSON.stringify(color));
  const colorId=color.data.item.id;await handleContentPublish(db,'colors',colorId);
  const image=await new MediaRepository(db).create({filename:'test.jpg',mimeType:'image/jpeg',storageKey:'test.jpg'});
  const data={title:'Test',price_cents:5000,available:true,gallery:[{image:{id:image.id},alt:'Bikini de prueba'}]};
  async function product(slug,category,sizes=['S','M']) {
-  const references={category:[lookups[category]],collection:[lookups.margarita],color:[colorId],sizes:sizes.map(s=>lookups[s])};
+  const references={collection:[lookups.margarita],color:[colorId],sizes:sizes.map(s=>lookups[s])};
   const result=await runtime.handleContentCreate('products',{slug,data:{...data,title:slug},references});
   assert.equal(result.success,true,JSON.stringify(result));
   const id=result.data.item.id;
+  await taxonomy.setTermsForEntry('products',id,'category',[lookups[category]]);
   const published=await runtime.handleContentPublish('products',id);assert.equal(published.success,true,JSON.stringify(published));
   return id;
  }
  const top=await product('top-test','top'),bottom=await product('bottom-test','braguita',['XS','XL']);
- const bundle=await runtime.handleContentCreate('conjuntos',{slug:'test-set',data:{...data,price_cents:8500},references:{top:[top],bottom:[bottom]}});
+ const bundle=await runtime.handleContentCreate('products',{slug:'test-set',data:{...data,bundle:true,price_cents:8500},references:{components:[top,bottom]}});
  assert.equal(bundle.success,true,JSON.stringify(bundle));
- return {db,runtime,repo,lookups,colorId,image,data,top,bottom,bundle:bundle.data.item.id,product};
+ await taxonomy.setTermsForEntry('products',bundle.data.item.id,'category',[lookups.conjuntos]);
+ return {db,runtime,repo,taxonomy,lookups,colorId,image,data,top,bottom,bundle:bundle.data.item.id,product};
 }

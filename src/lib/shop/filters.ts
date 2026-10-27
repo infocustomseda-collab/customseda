@@ -5,8 +5,9 @@ import type { ProductCardView, SizeCode } from "./view.ts";
 export type CatalogItem = {
 	id: string;
 	slug: string;
-	kind: "conjunto" | "pieza";
-	category: "conjunto" | "top" | "braguita";
+	kind: "bundle" | "pieza";
+	category: string | null;
+	categories: string[];
 	title: string;
 	price: number;
 	available: boolean;
@@ -18,14 +19,13 @@ export type CatalogItem = {
 
 export const SORTS = ["destacados", "precio-asc", "precio-desc", "nombre"] as const;
 export type Sort = (typeof SORTS)[number];
-export const CATEGORIES = ["todos", "conjuntos", "tops", "braguitas"] as const;
-export type Category = (typeof CATEGORIES)[number];
+export type Category = string;
 export type Filters = { category?: Category; colors: string[]; available: boolean; sort?: Sort };
 
 export function filterItems(items: CatalogItem[], filters: Filters): CatalogItem[] {
 	return items.filter(
 		(item) =>
-			(!filters.category || filters.category === "todos" || item.category === ({ conjuntos: "conjunto", tops: "top", braguitas: "braguita" } as const)[filters.category]) &&
+			(!filters.category || item.categories.includes(filters.category)) &&
 			(filters.colors.length === 0 || (item.color !== null && filters.colors.includes(item.color))) &&
 			(!filters.available || item.available),
 	);
@@ -39,12 +39,12 @@ export function sortItems(items: CatalogItem[], sort: Sort | undefined): Catalog
 	return sorted;
 }
 
-export function parseFilters(search: string, allowed: { colors: string[]; defaultCategory?: Category }): Required<Filters> {
+export function parseFilters(search: string, allowed: { colors: string[]; categories?: string[]; defaultCategory?: Category }): Required<Filters> {
 	const params = new URLSearchParams(search);
 	const sort = params.get("orden");
 	const category = params.get("category");
 	return {
-		category: CATEGORIES.includes(category as Category) ? category as Category : category === null ? allowed.defaultCategory ?? "todos" : "todos",
+		category: category && allowed.categories?.includes(category) ? category : category === null ? allowed.defaultCategory ?? "" : "",
 		colors: [...new Set(params.getAll("color"))].filter((value) => allowed.colors.includes(value)),
 		available: params.get("disponible") === "1",
 		sort: SORTS.includes(sort as Sort) ? (sort as Sort) : "destacados",

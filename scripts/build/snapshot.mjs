@@ -16,7 +16,7 @@ export async function writeSnapshot({environment,allowEmpty=false,drafts=false,o
   await writeFile(`${path}.tmp`,JSON.stringify(snapshot));
   await rename(`${path}.tmp`,path);
   const {shop}=snapshot;
-  console.log(`Snapshot ${environment}: ${shop.products.length} products, ${shop.conjuntos.length} Conjuntos, ${shop.pages.length} pages, ${shop.shipping_rules.length} shipping rules.`);
+  console.log(`Snapshot ${environment}: ${shop.products.length} products, ${shop.pages.length} pages, ${shop.shipping_rules.length} shipping rules.`);
   return snapshot;
  } finally {await bindings.dispose();}
 }

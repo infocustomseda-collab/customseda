@@ -5,19 +5,18 @@ import {productDetail} from '../src/lib/shop/detail.ts';
 const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
 const piece=(id,cat,color,sizes,extra={})=>entry(id,extra,{category:[cat],collection:['col'],color:[color],sizes:sizes.map(s=>`s-${s}`),...(extra.guide?{size_guide:[extra.guide]}:{})});
 const shop={
- categories:[entry('cat-top',{code:'top',title:'Top'}),entry('cat-bottom',{code:'braguita',title:'Braguita'})],
+ categories:[entry('cat-top',{code:'top',title:'Top'}),entry('cat-bottom',{code:'braguita',title:'Braguita'}),entry('cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code})),
  collections:[entry('col',{code:'margarita',title:'Margarita'})],
  colors:[entry('c-caoba',{code:'caoba',title:'Caoba'}),entry('c-rojo',{code:'rojo',title:'Rojo'})],
  sizes:['XS','S','M','L','XL'].map(code=>entry(`s-${code}`,{code})),
  size_guides:[entry('guia-general',{title:'Guía de tallas'}),entry('guia-top',{title:'Guía top'})],
- products:[
+ products:[entry('tierra',{bundle:true,price_cents:5000},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),
   piece('top-tierra','cat-top','c-caoba',['S','M','L']),
   piece('braguita-curve','cat-bottom','c-caoba',['XS','S','M'],{guide:'guia-top'}),
   piece('top-fuego','cat-top','c-rojo',['S','M']),
   piece('braguita-flow','cat-bottom','c-rojo',[]),
   piece('top-luz','cat-top','c-rojo',['S']),
  ],
- conjuntos:[entry('tierra',{price_cents:5000},{top:['top-tierra'],bottom:['braguita-curve']})],
  pages:[],site_settings:[],popups:[],
 };
 
@@ -29,13 +28,13 @@ test('a product resolves its labels, sizes, guide and related items',()=>{
  assert.equal(detail.sizeGuide.id,'guia-general');
  assert.equal(productDetail(shop,'braguita-curve').sizeGuide.id,'guia-top');
  // Same color first, then the rest of the catalog; never itself; at most four.
- assert.deepEqual(detail.related.map(i=>i.slug),['tierra','braguita-curve','top-fuego','top-luz']);
+ assert.deepEqual(detail.related.map(i=>i.slug),['tierra','braguita-curve','top-fuego','braguita-flow']);
 });
 
 test('Conjunto slugs resolve as Conjuntos and unknown slugs are null',()=>{
  const detail=productDetail(shop,'tierra');
- assert.equal(detail.kind,'conjunto');
- assert.deepEqual([detail.top.item.slug,detail.bottom.item.slug],['top-tierra','braguita-curve']);
+ assert.equal(detail.kind,'bundle');
+ assert.deepEqual(detail.components.map(component=>component.item.slug),['top-tierra','braguita-curve']);
  assert.equal(detail.colorLabel,'Caoba');
  assert.equal(productDetail(shop,'nada'),null);
 });
@@ -48,9 +47,9 @@ test('size-less pieces are flagged rather than given invented sizes',()=>{
 });
 
 test('a Conjunto offers each component its own sizes and needs both to be buyable',()=>{
- const withSizeless={...shop,conjuntos:[...shop.conjuntos,entry('fuego',{price_cents:5500},{top:['top-fuego'],bottom:['braguita-flow']})]};
+ const withSizeless={...shop,products:[...shop.products,entry('fuego',{bundle:true,price_cents:5500},{category:['cat-sets'],components:['top-fuego','braguita-flow']})]};
  const tierra=productDetail(withSizeless,'tierra');
- assert.deepEqual([tierra.top.item.sizes,tierra.bottom.item.sizes],[['S','M','L'],['XS','S','M']]);
+ assert.deepEqual(tierra.components.map(component=>component.item.sizes),[['S','M','L'],['XS','S','M']]);
  assert.equal(tierra.purchasable,true);
  assert.equal(tierra.item.price,5000);
  const fuego=productDetail(withSizeless,'fuego');

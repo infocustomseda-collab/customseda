@@ -15,38 +15,7 @@ export interface Product {
   gallery?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "focal_x"?: number | null; "focal_y"?: number | null }[];
   price_cents: number;
   available?: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt: Date | null;
-  byline?: BylineSummary | null;
-  bylines?: ContentBylineCredit[];
-  terms?: Record<string, TaxonomyTerm[]>;
-}
-
-export interface Conjunto {
-  id: string;
-  slug: string | null;
-  status: string;
-  title: string;
-  description?: PortableTextBlock[];
-  summary?: string;
-  gallery?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "focal_x"?: number | null; "focal_y"?: number | null }[];
-  price_cents: number;
-  available?: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt: Date | null;
-  byline?: BylineSummary | null;
-  bylines?: ContentBylineCredit[];
-  terms?: Record<string, TaxonomyTerm[]>;
-}
-
-export interface Category {
-  id: string;
-  slug: string | null;
-  status: string;
-  title: string;
-  code: string;
+  bundle?: boolean;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -93,6 +62,20 @@ export interface Color {
   title: string;
   code: string;
   hex?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Page {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  content?: PortableTextBlock[];
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -185,20 +168,6 @@ export interface ShippingRule {
   terms?: Record<string, TaxonomyTerm[]>;
 }
 
-export interface Page {
-  id: string;
-  slug: string | null;
-  status: string;
-  title: string;
-  content?: PortableTextBlock[];
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt: Date | null;
-  byline?: BylineSummary | null;
-  bylines?: ContentBylineCredit[];
-  terms?: Record<string, TaxonomyTerm[]>;
-}
-
 export interface Post {
   id: string;
   slug: string | null;
@@ -216,40 +185,32 @@ export interface Post {
 }
 
 export interface ProductReferences {
-  category: ReferencePage<Category>;
   collection: ReferencePage<Collection>;
   color: ReferencePage<Color>;
   sizes: ReferencePage<Size>;
   size_guide: ReferencePage<SizeGuide>;
-}
-
-export interface ConjuntoReferences {
-  top: ReferencePage<Product>;
-  bottom: ReferencePage<Product>;
+  components: ReferencePage<Product>;
 }
 
 export interface SiteSettingReferences {
-  featured_conjunto: ReferencePage<Conjunto>;
+  featured_conjunto: ReferencePage<Product>;
 }
 
 declare module "emdash" {
   interface EmDashCollections {
     products: Product;
-    conjuntos: Conjunto;
-    categories: Category;
     collections: Collection;
     sizes: Size;
     colors: Color;
+    pages: Page;
     size_guides: SizeGuide;
     site_settings: SiteSetting;
     popups: Popup;
     shipping_rules: ShippingRule;
-    pages: Page;
     posts: Post;
   }
   interface EmDashCollectionReferences {
     products: ProductReferences;
-    conjuntos: ConjuntoReferences;
     site_settings: SiteSettingReferences;
   }
 }

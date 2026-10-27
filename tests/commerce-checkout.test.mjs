@@ -7,19 +7,18 @@ const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id
 const piece=(id,cat,sizes,extra={})=>entry(id,extra,{category:[cat],collection:['col'],color:['c'],sizes:sizes.map(s=>`s-${s}`)});
 const rule=(id,data)=>entry(id,{enabled:true,price_cents:630,description:'24/48 h',...data});
 const shop=()=>({
- categories:[entry('cat-top',{code:'top'}),entry('cat-bottom',{code:'braguita'})],
+ categories:[entry('cat-top',{code:'top'}),entry('cat-bottom',{code:'braguita'}),entry('cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code})),
  collections:[entry('col',{code:'margarita',title:'Margarita'})],
  colors:[entry('c',{code:'caoba'})],
  sizes:['XS','S','M','L','XL'].map(code=>entry(`s-${code}`,{code})),
  products:[
+  entry('tierra',{bundle:true,title:'Conjunto Tierra',price_cents:5000},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),
+  entry('mixto',{bundle:true,title:'Mixto',price_cents:4000},{category:['cat-sets'],components:['top-agotado','braguita-curve']}),
+
   piece('top-tierra','cat-top',['S','M','L'],{title:'Top Tierra',price_cents:3000}),
   piece('braguita-curve','cat-bottom',['XS','S','M'],{title:'Braguita Curve',price_cents:2500}),
   piece('top-agotado','cat-top',['S'],{available:false}),
   piece('top-gratis','cat-top',['S'],{price_cents:0}),
- ],
- conjuntos:[
-  entry('tierra',{title:'Conjunto Tierra',price_cents:5000},{top:['top-tierra'],bottom:['braguita-curve']}),
-  entry('mixto',{title:'Mixto',price_cents:4000},{top:['top-agotado'],bottom:['braguita-curve']}),
  ],
  shipping_rules:[
   rule('canarias',{title:'Canarias',zone:'canarias',country_codes:'ES',postal_prefixes:'35, 38',free_above_cents:4500}),
@@ -66,8 +65,8 @@ test('a delivered address must match the chosen rule country and postal prefix',
 });
 
 test('order form fields are parsed strictly',()=>{
- assert.deepEqual(parseOrder(form({id:'tierra',talla_top:'M',talla_braguita:'S',quantity:2,shipping:'canarias',price:5000})),
-  {id:'tierra',sizes:{talla:null,talla_top:'M',talla_braguita:'S'},quantity:2,shipping:'canarias',price:5000});
+ assert.deepEqual(parseOrder(form({id:'tierra','size_top-tierra':'M','size_braguita-curve':'S',quantity:2,shipping:'canarias',price:5000})),
+  {id:'tierra',sizes:{'size_top-tierra':'M','size_braguita-curve':'S'},quantity:2,shipping:'canarias',price:5000});
  assert.equal(parseOrder(form({id:'tierra',quantity:0,shipping:'canarias',price:5000})),null);
  assert.equal(parseOrder(form({id:'tierra',quantity:11,shipping:'canarias',price:5000})),null);
  assert.equal(parseOrder(form({id:'tierra',quantity:1.5,shipping:'canarias',price:5000})),null);
@@ -88,10 +87,10 @@ test('a piece is quoted from database prices with its size and shipping',()=>{
 });
 
 test('a Conjunto keeps both component sizes on one line',()=>{
- const quote=quoteOrder(shop(),order({id:'tierra',talla_top:'L',talla_braguita:'XS',price:5000}));
+ const quote=quoteOrder(shop(),order({id:'tierra','size_top-tierra':'L','size_braguita-curve':'XS',price:5000}));
  assert.equal(quote.ok,true);
- assert.equal(quote.line.detail,'Top: L · Braguita: XS');
- assert.deepEqual(quote.line.components.map(c=>[c.role,c.id,c.size]),[['top','top-tierra','L'],['braguita','braguita-curve','XS']]);
+ assert.equal(quote.line.detail,'Top Tierra: L · Braguita Curve: XS');
+ assert.deepEqual(quote.line.components.map(c=>[c.role,c.id,c.size]),[['component','top-tierra','L'],['component','braguita-curve','XS']]);
  assert.equal(quote.shipping.cents,0);
 });
 
@@ -100,37 +99,37 @@ test('unavailable items, unsupported sizes, stale prices and unknown shipping ar
  assert.equal(code({id:'nada',talla:'M',price:1000}),'unavailable');
  assert.equal(code({id:'top-agotado',talla:'S',price:1000}),'unavailable');
  // A Conjunto with an unavailable component cannot be bought.
- assert.equal(code({id:'mixto',talla_top:'S',talla_braguita:'S',price:4000}),'unavailable');
+ assert.equal(code({id:'mixto','size_top-tierra':'S','size_braguita-curve':'S',price:4000}),'unavailable');
  // Below Stripe's minimum charge an item would be given away for the shipping cost.
  assert.equal(code({id:'top-gratis',talla:'S',price:0}),'unavailable');
  assert.equal(code({id:'top-tierra',talla:'XL',price:3000}),'size');
  assert.equal(code({id:'top-tierra',price:3000}),'size');
- assert.equal(code({id:'tierra',talla_top:'M',talla_braguita:'L',price:5000}),'size');
- assert.equal(code({id:'tierra',talla_top:'M',price:5000}),'size');
+ assert.equal(code({id:'tierra','size_top-tierra':'M','size_braguita-curve':'L',price:5000}),'size');
+ assert.equal(code({id:'tierra','size_top-tierra':'M',price:5000}),'size');
  assert.equal(code({id:'top-tierra',talla:'M',price:2000}),'price');
  assert.equal(code({id:'top-tierra',talla:'M',price:3000,shipping:'apagada'}),'shipping');
  assert.equal(code({id:'top-tierra',talla:'M',price:3000,shipping:'nada'}),'shipping');
 });
 
 test('Stripe session parameters carry one line item, shipping and readable production details',()=>{
- const quote=quoteOrder(shop(),order({id:'tierra',talla_top:'M',talla_braguita:'S',price:5000,shipping:'peninsula'}));
+ const quote=quoteOrder(shop(),order({id:'tierra','size_top-tierra':'M','size_braguita-curve':'S',price:5000,shipping:'peninsula'}));
  const params=sessionParams(quote,'https://seda.example');
  assert.equal(params.mode,'payment');
  assert.equal(params.locale,'es');
- assert.deepEqual(params.line_items,[{quantity:1,price_data:{currency:'eur',unit_amount:5000,product_data:{name:'Conjunto Tierra',description:'Top: M · Braguita: S'}}}]);
+ assert.deepEqual(params.line_items,[{quantity:1,price_data:{currency:'eur',unit_amount:5000,product_data:{name:'Conjunto Tierra',description:'Top Tierra: M · Braguita Curve: S'}}}]);
  assert.deepEqual(params.shipping_options,[{shipping_rate_data:{type:'fixed_amount',display_name:'Península y Baleares',fixed_amount:{amount:1090,currency:'eur'}}}]);
  assert.deepEqual(params.shipping_address_collection,{allowed_countries:['ES']});
  assert.equal(params.success_url,'https://seda.example/checkout/gracias?session_id={CHECKOUT_SESSION_ID}');
  assert.equal(params.cancel_url,'https://seda.example/checkout/cancelado?producto=tierra');
- assert.equal(params.payment_intent_data.description,'1 × Conjunto Tierra (Top: M · Braguita: S) · Envío: Península y Baleares');
+ assert.equal(params.payment_intent_data.description,'1 × Conjunto Tierra (Top Tierra: M · Braguita Curve: S) · Envío: Península y Baleares');
  const metadata=params.metadata;
  assert.deepEqual(params.payment_intent_data.metadata,metadata);
  assert.equal(metadata.source,'customseda');
  assert.equal(metadata.item_id,'tierra');
- assert.equal(metadata.top_id,'top-tierra');
- assert.equal(metadata.top_size,'M');
- assert.equal(metadata.braguita_id,'braguita-curve');
- assert.equal(metadata.braguita_size,'S');
+ assert.equal(metadata.component_1_id,'top-tierra');
+ assert.equal(metadata.component_1_size,'M');
+ assert.equal(metadata.component_2_id,'braguita-curve');
+ assert.equal(metadata.component_2_size,'S');
  assert.equal(metadata.unit_price_cents,'5000');
  assert.equal(metadata.shipping_cents,'1090');
  assert.equal(metadata.total_cents,'6090');

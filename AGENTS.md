@@ -5,8 +5,9 @@
 - Follow `docs/superpowers/plans/2026-10-24-custom-seda.md` phase by phase.
 - Work locally (confirmed by the user again on 2026-10-25, after phase 6). No staging or production deploys until phase 7. The deploy tooling exists but stays off: GitHub Actions only runs tests until `STAGING_DEPLOY_ENABLED` / `PRODUCTION_DEPLOY_ENABLED` are set, publish-triggered rebuilds need `GITHUB_REBUILD_TOKEN`, and manual `pnpm deploy:<env>` (wrangler login) is for phase 7. The staging catalog import, remote acceptance/performance checks, recovery rehearsals and cutover are phase 7.
 - Phase 1 is infrastructure and feasibility only. The starter's posts/pages are temporary CMS smoke-test types, not the approved shop model or visual design.
-- Products and Conjuntos are separate types. Made to order; no stock tracking. Stripe Dashboard manages orders.
+- Products use native hierarchical category taxonomy terms. Conjuntos are products with a bundle flag and multiple product components; do not validate matching component colors. Made to order; no stock tracking. Stripe Dashboard manages orders.
 - No Tailwind. Preserve the approved identity in later design work.
+- Prefer native Astro and EmDash functionality over custom structures or implementations when it meets the requirements. When reviewing the imported Shopify model, simplify forced structures and reuse native features such as taxonomies for classification where appropriate; explain any need for a custom alternative.
 
 ## Runtime
 

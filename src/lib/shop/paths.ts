@@ -8,7 +8,7 @@ type Paths<P extends string, Props = undefined> = { params: Record<P, string>; p
 const DEDICATED_PAGES = new Set(["contact", "margarita"]);
 
 export function productPaths(shop: ShopContent): Paths<"slug"> {
-	return [...shop.conjuntos, ...shop.products].flatMap((entry) => (productDetail(shop, entry.slug) ? [{ params: { slug: entry.slug } }] : []));
+	return shop.products.flatMap((entry) => (productDetail(shop, entry.slug) ? [{ params: { slug: entry.slug } }] : []));
 }
 
 export const collectionPaths = (shop: ShopContent): Paths<"handle"> => catalogViews(shop).map((view) => ({ params: { handle: view.handle } }));

@@ -3,7 +3,7 @@ import {sql} from 'kysely';
 import type {CatalogDb} from './catalog-store.ts';
 
 export const cleanupVersion='customseda.catalog-cleanup.v1';
-const importedTypes=['products','conjuntos','colors','pages','size_guides','site_settings','collections'];
+const importedTypes=['products','colors','pages','size_guides','site_settings','collections'];
 
 /** Retire one-time import data without replacing editorial rows or reference groups. */
 export async function retireImport(db:CatalogDb) {

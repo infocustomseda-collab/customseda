@@ -4,11 +4,14 @@ import { catalogTypes, validateCatalogEntry, type CatalogEntry } from './catalog
 
 export type CatalogDb = Kysely<Database>;
 const targets: Record<string, Record<string,string>> = {
- products:{category:'categories',collection:'collections',color:'colors',sizes:'sizes',size_guide:'size_guides'},
- conjuntos:{top:'products',bottom:'products'},
+ products:{collection:'collections',color:'colors',sizes:'sizes',size_guide:'size_guides',components:'products'},
 };
 export type CatalogWrite = {data?:Record<string,unknown>;references?:Record<string,string[]>;slug?:string|null};
 export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=true):Promise<CatalogEntry|null> {
+ if(type==='category') {
+  const term=await db.selectFrom('taxonomies').selectAll().where('name','=','category').where(eb=>eb.or([eb('id','=',id),eb('translation_group','=',id)])).executeTakeFirst();
+  return term ? {id:term.translation_group??term.id,type,status:'published',data:{title:term.label,code:term.slug},refs:{}} : null;
+ }
  if(!catalogTypes.has(type)) return null;
  const item=await new ContentRepository(db).findByIdOrSlug(type,id);
  if(!item) return null;
@@ -20,7 +23,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
   data={...data,...Object.fromEntries(Object.entries(revision.data).filter(([key])=>!key.startsWith('_')))};
   staged=(revision.data._references??{}) as Record<string,unknown>;
  }
- if(data.available===0 || data.available===1) data.available=Boolean(data.available);
+ for(const field of ['available','bundle']) if(data[field]===0 || data[field]===1) data[field]=Boolean(data[field]);
  const refs:Record<string,string[]>={};
  const selections=Object.entries(targets[type]??{}).map(([field,target])=>{
   refs[field]=[];
@@ -42,6 +45,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
   for(const row of result.rows) refs[row.field]!.push(row.id);
  }
 
+ if(type==='products') refs.category=[...new Set((await db.selectFrom('content_taxonomies as ct').innerJoin('taxonomies as t','t.translation_group','ct.taxonomy_id').select('ct.taxonomy_id').where('ct.collection','=','products').where('ct.entry_id','=',item.translationGroup??item.id).where('t.name','=','category').execute()).map(term=>term.taxonomy_id))];
  return {id:item.id,type,status:item.status,data,refs,group:item.translationGroup??item.id};
 }
 
@@ -52,7 +56,7 @@ async function loadGraph(db:CatalogDb,root:CatalogEntry,draftRelated=false,read:
  const pending=[root];
  while(pending.length) {
   const entry=pending.shift()!;
-  for(const [field,type] of Object.entries(targets[entry.type]??{})) {
+  for(const [field,type] of Object.entries(entry.type==='products'?{...targets.products,category:'category'}:targets[entry.type]??{})) {
    for(const id of entry.refs[field]??[]) {
     if(entries.has(id)) continue;
     const related=await read(type,id,draftRelated);
@@ -98,15 +102,15 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
  if(id&&!existing) return ['No se ha encontrado el contenido.'];
  const candidate:CatalogEntry={id:existing?.id??'new',type,status:existing?.status??'draft',group:existing?.group,data:{...existing?.data,...body.data},refs:{...existing?.refs,...body.references}};
  // EmDash's defaults are applied after beforeSave; mirror the single business default here.
- if((type==='products'||type==='conjuntos')&&candidate.data.available===undefined) candidate.data.available=true;
+ if((type==='products')&&candidate.data.available===undefined) candidate.data.available=true;
  const graph=checkReferences ? await loadGraph(db,candidate,false,read) : new Map([[candidate.id,candidate]]);
  const errors=validateCatalogEntry(candidate,graph,{publish,references:checkReferences});
  const filtered=errors;
  if(existing) {
   const dependents=await catalogDependents(db,existing);
-  if(['categories','collections','colors','sizes'].includes(type)) {
+  if(['collections','colors','sizes'].includes(type)) {
    const live=await read(type,existing.id,false);
-   if(live && live.data.code!==candidate.data.code && (['categories','sizes'].includes(type)||dependents.length)) filtered.push('El código es estable y no se puede cambiar mientras esté en uso.');
+   if(live && live.data.code!==candidate.data.code && (type==='sizes'||dependents.length)) filtered.push('El código es estable y no se puede cambiar mientras esté en uso.');
   }
   if(type==='products' && checkReferences) for(const dep of dependents) {
    // Validate both live and staged bundle selections against the proposed component.
@@ -124,13 +128,6 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
     if(failures.length) filtered.push(`El cambio rompería el conjunto «${bundle.data.title??bundle.id}»: ${failures[0]}`);
    }
   }
- }
- // Products and Conjuntos share the public /products/<slug> path; EmDash only enforces uniqueness per type.
- if(type==='products'||type==='conjuntos') {
-  const repo=new ContentRepository(db);
-  const slug=typeof body.slug==='string'&&body.slug ? body.slug : id ? (await repo.findByIdOrSlug(type,id))?.slug : null;
-  const other=type==='products'?'conjuntos':'products';
-  if(slug && await repo.findBySlug(other,slug)) filtered.push(`La dirección «${slug}» ya la usa ${other==='conjuntos'?'un conjunto':'un producto'}; elige otra.`);
  }
  if(publish && Array.isArray(candidate.data.gallery)) {
   const ids=[...new Set(candidate.data.gallery.map(row=>row?.image?.id).filter((id):id is string=>typeof id==='string'))];

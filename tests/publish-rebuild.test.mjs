@@ -78,12 +78,25 @@ test('publishing, unpublishing and deleting shop content requests a rebuild; dra
  assert.ok(reasons.includes('publish products'),JSON.stringify(reasons));
  reasons.length=0;
  // Saving a draft (the Conjunto created by the fixture) is not a public change.
- await f.runtime.handleContentUpdate('conjuntos',f.bundle,{data:{title:'Otro título'}});
+ await f.runtime.handleContentUpdate('products',f.bundle,{data:{title:'Otro título'}});
  await settle();
  assert.deepEqual(reasons,[]);
- assert.equal((await f.runtime.handleContentPublish('conjuntos',f.bundle)).success,true);
- await f.runtime.handleContentUnpublish('conjuntos',f.bundle);
- await f.runtime.handleContentDelete('conjuntos',f.bundle);
+ assert.equal((await f.runtime.handleContentPublish('products',f.bundle)).success,true);
+ await f.runtime.handleContentUnpublish('products',f.bundle);
+ await f.runtime.handleContentDelete('products',f.bundle);
  await settle();
- assert.deepEqual(reasons,['publish conjuntos','unpublish conjuntos','delete conjuntos']);
+ assert.deepEqual(reasons,['publish products','unpublish products','delete products']);
+});
+
+test('native category edits and published category assignments trigger a scheduled rebuild',async t=>{
+ const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
+ await runMigrations(db);await applyModelMigrations(db);
+ const check=()=>scheduledRebuildReasons(d1(db),Date.now());
+ assert.deepEqual(await check(),[]);
+ const term=await db.selectFrom('taxonomies').selectAll().where('slug','=','top').executeTakeFirstOrThrow();
+ await db.updateTable('taxonomies').set({label:'Tops'}).where('id','=',term.id).execute();
+ assert.deepEqual(await check(),['taxonomy change']);assert.deepEqual(await check(),[]);
+ const entry=await new ContentRepository(db).create({type:'products',slug:'classified',status:'published',data:{title:'Classified'}});
+ await db.insertInto('content_taxonomies').values({collection:'products',entry_id:entry.translationGroup??entry.id,taxonomy_id:term.translation_group??term.id}).execute();
+ assert.deepEqual(await check(),['taxonomy change']);
 });

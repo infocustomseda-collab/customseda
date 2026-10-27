@@ -37,7 +37,7 @@ test('remote-model orchestration applies and retries against isolated local D1, 
  const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,cleanupVersion);
  assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion]);
  assert.equal((await new SchemaRegistry(db).getField('site_settings','highlights')).type,'repeater');
- assert.equal((await new ContentRepository(db).findMany('categories')).items.length,2);
+ assert.equal((await db.selectFrom('taxonomies').selectAll().where('name','=','category').execute()).length,6);
  const options=new OptionsRepository(db);
  assert.equal(await options.get('customseda.catalog.migration-lock'),null);
  await options.set('customseda.catalog.migration-lock',{owner:'other',startedAt:'test'});
