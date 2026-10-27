@@ -1,0 +1,19 @@
+---
+// Pills over a product photo, stacked: Edición especial above Agotado.
+import Icon from "./Icon.astro";
+
+interface Props {
+	specialEdition: boolean;
+	soldOut?: boolean;
+	class?: string;
+}
+
+const { specialEdition, soldOut = false, class: className } = Astro.props;
+---
+
+{(specialEdition || soldOut) && (
+	<div class:list={["product-badges", className]}>
+		{specialEdition && <span class="badge badge--special"><Icon name="clock" size={14} />Edición especial</span>}
+		{soldOut && <span class="badge">Agotado</span>}
+	</div>
+)}

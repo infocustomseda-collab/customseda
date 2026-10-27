@@ -5,6 +5,7 @@ import BuyBox from "../../components/BuyBox.astro";
 import Disclosure from "../../components/Disclosure.astro";
 import Gallery from "../../components/Gallery.astro";
 import Price from "../../components/Price.astro";
+import ProductBadges from "../../components/ProductBadges.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import RichText from "../../components/RichText.astro";
 import Shop from "../../layouts/Shop.astro";
@@ -44,7 +45,9 @@ const names = item.card.transitionName ? transitionNames(item.card.transitionNam
 				</ol>
 			</nav>
 			<div class="split">
-				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={names?.image} />
+				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={names?.image}>
+					<ProductBadges class="gallery__badges" specialEdition={item.card.specialEdition} />
+				</Gallery>
 				<div class="product-details stack">
 					<div class="stack" style="--stack-space: var(--space-3xs)">
 						<h1 class="product-details__title" style={names ? `view-transition-name: ${names.title}` : undefined}>{item.title}</h1>

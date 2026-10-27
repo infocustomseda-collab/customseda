@@ -23,6 +23,8 @@ export type ProductCardView = {
 	priceCents: number;
 	images: GalleryImage[];
 	available: boolean;
+	/** The product's material is an Edición especial. */
+	specialEdition: boolean;
 	/** Stable name used later for product-to-detail view transitions. */
 	transitionName?: string;
 };

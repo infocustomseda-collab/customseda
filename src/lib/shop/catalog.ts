@@ -20,7 +20,7 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
   });
   // Colors are identified by their native slug, which is also the filter value.
   return { entry, color: shop.colors.find(color=>color.id===material?.refs.color?.[0])?.slug ?? null, collection: code(shop.collections,entry.refs.collection?.[0]),
-   category: code(shop.categories,category), sizes: orderSizes(sizes) };
+   category: code(shop.categories,category), sizes: orderSizes(sizes), specialEdition: material?.data.special_edition===true };
  };
  const pieces = new Map(shop.products.filter(entry=>entry.data.bundle!==true).map(entry=>[entry.id,piece(entry)]));
  return shop.products.flatMap((entry): CatalogItem[] => {
@@ -47,7 +47,7 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
    title:String(entry.data.title??''),price:Number(entry.data.price_cents??0),available,color,collection,
    sizes:bundle?orderSizes(included.flatMap(component=>component.sizes)):own.sizes,
    sizesByCategory:Object.fromEntries((bundle?included:[own]).flatMap(part=>part.category?[[part.category,part.sizes]]:[])),
-   card:{...productCard(entry),available,metadata},
+   card:{...productCard(entry),available,specialEdition:own.specialEdition,metadata},
   }];
  });
 }

@@ -17,6 +17,7 @@ const eager = variant === "product";
 ---
 
 <product-gallery class:list={["gallery", variant === "slideshow" && "gallery--slideshow"]} role="region" aria-label={label}>
+	<slot />
 	<ul class="gallery__list" role="list" tabindex="0">
 		{images.map((image, index) => (
 			<li class="gallery__item" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>

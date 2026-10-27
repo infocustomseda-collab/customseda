@@ -24,6 +24,23 @@
 		line-height: var(--leading-ui);
 	}
 
+	/* Pills over a photo share one line (Edición especial first), wrapping only on narrow cards. */
+	.product-badges {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3xs);
+	}
+
+	/* Inverted, like a selected chip. */
+	.badge--special {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-3xs);
+		background: var(--color-selected);
+		color: var(--color-on-selected);
+	}
+
 	.product-card {
 		position: relative;
 		display: grid;
@@ -57,7 +74,7 @@
 		}
 	}
 
-	.product-card__badge {
+	.product-card__badges {
 		position: absolute;
 		inset-block-end: var(--space-xs);
 		inset-inline-start: var(--space-xs);
@@ -95,8 +112,17 @@
 
 	/* Gallery: a swipeable strip on small screens, masonry beside the details on wide ones. */
 	.gallery {
+		position: relative;
 		display: grid;
 		gap: var(--space-xs);
+	}
+
+	.gallery__badges {
+		position: absolute;
+		z-index: 1;
+		inset-block-start: var(--space-xs);
+		inset-inline-start: var(--space-xs);
+		pointer-events: none;
 	}
 
 	.gallery__list {

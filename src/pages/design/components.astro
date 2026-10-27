@@ -26,6 +26,7 @@ const card = (row: Row): ProductCardView => ({
 	images: galleryImages(JSON.parse(row.gallery || "[]")),
 	// The specimen shows one Agotado card below; availability comes from sizes in the real catalog.
 	available: true,
+	specialEdition: false,
 });
 const sets = conjuntos.results.map(card);
 const pieces = products.results.map(card);

@@ -14,7 +14,7 @@ const lookups={
   ...['XS','S','M','L','XL'].map((label,i)=>entry('sizes',`b-${label}`,{label,sort_order:i},{category:['cat-bottom']}))],
  // Products take color and sizes from their material. Rojo has no braguita sizes left.
  materials:[entry('materials','m-caoba',{},{color:['c-caoba'],sizes:['t-S','t-M','t-L','b-XS','b-S','b-M']}),
-  entry('materials','m-rojo',{},{color:['c-rojo'],sizes:['t-S','t-M','t-L','t-XL']})],
+  entry('materials','m-rojo',{special_edition:true},{color:['c-rojo'],sizes:['t-S','t-M','t-L','t-XL']})],
 };
 const piece=(id,cat,material,data={})=>entry('products',id,data,{category:[cat],collection:['col-m'],material:[material]});
 const shop={
@@ -60,6 +60,12 @@ test('a material without sizes for the category leaves the piece Agotado',()=>{
  assert.equal(by('braguita-flow').available,false);assert.equal(by('braguita-flow').card.available,false);
  assert.equal(by('top-fuego').available,true);
  assert.equal(productDetail(shop,'braguita-flow').item.available,false);
+});
+
+test('cards flag the special edition of the product\'s own material',()=>{
+ const items=buildCatalog(shop);const by=slug=>items.find(i=>i.slug===slug).card.specialEdition;
+ // m-rojo is a special edition; a Conjunto follows its own material, like its color.
+ assert.deepEqual(['top-fuego','braguita-flow','fuego','top-tierra','tierra'].map(by),[true,true,true,false,false]);
 });
 
 test('views cover the combined catalog and categories; collections and unknown handles are absent',()=>{

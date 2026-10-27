@@ -59,8 +59,8 @@ export function siteChrome({ settings, primary, footer, path }: { settings: Shop
 	};
 }
 
-/** Products and Conjuntos keep their public paths (/products/<slug>). Availability comes from the catalog. */
-export function productCard(entry: ShopEntry): Omit<ProductCardView, "available"> {
+/** Products and Conjuntos keep their public paths (/products/<slug>). Availability and special edition come from the catalog. */
+export function productCard(entry: ShopEntry): Omit<ProductCardView, "available" | "specialEdition"> {
 	return {
 		href: `/products/${entry.slug}`,
 		title: String(entry.data.title ?? ""),
