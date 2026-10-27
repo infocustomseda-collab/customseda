@@ -8,6 +8,7 @@ import {retireImport,cleanupVersion} from './retire-import.ts';
 import {applySizeCategories,sizeCategoriesVersion} from './size-categories.ts';
 import {dropField} from './drop-field.ts';
 import {applyMaterials,materialsVersion} from './materials.ts';
+import {applyProductMaterials,productMaterialsVersion} from './product-materials.ts';
 
 export const modelVersion='customseda.catalog.v1';
 export async function applyCatalogModel(db:CatalogDb) {
@@ -63,7 +64,7 @@ export async function retireColorCodes(db:CatalogDb) {
 }
 
 /** Every application model version, in order. Deployment and the local route call this. */
-export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion];
+export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion];
 export async function applyModelMigrations(db:CatalogDb) {
- return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db),await applyMaterials(db)];
+ return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db),await applyMaterials(db),await applyProductMaterials(db)];
 }
