@@ -11,19 +11,20 @@
 - No sandbox runner or Worker Loader. These require Workers Paid.
 - The hourly maintenance handler and Wrangler Cron expression must match. Scheduled publications and backups still need resource-budget testing; an hourly trigger does not promise Free-tier compatibility for large jobs.
 
-## Two Workers per environment
+## Workers per environment
 
-Each remote environment deploys two Workers that share one D1 database and one R2 bucket:
+An environment's `SITE_ROLE` selects its shape; `validateTarget` checks it before any deploy.
 
-| Environment | Public Worker | Preview Worker |
+| Environment | Worker(s) | Rendering |
 | --- | --- | --- |
-| Staging | `customseda-staging`, <https://customseda-staging.customseda.workers.dev> | `customseda-staging-preview`, <https://customseda-staging-preview.customseda.workers.dev> |
-| Production | `customseda-production`, <https://customseda-production.customseda.workers.dev> | `customseda-production-preview`, <https://customseda-production-preview.customseda.workers.dev> |
+| Staging | `customseda-staging`, <https://customseda-staging.customseda.workers.dev> | Live: one Worker, every page on request |
+| Production | `customseda-production`, <https://customseda-production.customseda.workers.dev>, and `customseda-production-preview`, <https://customseda-production-preview.customseda.workers.dev> | Static public site plus a preview Worker, sharing one D1 database and R2 bucket |
 
-- **Public** (`SITE_ROLE=public`, built to `dist/`): prerendered static pages from the snapshot. Per request it runs only `/api/*`, `/checkout/*` and `/_emdash/api/media/file/*`.
-- **Preview** (`SITE_ROLE=preview`, built with `SITE_MODE=preview` to `dist-preview/`): the admin, all of `/_emdash`, and every page rendered on request. Signed-in editors (Contributor and above) see live pages with drafts, and `?_preview=` links work. Everyone else is redirected to the public origin. The hourly cron and the rebuild trigger run on the preview Worker.
+- **Live** (`SITE_ROLE=preview`, no `<env>-preview` partner, no `PUBLIC_SITE_URL`; built with `SITE_MODE=preview` to `dist-preview/`): the admin, all of `/_emdash`, and every page rendered on request. Visitors see published content; signed-in editors (Contributor and above) and `?_preview=` links see drafts. The hourly cron runs here. Content changes appear immediately, so there is no rebuild trigger.
+- **Static public** (`SITE_ROLE=public`, built to `dist/`): prerendered pages from the snapshot. Per request it runs only `/api/*`, `/checkout/*` and `/_emdash/api/media/file/*`; the rest of `/_emdash` redirects (307) to its preview Worker.
+- **Preview partner** (`<env>-preview`, `SITE_ROLE=preview`, `PUBLIC_SITE_URL` set): like live, but logged-out visitors are redirected to the public origin. The hourly cron and the rebuild trigger run here.
 
-Moving the admin to the preview hostname means passkeys must be registered again: EmDash binds passkeys to the site hostname. Use EmDash's sign-in handover (`POST /_emdash/api/auth/handover`) to sign in on the new hostname, then register a passkey there.
+Admin passkeys are bound to the hostname that serves the admin. Staging keeps its admin on its own hostname. When production's admin moves to a preview hostname, register passkeys there (EmDash's sign-in handover, `POST /_emdash/api/auth/handover`, moves an existing session).
 
 ## Credentials
 
@@ -40,7 +41,7 @@ Manual deploys authenticate like fdag: run `pnpm exec wrangler login` once, then
 
 Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN` (a secret of the `<env>-preview` Worker only), and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
 
-Secrets per Worker: each Worker keeps its own copy. Both Workers of an environment need the same `EMDASH_ENCRYPTION_KEY` (they read the same encrypted settings) and `FOUNDATION_ACCESS_TOKEN`, so one file per environment holds exactly those and is uploaded to both. Keys that belong to one Worker only are added to it individually: the Stripe keys to the public Worker, `GITHUB_REBUILD_TOKEN` to the preview Worker. Keep them out of `.env.cloudflare-<env>`, since `secret bulk` uploads every key in the file.
+Secrets per Worker: each Worker keeps its own copy. Both Workers of an environment need the same `EMDASH_ENCRYPTION_KEY` (they read the same encrypted settings) and `FOUNDATION_ACCESS_TOKEN`, so one file per environment holds exactly those and is uploaded to both. Keys that belong to one Worker only are added to it individually: the Stripe keys to the public Worker, `GITHUB_REBUILD_TOKEN` to the preview Worker. Keep them out of `.env.cloudflare-<env>`, since `secret bulk` uploads every key in the file. Staging has one Worker, so it takes the file once (`--env staging`) and its Stripe test keys on the same Worker.
 
 For the first deployment of an environment, upload its secrets through Wrangler, for example:
 
@@ -59,7 +60,7 @@ Public pages are prerendered static assets. Cloudflare serves those without runn
 
 **Launch switch (phase 7):** set `FOUNDATION_LOCKED` to `"false"` and remove `run_worker_first` together. Pages are then served directly from static assets.
 
-**Staging preview is open** (`staging-preview` has `FOUNDATION_LOCKED: "false"` and no `run_worker_first`). Its admin already has an owner, editors sign in with their passkey, and logged-out visitors are redirected to the gated public site, so the browser login only got in the way. `production-preview` stays gated until its first administrator is registered: an open, unclaimed setup wizard would let the first visitor become admin.
+**Staging is open** (`FOUNDATION_LOCKED: "false"`, no `run_worker_first`). Its admin already has an owner and editors sign in with their passkey. `production-preview` stays gated until its first administrator is registered: an open, unclaimed setup wizard would let the first visitor become admin.
 
 ## Build, migrate, deploy, check
 
@@ -69,7 +70,9 @@ pnpm deploy:staging
 pnpm deploy:production
 ```
 
-The runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV` (the preview build in step 9 uses `<env>-preview` instead):
+A live environment (staging) runs steps 1–3, builds with `SITE_MODE=preview` for its own environment into `dist-preview/`, deploys `dist-preview/server/wrangler.json`, and runs step 12. It needs no snapshot, derivatives or prerendering.
+
+For a static environment, the runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV` (the preview build in step 9 uses `<env>-preview` instead):
 
 1. Show the migration target and status (manifest built from the Astro config with `--from-config`, since no build exists yet).
 2. Run core migration. It is interactive, unless `EMDASH_EXPECTED_TARGET_FINGERPRINT` holds the reviewed fingerprint, as in CI.
@@ -119,7 +122,7 @@ Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, and
 
 ## Publishing and rebuilds
 
-Public pages are prebuilt, so a CMS change appears on the public site after the next deploy of that environment (editors see it immediately on the preview Worker). Three things trigger that deploy:
+On staging, pages render on request, so a CMS change appears immediately and nothing is rebuilt. On production, public pages are prebuilt, so a change appears on the public site after the next deploy (editors see it immediately on the preview Worker). Three things trigger that deploy:
 
 - **Publish, unpublish, delete or restore** of shop content (products, Conjuntos, lookups, size guides, site settings, pages, popups, shipping rules). The catalog plugin dispatches `deploy.yml` for its own environment after the response, so the editor never waits.
 - **Scheduled publishing and menu changes,** within the hour. EmDash's scheduled sweep runs no plugin hooks, and menus have no hook at all. Before each hourly sweep, the Worker's scheduled handler checks two things: shop entries whose `scheduled_at` is due, which includes scheduled edits of live entries, and a fingerprint of the menus kept in `options`. It dispatches a rebuild if either changed.
@@ -130,14 +133,14 @@ Bursts coalesce before any job starts: waiting dispatch runs for an environment 
 The workflow is dispatched with a **fine-grained personal access token**, scoped to the `infocustomseda-collab/customseda` repository with "Actions: read and write" permission and nothing else. Store it as a secret of each `<env>-preview` Worker (the rebuild trigger runs there):
 
 ```sh
-pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env staging-preview
+pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env production-preview
 ```
 
 `DEPLOY_ENVIRONMENT` and `GITHUB_REPOSITORY` are set as Worker vars in `wrangler.jsonc`. Local development has neither, so it never dispatches.
 
 | Token | Owner | Expires | Renewal |
 | --- | --- | --- | --- |
-| `GITHUB_REBUILD_TOKEN` (`staging-preview` Worker) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
+| `GITHUB_REBUILD_TOKEN` (`production-preview` Worker) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
 
 When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
 

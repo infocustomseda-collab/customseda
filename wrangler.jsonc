@@ -35,42 +35,10 @@
     "staging": {
       "name": "customseda-staging",
       "workers_dev": true,
-      "assets": {
-        "run_worker_first": true
-      },
       "vars": {
         "EMDASH_SITE_URL": "https://customseda-staging.customseda.workers.dev",
-        "FOUNDATION_LOCKED": "true",
-        "SITE_ROLE": "public",
-        "PREVIEW_SITE_URL": "https://customseda-staging-preview.customseda.workers.dev"
-      },
-      "triggers": {
-        "crons": []
-      },
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "customseda-staging",
-          "database_id": "8c279b51-3653-400f-a02c-408acb52569f"
-        }
-      ],
-      "r2_buckets": [
-        {
-          "binding": "MEDIA",
-          "bucket_name": "customseda-staging-media"
-        }
-      ]
-    },
-    "staging-preview": {
-      "name": "customseda-staging-preview",
-      "workers_dev": true,
-      "vars": {
-        "EMDASH_SITE_URL": "https://customseda-staging-preview.customseda.workers.dev",
         "FOUNDATION_LOCKED": "false",
-        "SITE_ROLE": "preview",
-        "PUBLIC_SITE_URL": "https://customseda-staging.customseda.workers.dev",
-        "DEPLOY_ENVIRONMENT": "staging",
-        "GITHUB_REPOSITORY": "infocustomseda-collab/customseda"
+        "SITE_ROLE": "preview"
       },
       "triggers": {
         "crons": [

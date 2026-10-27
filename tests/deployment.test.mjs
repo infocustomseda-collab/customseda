@@ -108,16 +108,53 @@ test('gated environments must route static assets through the Worker', () => {
   assert.equal(validateTarget(c, 'production').environment, 'production');
 });
 
-test('the checked-in Wrangler config gates assets wherever the foundation gate is locked', async () => {
+test('the checked-in Wrangler config: staging live and open, production static with a gated preview', async () => {
   const { readFile } = await import('node:fs/promises');
   const wrangler = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
-  for (const name of ['staging', 'production']) {
-    assert.equal(validateTarget(wrangler, name).environment, name);
-  }
-  // The staging preview is open; production's preview keeps the gate until its admin is set up.
-  assert.equal(wrangler.env['staging-preview'].vars.FOUNDATION_LOCKED, 'false');
+  const staging = validateTarget(wrangler, 'staging');
+  assert.equal(staging.rendering, 'live');
+  assert.equal(staging.preview, undefined);
+  assert.equal(wrangler.env['staging-preview'], undefined);
+  assert.equal(wrangler.env.staging.vars.FOUNDATION_LOCKED, 'false');
+  // The live staging Worker runs the hourly maintenance (scheduled publishing).
+  assert.deepEqual(wrangler.env.staging.triggers.crons, ['0 * * * *']);
+  const production = validateTarget(wrangler, 'production');
+  assert.equal(production.rendering, 'static');
+  // Production's preview keeps the gate until its first administrator exists.
   assert.equal(wrangler.env['production-preview'].vars.FOUNDATION_LOCKED, 'true');
   assert.equal(wrangler.env['production-preview'].assets.run_worker_first, true);
+});
+
+/** Staging as one live Worker: every page rendered on request, no public partner. */
+const liveStaging = () => {
+  const c = config();
+  delete c.env['staging-preview'];
+  c.env.staging.vars = { EMDASH_SITE_URL: origin('staging'), SITE_ROLE: 'preview' };
+  return c;
+};
+
+test('a live environment is one Worker without a static partner', () => {
+  const target = validateTarget(liveStaging(), 'staging');
+  assert.equal(target.rendering, 'live');
+  assert.equal(target.preview, undefined);
+  assert.equal(target.origin, origin('staging'));
+  assert.equal(validateTarget(liveStaging(), 'production').rendering, 'static');
+});
+
+test('a live environment redirects nobody elsewhere', () => {
+  const c = liveStaging();
+  c.env.staging.vars.PUBLIC_SITE_URL = origin('production');
+  assert.throws(() => validateTarget(c, 'staging'), /live staging environment.*PUBLIC_SITE_URL/);
+});
+
+test('a live environment builds and uploads only the server-rendered variant', () => {
+  const target = validateTarget(liveStaging(), 'staging');
+  const commands = deploymentCommands(target, { fingerprint: 'fp' });
+  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'emdash', 'catalog-model', 'astro-preview', 'wrangler', 'emdash']);
+  assert.deepEqual(commands[3], ['astro-preview', 'staging']);
+  assert.deepEqual(commands[4], ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json']);
+  assert.ok(commands[1].includes('fp') && commands[5].includes('--check'));
+  for (const args of commands.filter(x => x[0] === 'emdash')) assert.equal(args[args.indexOf('--wrangler-env') + 1], 'staging');
 });
 
 test('deploy scripts run like fdag: plain node, authenticated by wrangler login or the CI secret', async () => {
@@ -166,7 +203,8 @@ test('rejects an unpaired or mismatched preview Worker', () => {
   mutate((p, _, c) => { p.vars.EMDASH_SITE_URL = c.env.production.vars.EMDASH_SITE_URL; }, /preview origin must differ/);
   mutate(p => { p.vars.EMDASH_SITE_URL = 'http://localhost:4321'; }, /preview EMDASH_SITE_URL.*HTTPS/);
   mutate(p => { delete p.vars.SITE_ROLE; }, /SITE_ROLE.*preview/);
-  mutate((p, s) => { s.vars.SITE_ROLE = 'preview'; }, /SITE_ROLE.*public/);
+  mutate((p, s) => { s.vars.SITE_ROLE = 'preview'; }, /live staging environment has no staging-preview partner/);
+  mutate((p, s) => { delete s.vars.SITE_ROLE; }, /SITE_ROLE.*"public" or "preview"/);
   mutate(p => { p.vars.PUBLIC_SITE_URL = 'https://elsewhere.example.com'; }, /PUBLIC_SITE_URL/);
   mutate((p, s) => { s.vars.PREVIEW_SITE_URL = 'https://elsewhere.example.com'; }, /PREVIEW_SITE_URL/);
   mutate(p => { p.vars.FOUNDATION_LOCKED = 'true'; }, /Gated.*preview|preview.*before static assets/);

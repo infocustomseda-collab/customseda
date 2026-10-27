@@ -36,8 +36,22 @@ export function validateTarget(config, environment) {
   if (!otherOrigin || url.origin === otherOrigin) {
     throw new Error('Staging and production require distinct public origins.');
   }
-  const preview = validatePreview(config, environment, selected, url.origin, database, bucket);
-  return { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin, preview };
+  const target = { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin };
+  const role = selected.vars?.SITE_ROLE;
+  if (role === 'preview') return { ...target, rendering: 'live', preview: validateLive(config, environment, selected) };
+  if (role !== 'public') throw new Error(`Set SITE_ROLE to "public" or "preview" in the ${environment} environment.`);
+  return { ...target, rendering: 'static', preview: validatePreview(config, environment, selected, url.origin, database, bucket) };
+}
+
+/** A live environment is one Worker rendering every page on request: no static partner to send visitors to. */
+function validateLive(config, environment, selected) {
+  if (config.env?.[`${environment}-preview`]) {
+    throw new Error(`A live ${environment} environment has no ${environment}-preview partner; remove it or set SITE_ROLE to "public".`);
+  }
+  if (selected.vars?.PUBLIC_SITE_URL || selected.vars?.PREVIEW_SITE_URL) {
+    throw new Error(`A live ${environment} environment serves everyone itself; remove PUBLIC_SITE_URL and PREVIEW_SITE_URL.`);
+  }
+  return undefined;
 }
 
 /** The preview Worker shares its pair's database and bucket; only its role, name and origin differ. */
@@ -53,7 +67,6 @@ function validatePreview(config, environment, selected, publicOrigin, database, 
   if (preview.r2_buckets?.find(x => x.binding === 'MEDIA')?.bucket_name !== bucket.bucket_name) {
     throw new Error(`The ${previewEnvironment} environment must use the same media bucket as ${environment}.`);
   }
-  if (selected.vars?.SITE_ROLE !== 'public') throw new Error(`Set SITE_ROLE to "public" in the ${environment} environment.`);
   if (preview.vars?.SITE_ROLE !== 'preview') throw new Error(`Set SITE_ROLE to "preview" in the ${previewEnvironment} environment.`);
   let previewUrl;
   try { previewUrl = new URL(preview.vars?.EMDASH_SITE_URL); } catch { /* The check below reports the missing origin. */ }
@@ -101,10 +114,20 @@ export const statusCommand = target => [...migrationCommand(target), '--from-con
 
 export function deploymentCommands(target, { fingerprint, allowEmpty = false } = {}) {
   const migration = migrationCommand(target);
-  return [
+  const migrate = [
     statusCommand(target),
     [...migration, '--from-config', ...(fingerprint ? ['--expected-target-fingerprint', fingerprint] : [])],
     ['catalog-model'],
+  ];
+  // A live environment renders every page on request: no snapshot, derivatives or prerendering.
+  if (target.rendering === 'live') return [
+    ...migrate,
+    ['astro-preview', target.environment],
+    ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json'],
+    [...migration, '--check'],
+  ];
+  return [
+    ...migrate,
     ['snapshot', target.environment, allowEmpty],
     ['images', target.environment],
     ['prerender-db', target.environment],

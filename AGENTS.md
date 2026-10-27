@@ -15,7 +15,7 @@
 - Remote core migrations run from the CLI before deployment; `migrations.runtime` stays `check`.
 - Never enable sandboxed plugins or Worker Loader bindings for the Free-tier deployment.
 - Top-level Wrangler bindings are local only. Staging and production must have distinct databases, buckets, origins, and secrets.
-- EmDash live queries and admin routes run server-side. Each remote environment has two Workers. On the public Worker, pages prerender from the build-time snapshot (`pnpm snapshot --env <env>`, `src/lib/shop/snapshot.ts`) and only `/api/*`, `/checkout/*` and `/_emdash/api/media/file/*` run per request. The `<env>-preview` Worker (`SITE_MODE=preview`) renders every page on request for editors and `?_preview=` links, and serves the admin and all of `/_emdash`. Do not prerender live database queries outside the snapshot step.
+- EmDash live queries and admin routes run server-side. Staging is one live Worker (`SITE_ROLE=preview`, built with `SITE_MODE=preview`): it serves the admin and renders every page on request, published content for visitors and drafts for signed-in editors and `?_preview=` links. Production (at launch) is static: on its public Worker pages prerender from the build-time snapshot (`pnpm snapshot --env <env>`, `src/lib/shop/snapshot.ts`) and only `/api/*`, `/checkout/*` and `/_emdash/api/media/file/*` run per request, and its `production-preview` Worker serves the admin and live drafts. Do not prerender live database queries outside the snapshot step.
 - Never copy an entire local database over production as a normal deployment.
 
 ## Commands
