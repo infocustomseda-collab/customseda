@@ -10,8 +10,6 @@ type Common = {
 	collectionLabel: string | null;
 	sizeGuide: ShopEntry | undefined;
 	related: CatalogItem[];
-	/** Available and every required size choice has options; otherwise the buy form stays disabled. */
-	purchasable: boolean;
 };
 export type ProductDetail = Common & { kind: "pieza" | "bundle"; categoryLabel: string | null; components: Piece[] };
 
@@ -47,6 +45,5 @@ export function productDetail(shop: Omit<ShopContent, "pages" | "site_settings" 
 	return {...common,kind:item.kind,entry,components,
 		categoryLabel:typeof category?.data.title==='string'?category.data.title:null,
 		sizeGuide:guideFor(entry)??(components[0]?guideFor(components[0].entry):undefined),
-		purchasable:item.available&&(item.kind==='bundle'?components.length>=2&&components.every(component=>component.item.sizes.length>0):item.sizes.length>0),
 	};
 }

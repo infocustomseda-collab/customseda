@@ -98,15 +98,6 @@ test('publication reads pending prices and rejects unfinished media uploads',asy
  assert.ok(errors.some(e=>e.includes('imagen')),JSON.stringify(errors));
 });
 
-test('EmDash persists availability as Yes when omitted on product creation',async t=>{
- const f=await fixture(t);
- const data={...f.data,title:'Default availability'};delete data.available;
- const references={collection:[f.lookups.margarita],material:[f.materialId]};
- const created=await f.runtime.handleContentCreate('products',{slug:'default-availability',data,references});
- assert.equal(created.success,true,JSON.stringify(created));
- assert.equal((await readCatalogEntry(f.db,'products',created.data.item.id)).data.available,true);
-});
-
 test('Contributor REST create and reference-only PUT cannot bypass relationship rules',async t=>{
  const f=await fixture(t);
  const {catalogWriteMiddleware}=await import('../src/lib/cms/write-middleware.ts');

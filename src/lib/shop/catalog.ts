@@ -20,7 +20,7 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
   });
   // Colors are identified by their native slug, which is also the filter value.
   return { entry, color: shop.colors.find(color=>color.id===material?.refs.color?.[0])?.slug ?? null, collection: code(shop.collections,entry.refs.collection?.[0]),
-   sizes: orderSizes(sizes), available: entry.data.available!==false };
+   sizes: orderSizes(sizes) };
  };
  const pieces = new Map(shop.products.filter(entry=>entry.data.bundle!==true).map(entry=>[entry.id,piece(entry)]));
  return shop.products.flatMap((entry): CatalogItem[] => {
@@ -29,7 +29,8 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
   if(bundle && (components.length<2 || components.some(component=>!component))) return [];
   const included=components.filter((component): component is ReturnType<typeof piece> => !!component);
   const own=piece(entry);
-  const available=own.available && (!bundle || included.every(component=>component.available));
+  // Agotado: no size left in the material, and a conjunto as soon as one of its pieces is.
+  const available=bundle ? included.every(component=>component.sizes.length>0) : own.sizes.length>0;
   const category=shop.categories.find(term=>term.id===entry.refs.category?.[0]);
   const categories:string[]=[];
   const seen=new Set<string>();

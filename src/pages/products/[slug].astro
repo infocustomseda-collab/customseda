@@ -51,7 +51,7 @@ const names = item.card.transitionName ? transitionNames(item.card.transitionNam
 						<p class="product-details__meta" style={names ? `view-transition-name: ${names.metadata}` : undefined}>{section.label}{detail.colorLabel && ` · color ${detail.colorLabel}`}</p>
 					</div>
 					<Price cents={item.price} transitionName={names?.price} />
-					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available} purchasable={detail.purchasable} />
+					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available} />
 					<RichText value={entry.data.description} />
 					{detail.kind === "bundle" && (
 						<section class="stack" aria-labelledby="includes-title" style="--stack-space: var(--space-xs)">

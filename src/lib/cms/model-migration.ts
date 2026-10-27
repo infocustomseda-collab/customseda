@@ -63,8 +63,18 @@ export async function retireColorCodes(db:CatalogDb) {
  return {version:colorSlugsVersion,applied:true};
 }
 
+// A product is Agotado when its material has no sizes for it; the Disponible flag is retired.
+export const productAvailabilityVersion='customseda.product-availability.v1';
+export async function retireProductAvailability(db:CatalogDb) {
+ const options=new OptionsRepository(db);
+ if(await options.get(productAvailabilityVersion)) return {version:productAvailabilityVersion,applied:false};
+ await dropField(db,'products','available');
+ await options.set(productAvailabilityVersion,{appliedAt:new Date().toISOString()});
+ return {version:productAvailabilityVersion,applied:true};
+}
+
 /** Every application model version, in order. Deployment and the local route call this. */
-export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion];
+export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion];
 export async function applyModelMigrations(db:CatalogDb) {
- return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db),await applyMaterials(db),await applyProductMaterials(db),await applyMaterialSizeOrder(db)];
+ return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db),await applyMaterials(db),await applyProductMaterials(db),await applyMaterialSizeOrder(db),await retireProductAvailability(db)];
 }

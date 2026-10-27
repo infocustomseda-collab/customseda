@@ -15,17 +15,15 @@ interface Props {
 	priceCents: number;
 	choices: { name: string; legend: string; sizes: readonly string[] }[];
 	shipping: ShippingRule[];
+	/** False when Agotado: no size left for the piece, or for one of the conjunto's pieces. */
 	available: boolean;
-	purchasable: boolean;
 	/** ?checkout=<reason> when rendered on demand; prerendered pages fill it in the browser. */
 	checkoutError?: string | null;
-	contactHref?: string;
 }
 
-const { id, slug, priceCents, choices, shipping, available, purchasable, checkoutError, contactHref = "/pages/contact" } = Astro.props;
+const { id, slug, priceCents, choices, shipping, available, checkoutError } = Astro.props;
 const message = checkoutMessage(checkoutError);
-const missingSizes = available && !purchasable;
-const canBuy = purchasable && shipping.length > 0;
+const canBuy = available && shipping.length > 0;
 const shippingLabel = (rule: ShippingRule) =>
 	[rule.title, rule.priceCents ? formatPrice(rule.priceCents) : "gratis", rule.priceCents && rule.freeAboveCents !== null ? `gratis desde ${formatPrice(rule.freeAboveCents)}` : ""]
 		.filter(Boolean)
@@ -53,15 +51,12 @@ const shippingLabel = (rule: ShippingRule) =>
 		</>
 	)}
 	{!available && (
-		<p class="buy-box__state"><span class="badge buy-box__badge">No disponible</span> Esta pieza no está disponible ahora mismo.</p>
+		<p class="buy-box__state"><span class="badge buy-box__badge">Agotado</span> Esta pieza está agotada ahora mismo.</p>
 	)}
-	{missingSizes && (
-		<p class="buy-box__state">Tallas por confirmar. <a href={contactHref}>Escríbenos</a> si quieres encargarla.</p>
-	)}
-	<Button type="submit" width="full" disabled={!canBuy} aria-describedby={purchasable && !canBuy ? `buy-note-${id}` : undefined}>
-		{available ? "Comprar" : "No disponible"}
+	<Button type="submit" width="full" disabled={!canBuy} aria-describedby={available && !canBuy ? `buy-note-${id}` : undefined}>
+		{available ? "Comprar" : "Agotado"}
 	</Button>
-	{purchasable && !canBuy && <p class="field__hint" id={`buy-note-${id}`}>La compra online estará disponible muy pronto.</p>}
+	{available && !canBuy && <p class="field__hint" id={`buy-note-${id}`}>La compra online estará disponible muy pronto.</p>}
 	{canBuy && <p class="field__hint">Pago seguro con Stripe. Confeccionamos cada pieza por encargo.</p>}
 </form>
 </buy-box>

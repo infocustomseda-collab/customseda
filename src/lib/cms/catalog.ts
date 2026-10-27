@@ -15,9 +15,6 @@ export function mainImage(gallery: unknown): Record<string, unknown> | null {
  if (!Array.isArray(gallery)) return null;
  return gallery[0]?.image ?? null;
 }
-export function bundleAvailable(bundle: CatalogEntry, ...components: CatalogEntry[]): boolean {
- return [bundle,...components].every(e => e.status === 'published' && e.data.available !== false);
-}
 const money = (n: unknown) => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
 // materials: the material rules (one material, pieces in the conjunto's material). Off when a conjunto is
 // re-checked because one of its pieces changed: edits to a piece never block on its conjunto's material.
@@ -41,7 +38,6 @@ export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntrie
  if(type==='products') {
   if(data.bundle!==undefined && typeof data.bundle!=='boolean') fail('Bundle product: usa Sí o No.');
   if((publish || data.price_cents!==undefined) && !money(data.price_cents)) fail('El precio debe ser un entero en céntimos EUR, mayor o igual a cero.');
-  if(data.available!==undefined && typeof data.available!=='boolean') fail('Disponibilidad: usa Sí o No.');
   const gallery=data.gallery;
   if(publish && (!Array.isArray(gallery)||!gallery.length)) fail('Añade al menos una imagen a la galería.');
   if(gallery!==undefined && !Array.isArray(gallery)) fail('Galería no válida.');

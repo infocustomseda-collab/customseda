@@ -13,9 +13,9 @@ import { galleryImages, type ProductCardView } from "../../lib/shop/view";
 
 if (!import.meta.env.DEV) return new Response(null, { status: 404 });
 
-type Row = { slug: string; title: string; price_cents: number; available: number; gallery: string; bundle: number };
+type Row = { slug: string; title: string; price_cents: number; gallery: string; bundle: number };
 const query = (table: "ec_products") =>
-	env.DB.prepare(`SELECT slug, title, price_cents, available, gallery, bundle FROM ${table} WHERE deleted_at IS NULL ORDER BY created_at`).all<Row>();
+	env.DB.prepare(`SELECT slug, title, price_cents, gallery, bundle FROM ${table} WHERE deleted_at IS NULL ORDER BY created_at`).all<Row>();
 const products = await query("ec_products");
 const conjuntos = { results: products.results.filter(row=>row.bundle) };
 products.results = products.results.filter(row=>!row.bundle);
@@ -24,7 +24,8 @@ const card = (row: Row): ProductCardView => ({
 	title: row.title,
 	priceCents: row.price_cents,
 	images: galleryImages(JSON.parse(row.gallery || "[]")),
-	available: row.available !== 0,
+	// The specimen shows one Agotado card below; availability comes from sizes in the real catalog.
+	available: true,
 });
 const sets = conjuntos.results.map(card);
 const pieces = products.results.map(card);
@@ -81,7 +82,7 @@ const site: SiteChrome = {
 					<QuantityField id="quantity" />
 					<div class="stack" style="--stack-space: var(--space-xs)">
 						<Button type="submit" width="full">Añadir al carrito</Button>
-						<Button variant="secondary" width="full" disabled>No disponible</Button>
+						<Button variant="secondary" width="full" disabled>Agotado</Button>
 						<Button width="full" aria-busy="true">Procesando</Button>
 					</div>
 				</form>

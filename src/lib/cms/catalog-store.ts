@@ -26,7 +26,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
   data={...data,...Object.fromEntries(Object.entries(revision.data).filter(([key])=>!key.startsWith('_')))};
   staged=(revision.data._references??{}) as Record<string,unknown>;
  }
- for(const field of ['available','bundle','special_edition']) if(data[field]===0 || data[field]===1) data[field]=Boolean(data[field]);
+ for(const field of ['bundle','special_edition']) if(data[field]===0 || data[field]===1) data[field]=Boolean(data[field]);
  const refs:Record<string,string[]>={};
  const selections=Object.entries(targets[type]??{}).map(([field,target])=>{
   refs[field]=[];
@@ -104,8 +104,6 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
  const existing=id ? await read(type,id,true) : null;
  if(id&&!existing) return ['No se ha encontrado el contenido.'];
  const candidate:CatalogEntry={id:existing?.id??'new',type,status:existing?.status??'draft',group:existing?.group,data:{...existing?.data,...body.data},refs:{...existing?.refs,...body.references}};
- // EmDash's defaults are applied after beforeSave; mirror the single business default here.
- if((type==='products')&&candidate.data.available===undefined) candidate.data.available=true;
  const graph=checkReferences ? await loadGraph(db,candidate,false,read) : new Map([[candidate.id,candidate]]);
  const errors=validateCatalogEntry(candidate,graph,{publish,references:checkReferences});
  const filtered=errors;

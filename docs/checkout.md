@@ -6,7 +6,7 @@ Phase 5 uses **buy-now checkout**: each product or Conjunto page buys one item d
 
 1. The product page form posts the item ID, size(s), quantity (1–10), shipping rule and the displayed price to `/api/checkout`. The form works without JavaScript.
 2. The endpoint reloads the item from D1. Local development reads drafts; deployed Workers read published entries only. It refuses the purchase and returns to the product page with `?checkout=<reason>` when:
-   - the item, or any included bundle component, is unavailable or unpublished (`unavailable`);
+   - the item is Agotado (no size left in its material, or in any component's for a bundle) or unpublished (`unavailable`);
    - a size is not supported by that piece (`size`);
    - the database price differs from the price the page showed (`price`);
    - the shipping rule is disabled or unknown (`shipping`);

@@ -4,7 +4,7 @@ import seed from '../seed/seed.json' with {type:'json'};
 import {validateCatalogEntry} from '../src/lib/cms/catalog.ts';
 import {buildCatalog,filterItems,parseFilters,filtersQuery} from '../src/lib/shop/catalog.ts';
 import {parseOrder,quoteOrder,orderMetadata} from '../src/lib/commerce/checkout.ts';
-const entry=(id,data={},refs={})=>({id,slug:id,type:'products',status:'published',data:{title:id,price_cents:3000,available:true,gallery:[{image:{id:'photo'},alt:id}],...data},refs});
+const entry=(id,data={},refs={})=>({id,slug:id,type:'products',status:'published',data:{title:id,price_cents:3000,gallery:[{image:{id:'photo'},alt:id}],...data},refs});
 const category=(id,slug,parent=null)=>({...entry(id,{title:slug,code:slug,parent}),type:'category',slug});
 const categories=[category('women','mujeres'),category('top','top','women'),category('bottom','braguita','women'),category('sets','conjuntos','women'),category('men','hombres'),category('swim','banador','men')];
 // One material offers S in each piece's category; the conjunto uses the same material.

@@ -16,7 +16,8 @@ test('catalog seed exposes one product collection and native category taxonomy',
  assert.deepEqual(validateSeed(seed).errors,[]);
  assert.equal(seed.collections.length,10);
  const product=seed.collections.find(c=>c.slug==='products');
- assert.equal(product.fields.find(f=>f.slug==='available').defaultValue,true);
+ // Availability follows the material's sizes; products have no Disponible flag.
+ assert.ok(!product.fields.some(f=>f.slug==='available'));
  assert.equal(product.fields.find(f=>f.slug==='material').validation.targetCollection,'materials');
  assert.equal(product.fields.find(f=>f.slug==='material').validation.multiple,false);
  assert.ok(!product.fields.some(f=>['color','sizes'].includes(f.slug)));

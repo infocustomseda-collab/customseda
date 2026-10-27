@@ -48,7 +48,7 @@ export async function fixture(t,{onContentChange}={}) {
  assert.equal(material.success,true,JSON.stringify(material));
  const materialId=material.data.item.id;await handleContentPublish(db,'materials',materialId);
  const image=await new MediaRepository(db).create({filename:'test.jpg',mimeType:'image/jpeg',storageKey:'test.jpg'});
- const data={title:'Test',price_cents:5000,available:true,gallery:[{image:{id:image.id},alt:'Bikini de prueba'}]};
+ const data={title:'Test',price_cents:5000,gallery:[{image:{id:image.id},alt:'Bikini de prueba'}]};
  async function product(slug,category,mat=materialId) {
   const references={collection:[lookups.margarita],material:[mat]};
   const result=await runtime.handleContentCreate('products',{slug,data:{...data,title:slug},references});

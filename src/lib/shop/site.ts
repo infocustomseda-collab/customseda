@@ -59,14 +59,13 @@ export function siteChrome({ settings, primary, footer, path }: { settings: Shop
 	};
 }
 
-/** Products and Conjuntos keep their public paths (/products/<slug>). */
-export function productCard(entry: ShopEntry): ProductCardView {
+/** Products and Conjuntos keep their public paths (/products/<slug>). Availability comes from the catalog. */
+export function productCard(entry: ShopEntry): Omit<ProductCardView, "available"> {
 	return {
 		href: `/products/${entry.slug}`,
 		title: String(entry.data.title ?? ""),
 		priceCents: Number(entry.data.price_cents ?? 0),
 		images: galleryImages(entry.data.gallery),
-		available: entry.data.available !== false,
 		transitionName: `product-${entry.id}`,
 	};
 }

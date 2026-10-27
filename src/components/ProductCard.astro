@@ -34,7 +34,7 @@ const Heading = `h${headingLevel}` as "h2" | "h3";
 		{hover && (
 			<img src={hover.src} srcset={hover.srcset} sizes="(min-width: 60em) 25vw, 50vw" alt="" width={hover.width} height={hover.height} style={`object-position: ${hover.position}`} loading="lazy" decoding="async" />
 		)}
-		{!product.available && <span class="product-card__badge badge">No disponible</span>}
+		{!product.available && <span class="product-card__badge badge">Agotado</span>}
 	</div>
 	<div class="product-card__details">
 	<Heading class="product-card__title">
