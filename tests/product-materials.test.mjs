@@ -92,6 +92,6 @@ test('a fresh database has nothing to link, rename or drop',async t=>{
  const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
  await runMigrations(db);
  const results=await applyModelMigrations(db);
- const last=results.at(-1);
- assert.deepEqual({...last},{version:'customseda.product-materials.v1',applied:true,linked:0,renamed:0,unlinked:[]});
+ const own=results.find(result=>result.version==='customseda.product-materials.v1');
+ assert.deepEqual({...own},{version:'customseda.product-materials.v1',applied:true,linked:0,renamed:0,unlinked:[]});
 });
