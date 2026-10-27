@@ -25,3 +25,7 @@ export const rootRedirectPaths = (shop: ShopContent): Paths<"slug", { target: st
 		params: { slug: page.slug },
 		props: { target: page.slug.endsWith("-policy") ? `/policies/${page.slug}` : `/pages/${page.slug}` },
 	}));
+
+/** Redirect target for one root slug, for preview mode where there are no static props. */
+export const rootRedirectTarget = (shop: ShopContent, slug: string): string | null =>
+	rootRedirectPaths(shop).find((path) => path.params.slug === slug)?.props?.target ?? null;
