@@ -59,3 +59,16 @@ test('an empty database writes no snapshot and releases its bindings',async t=>{
  assert.equal(disposed,true);
  await assert.rejects(()=>access(path));
 });
+
+test('a blank database snapshots as empty only when allowed, before a site import creates the shop',async t=>{
+ const dir=await workspace(t);
+ const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
+ await runMigrations(db);
+ const path=join(dir,'snapshot.json');
+ const open=async()=>({db,dispose:async()=>{}});
+ await assert.rejects(()=>writeSnapshot({environment:'staging',open,path}),/ec_products/);
+ const snapshot=await writeSnapshot({environment:'staging',allowEmpty:true,open,path});
+ assert.deepEqual(snapshot.shop.products,[]);
+ assert.deepEqual(snapshot.menus.primary.items,[]);
+ await access(path);
+});
