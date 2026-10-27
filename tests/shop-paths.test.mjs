@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {collectionPaths,pagePaths,policyPaths,productPaths,rootRedirectPaths,rootRedirectTarget} from '../src/lib/shop/paths.ts';
+import {collectionPaths,pagePaths,policyPaths,productPaths,rootRedirectPaths,rootRedirectTarget,rootRedirect} from '../src/lib/shop/paths.ts';
 import {withMaterials} from './helpers/shop.mjs';
 
 const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id,price_cents:1000,gallery:[],...data},refs});
@@ -39,4 +39,13 @@ test('root redirect lookup matches the static paths and returns null for unknown
  for(const p of rootRedirectPaths(shop)) assert.equal(rootRedirectTarget(shop,p.params.slug),p.props.target);
  assert.equal(rootRedirectTarget(shop,'seda'),'/pages/seda');
  assert.equal(rootRedirectTarget(shop,'missing'),null);
+});
+
+test('root redirect keeps the query and is temporary in preview mode',()=>{
+ assert.deepEqual(rootRedirect('/pages/seda','?_preview=abc','preview'),{location:'/pages/seda?_preview=abc',status:302});
+ assert.deepEqual(rootRedirect('/pages/seda','','preview'),{location:'/pages/seda',status:302});
+});
+
+test('root redirect is permanent and drops the query in the public build',()=>{
+ assert.deepEqual(rootRedirect('/pages/seda','?_preview=abc','public'),{location:'/pages/seda',status:301});
 });

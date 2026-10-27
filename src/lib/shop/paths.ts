@@ -2,6 +2,7 @@
 import { catalogViews } from "./catalog.ts";
 import type { ShopContent } from "./content.ts";
 import { productDetail } from "./detail.ts";
+import type { SiteMode } from "../site-mode.ts";
 
 type Paths<P extends string, Props = undefined> = { params: Record<P, string>; props?: Props }[];
 // Pages with a dedicated route under /pages/ (contact.astro, margarita.astro, seda.astro).
@@ -29,3 +30,10 @@ export const rootRedirectPaths = (shop: ShopContent): Paths<"slug", { target: st
 /** Redirect target for one root slug, for preview mode where there are no static props. */
 export const rootRedirectTarget = (shop: ShopContent, slug: string): string | null =>
 	rootRedirectPaths(shop).find((path) => path.params.slug === slug)?.props?.target ?? null;
+
+/**
+ * Root `/<slug>` redirect. Preview (and dev) render on request and must keep the query (`?_preview=<token>`),
+ * so it is temporary; the prerendered public build has no query and redirects permanently.
+ */
+export const rootRedirect = (target: string, search: string, mode: SiteMode): { location: string; status: 301 | 302 } =>
+	mode === "public" ? { location: target, status: 301 } : { location: target + search, status: 302 };

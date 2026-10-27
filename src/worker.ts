@@ -14,7 +14,7 @@ export default {
 		if (denied) return denied;
 		const vars = env as unknown as Record<string, unknown>;
 		const target = publicAdminRedirect(new URL(request.url), vars.SITE_ROLE as string | undefined, vars.PREVIEW_SITE_URL as string | undefined);
-		if (target) return Response.redirect(target, 302);
+		if (target) return Response.redirect(target, 307);
 		// The official adapter always exports fetch; its broad handler type marks it optional.
 		return handler.fetch!(request, env, ctx);
 	},

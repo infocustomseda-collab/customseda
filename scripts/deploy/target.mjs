@@ -110,9 +110,10 @@ export function deploymentCommands(target, { fingerprint, allowEmpty = false } =
     ['prerender-db', target.environment],
     ['astro', 'build'],
     ['check-static'],
+    // Build the preview variant before any upload, so a failed build stops the deploy early.
+    ['astro-preview', target.preview.environment],
     // Each build writes a Wrangler config already flattened for its environment, so no --env.
     ['wrangler', 'deploy', '-c', 'dist/server/wrangler.json'],
-    ['astro-preview', target.preview.environment],
     ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json'],
     [...migration, '--check'],
   ];

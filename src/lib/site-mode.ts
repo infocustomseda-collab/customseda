@@ -6,7 +6,7 @@ export function siteMode(isDev: boolean, configured: string | undefined): SiteMo
   return configured === 'preview' ? 'preview' : 'public';
 }
 
-/** Editors at role 20 or higher (Editor and above) may preview drafts. */
+/** Users at role 20 or higher (Contributor and above) may preview drafts. */
 export function canPreviewDrafts(role: number | undefined): boolean {
   return role !== undefined && role >= 20;
 }

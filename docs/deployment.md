@@ -68,7 +68,7 @@ pnpm deploy:staging
 pnpm deploy:production
 ```
 
-The runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV` (the preview build in step 10 uses `<env>-preview` instead):
+The runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV` (the preview build in step 9 uses `<env>-preview` instead):
 
 1. Show the migration target and status (manifest built from the Astro config with `--from-config`, since no build exists yet).
 2. Run core migration. It is interactive, unless `EMDASH_EXPECTED_TARGET_FINGERPRINT` holds the reviewed fingerprint, as in CI.
@@ -78,8 +78,8 @@ The runner validates account, database and origin separation, then runs these st
 6. Migrate a **local** stand-in of that environment's database. Prerendering runs EmDash in a local Worker, and EmDash refuses unmigrated databases; the remote database is not involved.
 7. Build. The build refuses a snapshot from another environment than `CLOUDFLARE_ENV` (`local` when unset).
 8. Check the static output: every page must be an HTML document, never an EmDash error response.
-9. Deploy the public Worker: `wrangler deploy -c dist/server/wrangler.json`. The generated config is already flattened for the environment, so no `--env`.
-10. Build the preview Worker with `SITE_MODE=preview` and `CLOUDFLARE_ENV=<env>-preview` into `dist-preview/`.
+9. Build the preview Worker with `SITE_MODE=preview` and `CLOUDFLARE_ENV=<env>-preview` into `dist-preview/`. It runs before any upload, so a failed preview build stops the deploy early. The public steps always run with `SITE_MODE=public`, whatever the shell exports.
+10. Deploy the public Worker: `wrangler deploy -c dist/server/wrangler.json`. The generated config is already flattened for the environment, so no `--env`.
 11. Deploy the preview Worker: `wrangler deploy -c dist-preview/server/wrangler.json`.
 12. Check core migration status against the build's manifest (both builds come from the same commit and config).
 

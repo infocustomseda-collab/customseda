@@ -17,7 +17,8 @@ try {
   const token = migrationToken(process.env, wranglerLoginToken);
   // CI passes the reviewed fingerprint; interactive runs leave it unset and confirm the target.
   const fingerprint = process.env.EMDASH_EXPECTED_TARGET_FINGERPRINT || undefined;
-  const env = { ...process.env, CLOUDFLARE_ENV: target.environment, CLOUDFLARE_ACCOUNT_ID: target.accountId };
+  // SITE_MODE is pinned so an exported "preview" in the operator's shell cannot divert the public build.
+  const env = { ...process.env, SITE_MODE: 'public', CLOUDFLARE_ENV: target.environment, CLOUDFLARE_ACCOUNT_ID: target.accountId };
   console.log(`Target: ${target.environment} | ${target.origin} | D1 ${target.databaseId}`);
   await withDeploymentLock('.emdash', target.environment, async () => {
     for (const [tool, ...args] of deploymentCommands(target, { fingerprint, allowEmpty: flags.includes('--allow-empty') })) {

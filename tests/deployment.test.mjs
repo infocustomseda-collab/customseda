@@ -61,7 +61,7 @@ test('rejects missing or shared Worker names and normalized environment origins'
 test('migrates the explicit database, then snapshots, builds, uploads and checks', () => {
   const target = validateTarget(config(), 'staging');
   const commands = deploymentCommands(target);
-  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'emdash', 'catalog-model', 'snapshot', 'images', 'prerender-db', 'astro', 'check-static', 'wrangler', 'astro-preview', 'wrangler', 'emdash']);
+  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'emdash', 'catalog-model', 'snapshot', 'images', 'prerender-db', 'astro', 'check-static', 'astro-preview', 'wrangler', 'wrangler', 'emdash']);
   assert.deepEqual(commands[4], ['images', 'staging']);
   // Prerendering runs EmDash against a local stand-in for this environment's database.
   assert.deepEqual(commands[5], ['prerender-db', 'staging']);
@@ -75,9 +75,9 @@ test('migrates the explicit database, then snapshots, builds, uploads and checks
   assert.ok(commands[0].includes('--status') && commands[0].includes('--from-config'));
   assert.ok(commands[1].includes('--from-config') && !commands[1].includes('--check'));
   assert.deepEqual(commands[6], ['astro', 'build']);
-  // The generated configs are already flattened for their environment, so no --env.
-  assert.deepEqual(commands[8], ['wrangler', 'deploy', '-c', 'dist/server/wrangler.json']);
-  assert.deepEqual(commands[9], ['astro-preview', 'staging-preview']);
+  // Both builds finish before the first upload. The generated configs are already flattened, so no --env.
+  assert.deepEqual(commands[8], ['astro-preview', 'staging-preview']);
+  assert.deepEqual(commands[9], ['wrangler', 'deploy', '-c', 'dist/server/wrangler.json']);
   assert.deepEqual(commands[10], ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json']);
   assert.ok(commands[11].includes('--check') && !commands[11].includes('--from-config'));
 });
