@@ -24,6 +24,49 @@
 		line-height: var(--leading-ui);
 	}
 
+	/* Pills over a photo share one line (Edición especial first), wrapping only on narrow cards. */
+	.product-badges {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3xs);
+	}
+
+	/* Edición especial photos: a warm butter glint crosses from bottom to top in 1.5 s, then rests 2 s.
+	   Low specificity, so the masonry gallery's absolute photos keep their position. */
+	@media (prefers-reduced-motion: no-preference) {
+		.sheen {
+			position: relative;
+			overflow: hidden;
+		}
+
+		.sheen::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+			pointer-events: none;
+			background: no-repeat 0 0 / 100% 300%
+				linear-gradient(195deg, transparent 47.5%, color-mix(in srgb, var(--seda-butter) 75%, transparent) 50%, transparent 52.5%);
+			mix-blend-mode: screen;
+			animation: sheen 3.5s ease-in-out infinite;
+		}
+
+		@keyframes sheen {
+			0% { background-position: 0 0%; }
+			/* 1.5 s of 3.5 s. */
+			42.86%, 100% { background-position: 0 100%; }
+		}
+	}
+
+	/* Inverted, like a selected chip. */
+	.badge--special {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-3xs);
+		background: var(--color-selected);
+		color: var(--color-on-selected);
+	}
+
 	.product-card {
 		position: relative;
 		display: grid;
@@ -57,8 +100,9 @@
 		}
 	}
 
-	.product-card__badge {
+	.product-card__badges {
 		position: absolute;
+		z-index: 1;
 		inset-block-end: var(--space-xs);
 		inset-inline-start: var(--space-xs);
 	}
@@ -95,8 +139,17 @@
 
 	/* Gallery: a swipeable strip on small screens, masonry beside the details on wide ones. */
 	.gallery {
+		position: relative;
 		display: grid;
 		gap: var(--space-xs);
+	}
+
+	.gallery__badges {
+		position: absolute;
+		z-index: 1;
+		inset-block-start: var(--space-xs);
+		inset-inline-start: var(--space-xs);
+		pointer-events: none;
 	}
 
 	.gallery__list {
@@ -330,6 +383,9 @@
 		.category-tabs { --cluster-space: var(--space-l); }
 		.category-tabs__link { font-size: var(--step-2); }
 		.filters { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+		/* Filter groups stack on the left; availability stays at the end of the last row. */
+		.filters > .choice-group { grid-column: 1; }
+		.filters__availability { grid-column: 2; }
 	}
 }
 

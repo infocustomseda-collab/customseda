@@ -89,12 +89,6 @@
           }
         },
         {
-          "slug": "available",
-          "label": "Disponible",
-          "type": "boolean",
-          "defaultValue": true
-        },
-        {
           "slug": "collection",
           "label": "Colección",
           "type": "reference",

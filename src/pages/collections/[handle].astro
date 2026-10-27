@@ -2,7 +2,7 @@
 // Catalog listings at existing public paths: /collections/bikinis (Mujeres), conjuntos, top, braguitas.
 import CatalogBrowser from "../../components/CatalogBrowser.astro";
 import Shop from "../../layouts/Shop.astro";
-import { buildCatalog, catalogView, catalogCategories, facetOptions } from "../../lib/shop/catalog";
+import { buildCatalog, catalogView, catalogCategories, facetOptions, sizeGroups } from "../../lib/shop/catalog";
 import { loadShopContent, loadShopPage } from "../../lib/shop/page";
 import { collectionPaths } from "../../lib/shop/paths";
 
@@ -37,7 +37,7 @@ const tabs = [{category:'',label:'Todo'},...catalogCategories(listing, shop.cate
 		</header>
 
 		{items.length > 0 ? (
-			<CatalogBrowser items={items} colors={facets.colors} basePath={basePath} initialCategory={initialCategory} />
+			<CatalogBrowser items={items} colors={facets.colors} sizeGroups={sizeGroups(items, shop)} basePath={basePath} initialCategory={initialCategory} />
 		) : (
 			<div class="catalog__empty stack text-center">
 				<p>Todavía no hay piezas en esta sección. Vuelve pronto.</p>

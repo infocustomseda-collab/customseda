@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateCatalogEntry, mainImage, bundleAvailable } from '../src/lib/cms/catalog.ts';
+import { validateCatalogEntry, mainImage } from '../src/lib/cms/catalog.ts';
 
 const lookup = (type, id, code = id) => ({type,id,status:'published',data:{title:id,code},refs:{}});
 // Each category has its own size records; products show and order by the label.
@@ -14,10 +14,10 @@ const entries = new Map([
 // Products take their color and sizes from one material.
 const material = id => ({type:'materials',id,status:'published',data:{title:id},refs:{color:['pink'],sizes:['top-S','bottom-XS']}});
 entries.set('m1',material('m1')); entries.set('m2',material('m2'));
-const product = (id='a', category='top', mat='m1') => ({id,type:'products',status:'published',data:{title:id,price_cents:5000,available:true,gallery:[{image:{id:'media_1'},alt:'Bikini'}]},refs:{category:[category],collection:['margarita'],material:[mat]}});
+const product = (id='a', category='top', mat='m1') => ({id,type:'products',status:'published',data:{title:id,price_cents:5000,gallery:[{image:{id:'media_1'},alt:'Bikini'}]},refs:{category:[category],collection:['margarita'],material:[mat]}});
 const top=product(),bottom=product('b','bottom');
 entries.set('a',top); entries.set('b',bottom);
-const conjunto=()=>({id:'set',type:'products',status:'draft',data:{title:'Conjunto',bundle:true,price_cents:8500,available:true,gallery:[{image:{id:'media_2'},alt:'Conjunto'}]},refs:{category:['top'],material:['m1'],components:['a','b']}});
+const conjunto=()=>({id:'set',type:'products',status:'draft',data:{title:'Conjunto',bundle:true,price_cents:8500,gallery:[{image:{id:'media_2'},alt:'Conjunto'}]},refs:{category:['top'],material:['m1'],components:['a','b']}});
 const check=(entry,publish=false)=>validateCatalogEntry(entry,entries,{publish});
 test('valid products and separately priced mixed-size bundle publish',()=>{
  assert.deepEqual(check(top,true),[]); assert.deepEqual(check(bottom,true),[]);
@@ -69,11 +69,9 @@ test('drafts can omit galleries; publishing requires valid image alt and focal p
   assert.ok(check({...entry,data:{...entry.data,gallery}},true).length);
  }
 });
-test('main image follows editor gallery order and bundle availability follows all three records',()=>{
+test('main image follows editor gallery order',()=>{
  const images=[{image:{id:'second'},alt:'Second'},{image:{id:'first'},alt:'First'}];
  assert.equal(mainImage(images).id,'second');assert.equal(mainImage([]),null);
- assert.equal(bundleAvailable({...conjunto(),status:"published"},top,bottom),true);
- assert.equal(bundleAvailable(conjunto(),top,{...bottom,data:{...bottom.data,available:false}}),false);
 });
 
 test('optional size guide rejects wrong target types and multiple selections',()=>{

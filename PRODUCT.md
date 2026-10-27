@@ -37,12 +37,12 @@ One maker cuts and sews each piece in Canarias after it is ordered ("hecho con m
 
 ## Capabilities and Constraints
 
-- **Catalog:** Products (categories Top and Braguita) and Conjuntos are separate types. A Conjunto links exactly one Top and one Braguita, has its own price, gallery and availability, and the buyer picks each component's size separately. Sizes are XS–XL, and each product declares its supported subset. Margarita is the first collection.
+- **Catalog:** Products (categories Top and Braguita) and Conjuntos are separate types. A Conjunto links exactly one Top and one Braguita, has its own price and gallery, is Agotado when either component has no size left, and the buyer picks each component's size separately. Sizes are XS–XL, and each product declares its supported subset. Margarita is the first collection.
 - **Purchase:** buy-now, one item per Stripe Checkout, validated server-side. A multi-item cart is planned after launch (phase 8).
 - **Publishing:** public pages are prerendered from a snapshot of published content, and publishing triggers a rebuild. Only `/_emdash/*`, `/api/*` and `/checkout/*` run per request.
 - **Site features:** editable announcement bar and scheduled popup, view transitions from product to detail, PWA with an offline fallback (checkout stays online-only).
 - **Technical:** plain CSS (CUBE CSS, Utopia fluid scales, selected Open Props); no Tailwind. Must fit Cloudflare Workers Free.
-- **Undecided:** Stripe account, tax treatment (IGIC/IVA), EU rates, production/shipping copy, and the receipt approach (see `docs/checkout.md`). Sizes for Tierra-linked Braguitas still show "Tallas por confirmar". The envíos page lists delivery times and costs in separate sections with different zone names. Once the merchant confirms the Shipping Rules, a per-zone table generated from them (so it always matches checkout) can replace that split; regrouping the merchant's text by hand was declined (2026-10-25).
+- **Undecided:** Stripe account, tax treatment (IGIC/IVA), EU rates, production/shipping copy, and the receipt approach (see `docs/checkout.md`). Products whose material has no sizes for them show "Agotado". The envíos page lists delivery times and costs in separate sections with different zone names. Once the merchant confirms the Shipping Rules, a per-zone table generated from them (so it always matches checkout) can replace that split; regrouping the merchant's text by hand was declined (2026-10-25).
 
 ## Brand Commitments
 

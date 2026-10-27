@@ -59,11 +59,10 @@ test('rich-text links also accept email and phone links; navigation stays web-on
 });
 
 test('catalog entries map to cards at their retained public paths',()=>{
- const entry={id:'c1',slug:'tierra',status:'draft',refs:{},data:{title:'TIERRA',price_cents:5000,available:true,gallery:[
+ const entry={id:'c1',slug:'tierra',status:'draft',refs:{},data:{title:'TIERRA',price_cents:5000,gallery:[
   {image:{id:'m',width:4,height:5,meta:{storageKey:'k.jpg'}},alt:'TIERRA 1'}]}};
- assert.deepEqual(productCard(entry),{href:'/products/tierra',title:'TIERRA',priceCents:5000,available:true,transitionName:'product-c1',
+ assert.deepEqual(productCard(entry),{href:'/products/tierra',title:'TIERRA',priceCents:5000,transitionName:'product-c1',
   images:[{id:'m',src:'/_emdash/api/media/file/k.jpg',alt:'TIERRA 1',width:4,height:5,position:'50% 50%'}]});
- assert.equal(productCard({...entry,data:{...entry.data,available:false}}).available,false);
 });
 
 test('single image fields map like gallery rows and settings are picked from the first entry',()=>{

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {collectionPaths,pagePaths,policyPaths,productPaths,rootRedirectPaths} from '../src/lib/shop/paths.ts';
 import {withMaterials} from './helpers/shop.mjs';
 
-const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id,price_cents:1000,available:true,gallery:[],...data},refs});
+const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id,price_cents:1000,gallery:[],...data},refs});
 const piece=(id,cat,sizes)=>entry(id,{},{category:[cat],collection:['col'],color:['c'],sizes:sizes.map(s=>`s-${s}`)});
 const shop=withMaterials({
  categories:[entry('cat-top',{code:'top'}),entry('cat-bottom',{code:'braguita'}),entry('cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code})),

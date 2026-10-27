@@ -56,7 +56,6 @@ test('boolean fields read back as booleans whether stored on the row or in a rev
  const shop=await loadShop(f.db,{drafts:true});
  assert.equal(shop.popups[0].data.enabled,true);
  assert.equal(shop.site_settings[0].data.announcement_enabled,true);
- assert.equal(shop.products[0].data.available,true);
 });
 
 test('checkout loads every type a quote needs, so a published piece can be ordered',async t=>{

@@ -2,6 +2,7 @@
 // Catalog card: 4:5 photo with second-image hover swap, centered title and price.
 import { transitionNames, type ProductCardView } from "../lib/shop/view";
 import Price from "./Price.astro";
+import ProductBadges from "./ProductBadges.astro";
 
 interface Props {
 	product: ProductCardView;
@@ -16,7 +17,7 @@ const Heading = `h${headingLevel}` as "h2" | "h3";
 ---
 
 <article class="product-card">
-	<div class="product-card__media" style={main?.placeholder ? `background-color: ${main.placeholder}` : undefined}>
+	<div class:list={["product-card__media", product.specialEdition && "sheen"]} style={main?.placeholder ? `background-color: ${main.placeholder}` : undefined}>
 		{main && (
 			<img
 				src={main.src}
@@ -34,7 +35,7 @@ const Heading = `h${headingLevel}` as "h2" | "h3";
 		{hover && (
 			<img src={hover.src} srcset={hover.srcset} sizes="(min-width: 60em) 25vw, 50vw" alt="" width={hover.width} height={hover.height} style={`object-position: ${hover.position}`} loading="lazy" decoding="async" />
 		)}
-		{!product.available && <span class="product-card__badge badge">No disponible</span>}
+		<ProductBadges class="product-card__badges" specialEdition={product.specialEdition} soldOut={!product.available} />
 	</div>
 	<div class="product-card__details">
 	<Heading class="product-card__title">

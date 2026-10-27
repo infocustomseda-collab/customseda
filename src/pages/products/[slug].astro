@@ -5,6 +5,7 @@ import BuyBox from "../../components/BuyBox.astro";
 import Disclosure from "../../components/Disclosure.astro";
 import Gallery from "../../components/Gallery.astro";
 import Price from "../../components/Price.astro";
+import ProductBadges from "../../components/ProductBadges.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import RichText from "../../components/RichText.astro";
 import Shop from "../../layouts/Shop.astro";
@@ -44,14 +45,16 @@ const names = item.card.transitionName ? transitionNames(item.card.transitionNam
 				</ol>
 			</nav>
 			<div class="split">
-				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={names?.image} />
+				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={names?.image} sheen={item.card.specialEdition}>
+					<ProductBadges class="gallery__badges" specialEdition={item.card.specialEdition} />
+				</Gallery>
 				<div class="product-details stack">
 					<div class="stack" style="--stack-space: var(--space-3xs)">
 						<h1 class="product-details__title" style={names ? `view-transition-name: ${names.title}` : undefined}>{item.title}</h1>
 						<p class="product-details__meta" style={names ? `view-transition-name: ${names.metadata}` : undefined}>{section.label}{detail.colorLabel && ` · color ${detail.colorLabel}`}</p>
 					</div>
 					<Price cents={item.price} transitionName={names?.price} />
-					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available} purchasable={detail.purchasable} />
+					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available} />
 					<RichText value={entry.data.description} />
 					{detail.kind === "bundle" && (
 						<section class="stack" aria-labelledby="includes-title" style="--stack-space: var(--space-xs)">

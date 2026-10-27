@@ -4,7 +4,7 @@ import {parseOrder,quoteOrder,sessionParams} from '../src/lib/commerce/checkout.
 import {shippingRules,shippingCost,addressCheck} from '../src/lib/commerce/shipping.ts';
 import {withMaterials} from './helpers/shop.mjs';
 
-const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
+const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,gallery:[],...data},refs});
 const piece=(id,cat,sizes,extra={})=>entry(id,extra,{category:[cat],collection:['col'],color:['c'],sizes:sizes.map(s=>`s-${s}`)});
 const rule=(id,data)=>entry(id,{enabled:true,price_cents:630,description:'24/48 h',...data});
 const shop=()=>withMaterials({
@@ -18,7 +18,7 @@ const shop=()=>withMaterials({
 
   piece('top-tierra','cat-top',['S','M','L'],{title:'Top Tierra',price_cents:3000}),
   piece('braguita-curve','cat-bottom',['XS','S','M'],{title:'Braguita Curve',price_cents:2500}),
-  piece('top-agotado','cat-top',['S'],{available:false}),
+  piece('top-agotado','cat-top',[]),
   piece('top-gratis','cat-top',['S'],{price_cents:0}),
  ],
  shipping_rules:[
@@ -99,7 +99,7 @@ test('unavailable items, unsupported sizes, stale prices and unknown shipping ar
  const code=fields=>quoteOrder(shop(),order(fields)).error;
  assert.equal(code({id:'nada',talla:'M',price:1000}),'unavailable');
  assert.equal(code({id:'top-agotado',talla:'S',price:1000}),'unavailable');
- // A Conjunto with an unavailable component cannot be bought.
+ // A Conjunto with an Agotado component cannot be bought.
  assert.equal(code({id:'mixto','size_top-tierra':'S','size_braguita-curve':'S',price:4000}),'unavailable');
  // Below Stripe's minimum charge an item would be given away for the shipping cost.
  assert.equal(code({id:'top-gratis',talla:'S',price:0}),'unavailable');

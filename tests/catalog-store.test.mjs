@@ -98,13 +98,14 @@ test('publication reads pending prices and rejects unfinished media uploads',asy
  assert.ok(errors.some(e=>e.includes('imagen')),JSON.stringify(errors));
 });
 
-test('EmDash persists availability as Yes when omitted on product creation',async t=>{
+test('the admin\'s unchanged stored 0/1 booleans save; other values are still rejected',async t=>{
  const f=await fixture(t);
- const data={...f.data,title:'Default availability'};delete data.available;
- const references={collection:[f.lookups.margarita],material:[f.materialId]};
- const created=await f.runtime.handleContentCreate('products',{slug:'default-availability',data,references});
- assert.equal(created.success,true,JSON.stringify(created));
- assert.equal((await readCatalogEntry(f.db,'products',created.data.item.id)).data.available,true);
+ // EmDash stores booleans as 0/1 and the admin form sends an untouched switch back as stored.
+ assert.deepEqual(await validateCatalogWrite(f.db,'materials',f.materialId,{data:{title:'Rosa',special_edition:0}}),[]);
+ assert.deepEqual(await validateCatalogWrite(f.db,'materials',f.materialId,{data:{title:'Rosa',special_edition:1}}),[]);
+ assert.deepEqual(await validateCatalogWrite(f.db,'products',f.top,{data:{title:'top-test',bundle:0}}),[]);
+ assert.ok((await validateCatalogWrite(f.db,'materials',f.materialId,{data:{special_edition:2}})).length);
+ assert.ok((await validateCatalogWrite(f.db,'materials',f.materialId,{data:{special_edition:'sí'}})).length);
 });
 
 test('Contributor REST create and reference-only PUT cannot bypass relationship rules',async t=>{

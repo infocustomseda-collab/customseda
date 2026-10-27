@@ -27,3 +27,14 @@ test('scripts survive page swaps',async()=>{
  assert.match(popup,/disconnectedCallback/);
  assert.match(await read('src/components/Gallery.astro'),/disconnectedCallback\(\) \{\s*this\.observer\?\.disconnect\(\)/);
 });
+
+test('the Edición especial glint plays only on special-edition photos and never with reduced motion',async()=>{
+ const css=await read('src/styles/blocks/catalog.css');
+ const motion=css.match(/@media \(prefers-reduced-motion: no-preference\) \{([\s\S]*?)\n\t\}\n/);
+ assert.ok(motion,'the glint lives in a no-preference block');
+ assert.match(motion[1],/\.sheen::after \{[\s\S]*animation: sheen 3.5s/);
+ assert.match(motion[1],/@keyframes sheen/);
+ assert.doesNotMatch(css.replace(motion[0],''),/\.sheen::after|@keyframes sheen/);
+ assert.match(await read('src/components/ProductCard.astro'),/product\.specialEdition && "sheen"/);
+ assert.match(await read('src/components/Gallery.astro'),/sheen && "sheen"/);
+});

@@ -10,6 +10,13 @@ const targets: Record<string, Record<string,string>> = {
 // Collections whose entries carry one native category term.
 const categorized=new Set(['products','sizes']);
 export type CatalogWrite = {data?:Record<string,unknown>;references?:Record<string,string[]>;slug?:string|null};
+// EmDash stores booleans as 0/1, and the admin sends an untouched switch back as stored.
+const booleanFields=['bundle','special_edition'];
+function withBooleans(data:Record<string,unknown>):Record<string,unknown> {
+ const result={...data};
+ for(const field of booleanFields) if(result[field]===0 || result[field]===1) result[field]=Boolean(result[field]);
+ return result;
+}
 export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=true):Promise<CatalogEntry|null> {
  if(type==='category') {
   const term=await db.selectFrom('taxonomies').selectAll().where('name','=','category').where(eb=>eb.or([eb('id','=',id),eb('translation_group','=',id)])).executeTakeFirst();
@@ -26,7 +33,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
   data={...data,...Object.fromEntries(Object.entries(revision.data).filter(([key])=>!key.startsWith('_')))};
   staged=(revision.data._references??{}) as Record<string,unknown>;
  }
- for(const field of ['available','bundle','special_edition']) if(data[field]===0 || data[field]===1) data[field]=Boolean(data[field]);
+ data=withBooleans(data);
  const refs:Record<string,string[]>={};
  const selections=Object.entries(targets[type]??{}).map(([field,target])=>{
   refs[field]=[];
@@ -103,9 +110,7 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
  };
  const existing=id ? await read(type,id,true) : null;
  if(id&&!existing) return ['No se ha encontrado el contenido.'];
- const candidate:CatalogEntry={id:existing?.id??'new',type,status:existing?.status??'draft',group:existing?.group,data:{...existing?.data,...body.data},refs:{...existing?.refs,...body.references}};
- // EmDash's defaults are applied after beforeSave; mirror the single business default here.
- if((type==='products')&&candidate.data.available===undefined) candidate.data.available=true;
+ const candidate:CatalogEntry={id:existing?.id??'new',type,status:existing?.status??'draft',group:existing?.group,data:{...existing?.data,...withBooleans(body.data??{})},refs:{...existing?.refs,...body.references}};
  const graph=checkReferences ? await loadGraph(db,candidate,false,read) : new Map([[candidate.id,candidate]]);
  const errors=validateCatalogEntry(candidate,graph,{publish,references:checkReferences});
  const filtered=errors;
