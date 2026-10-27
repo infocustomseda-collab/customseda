@@ -1,5 +1,5 @@
 ---
-// Featured Conjunto: main photo beside its title, color, description and price, linking to the product page.
+// Latest Conjunto under "Últimas novedades": main photo beside its title, color, description and price, linking to the product page.
 import type { ProductCardView } from "../../lib/shop/view";
 import Button from "../Button.astro";
 import Price from "../Price.astro";
@@ -15,19 +15,22 @@ const { product, color, description } = Astro.props;
 const [image] = product.images;
 ---
 
-<section class="feature wrapper region" aria-labelledby="feature-title">
-	{image && (
-		<a class="feature__media" href={product.href} tabindex="-1" aria-hidden="true" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
-			<img src={image.src} srcset={image.srcset} sizes="(min-width: 60em) 50vw, 100vw" alt="" width={image.width} height={image.height} style={`object-position: ${image.position}`} loading="lazy" decoding="async" />
-		</a>
-	)}
-	<div class="feature__details stack" style="--stack-space: var(--space-s-m)">
-		<div class="stack" style="--stack-space: var(--space-3xs)">
-			<h2 class="feature__title" id="feature-title">{product.title}</h2>
-			{color && <p class="feature__color">Conjunto {color}</p>}
+<section class="wrapper region stack" aria-labelledby="feature-heading" style="--stack-space: var(--space-m-l)">
+	<h2 id="feature-heading" class="text-center">Últimas novedades</h2>
+	<div class="feature">
+		{image && (
+			<a class="feature__media" href={product.href} tabindex="-1" aria-hidden="true" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
+				<img src={image.src} srcset={image.srcset} sizes="(min-width: 60em) 50vw, 100vw" alt="" width={image.width} height={image.height} style={`object-position: ${image.position}`} loading="lazy" decoding="async" />
+			</a>
+		)}
+		<div class="feature__details stack" style="--stack-space: var(--space-s-m)">
+			<div class="stack" style="--stack-space: var(--space-3xs)">
+				<h3 class="feature__title">{product.title}</h3>
+				{color && <p class="feature__color">Conjunto {color}</p>}
+			</div>
+			<RichText value={description} />
+			<Price cents={product.priceCents} />
+			<Button href={product.href}>Ver conjunto</Button>
 		</div>
-		<RichText value={description} />
-		<Price cents={product.priceCents} />
-		<Button href={product.href}>Ver conjunto</Button>
 	</div>
 </section>

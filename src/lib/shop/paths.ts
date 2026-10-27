@@ -4,8 +4,8 @@ import type { ShopContent } from "./content.ts";
 import { productDetail } from "./detail.ts";
 
 type Paths<P extends string, Props = undefined> = { params: Record<P, string>; props?: Props }[];
-// Pages with a dedicated route under /pages/ (contact.astro, margarita.astro).
-const DEDICATED_PAGES = new Set(["contact", "margarita"]);
+// Pages with a dedicated route under /pages/ (contact.astro, margarita.astro, seda.astro).
+const DEDICATED_PAGES = new Set(["contact", "margarita", "seda"]);
 
 export function productPaths(shop: ShopContent): Paths<"slug"> {
 	return shop.products.flatMap((entry) => (productDetail(shop, entry.slug) ? [{ params: { slug: entry.slug } }] : []));
@@ -23,5 +23,5 @@ export const policyPaths = (shop: ShopContent): Paths<"slug"> =>
 export const rootRedirectPaths = (shop: ShopContent): Paths<"slug", { target: string }> =>
 	shop.pages.map((page) => ({
 		params: { slug: page.slug },
-		props: { target: page.slug === "noticias" ? "/blogs/noticias" : page.slug.endsWith("-policy") ? `/policies/${page.slug}` : `/pages/${page.slug}` },
+		props: { target: page.slug.endsWith("-policy") ? `/policies/${page.slug}` : `/pages/${page.slug}` },
 	}));

@@ -44,7 +44,7 @@ export const shippingRules=[
 
 // Approved header and footer links; keep existing public URLs.
 export const menus={
- primary:{label:'Principal',items:[['Inicio','/'],['Bikini','/collections/bikinis'],['Colección','/pages/margarita'],['Sobre Seda','/blogs/noticias'],['Envíos y Devoluciones','/pages/envios-y-devoluciones'],['Contacto','/pages/contact']]},
+ primary:{label:'Principal',items:[['Inicio','/'],['Bikini','/collections/bikinis'],['Colección','/pages/margarita'],['Sobre Seda','/pages/seda'],['Envíos y Devoluciones','/pages/envios-y-devoluciones'],['Contacto','/pages/contact']]},
  footer:{label:'Pie de página',items:[['Envíos y Devoluciones','/pages/envios-y-devoluciones'],['Guía de tallas','/pages/guia-de-tallas'],['Contacto','/pages/contact'],['Política de privacidad','/policies/privacy-policy']]},
 };
 

@@ -1,18 +1,6 @@
 ---
-// "Sobre Seda": the existing blog path, rendered from the "noticias" CMS page.
-import ContentPage from "../../components/ContentPage.astro";
-import Shop from "../../layouts/Shop.astro";
-import { loadShopPage } from "../../lib/shop/page";
-import { pageHeading, plainText } from "../../lib/shop/site";
-
+// "Sobre Seda" moved to /pages/seda; the old blog path stays as a permanent redirect.
 export const prerender = true;
 
-const { shop, site } = await loadShopPage(Astro);
-const page = shop.pages.find((entry) => entry.slug === "noticias");
-if (!page) return Astro.rewrite("/404");
-const heading = pageHeading(site, Astro.url.pathname, String(page.data.title ?? "Sobre Seda"));
+return Astro.redirect("/pages/seda", 301);
 ---
-
-<Shop title={heading} description={plainText(page.data.content)} site={site}>
-	<ContentPage page={page} heading={heading} headingFromContent />
-</Shop>

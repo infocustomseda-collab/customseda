@@ -102,6 +102,8 @@ export function sizeGroups(items:CatalogItem[],shop:Pick<ShopContent,'categories
   return sizes.length?[{category,label:String(term.data.title??category),sizes}]:[];
  });
 }
-export function featuredItem(shop:Lookups,id:string|undefined):CatalogItem|null {
- return buildCatalog(shop).find(item=>item.kind==='bundle'&&item.id===id)??null;
+/** The most recently published complete Conjunto; the first in catalog order wins a tie. */
+export function latestConjunto(shop:Lookups):CatalogItem|null {
+ const date=(item:CatalogItem)=>shop.products.find(entry=>entry.id===item.id)?.date??'';
+ return buildCatalog(shop).reduce<CatalogItem|null>((latest,item)=>item.kind==='bundle'&&(!latest||date(item)>date(latest))?item:latest,null);
 }

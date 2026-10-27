@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {productDetail} from '../src/lib/shop/detail.ts';
-import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,featuredItem,categoryHref,sizeGroups} from '../src/lib/shop/catalog.ts';
+import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,latestConjunto,categoryHref,sizeGroups} from '../src/lib/shop/catalog.ts';
 
 const entry=(type,id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,gallery:[],...data},refs});
 const lookups={
@@ -149,11 +149,12 @@ test('facet options list only values present in the view, in lookup order',()=>{
  assert.deepEqual(facets.colors,[{slug:'caoba',label:'Caoba'},{slug:'rojo',label:'Rojo'}]);
 });
 
-test('the featured Conjunto resolves through catalog rules and disappears without a component',()=>{
- assert.equal(featuredItem(shop,'tierra').slug,'tierra');
- assert.equal(featuredItem(shop,'huerfano'),null);
- assert.equal(featuredItem(shop,'top-tierra'),null);
- assert.equal(featuredItem(shop,undefined),null);
+test('the homepage shows the most recent complete Conjunto',()=>{
+ const dated=(dates)=>({...shop,products:shop.products.map(entry=>({...entry,date:dates[entry.id]??'2026-01-01T00:00:00.000Z'}))});
+ assert.equal(latestConjunto(dated({fuego:'2026-03-01T00:00:00.000Z'})).slug,'fuego');
+ // An incomplete Conjunto or a newer piece is never featured.
+ assert.equal(latestConjunto(dated({huerfano:'2026-05-01T00:00:00.000Z','top-tierra':'2026-05-01T00:00:00.000Z',tierra:'2026-04-01T00:00:00.000Z'})).slug,'tierra');
+ assert.equal(latestConjunto({...shop,products:shop.products.filter(entry=>entry.data.bundle!==true)}),null);
 });
 
 test('category links keep the catalog path and current refinements',()=>{
