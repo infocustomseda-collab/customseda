@@ -41,33 +41,49 @@ export async function applyProductMaterials(db:CatalogDb) {
   const colors=await edges('products_color'),components=await edges('products_components');
   const rows=(await sql<Row>`SELECT p.id, p.slug, COALESCE(p.translation_group, p.id) AS grp, p.bundle, r.data FROM ec_products p
    LEFT JOIN revisions r ON r.id=p.draft_revision_id WHERE p.deleted_at IS NULL ORDER BY p.slug`.execute(db)).rows;
-  // The pending draft's selection is what the editor shows, so it wins over the live row.
-  const selection=(row:Row,field:string,live:Map<string,string[]>)=>{
-   const staged=row.data ? JSON.parse(row.data)._references?.[field] : undefined;
-   return Array.isArray(staged) ? staged as string[] : live.get(row.grp)??[];
+  // The live row keeps the live color's material; a pending draft that staged another color stages
+  // that color's material instead, so nothing changes publicly before the draft is published.
+  const staged=(row:Row,field:string)=>{
+   const value=row.data ? JSON.parse(row.data)._references?.[field] : undefined;
+   return Array.isArray(value) ? value as string[] : undefined;
   };
-  const planned=new Map<string,string>();
+  const live=new Map<string,string|undefined>(),pending=new Map<string,string|undefined>();
   for(const row of rows.filter(row=>!row.bundle)) {
-   const material=materialOfColor.get(selection(row,'color',colors)[0]??'');
-   if(material) planned.set(row.grp,material);
+   live.set(row.grp,materialOfColor.get(colors.get(row.grp)?.[0]??''));
+   const color=staged(row,'color');
+   pending.set(row.grp,color ? materialOfColor.get(color[0]??'') : live.get(row.grp));
   }
+  // A conjunto takes its components' shared material, live from live links and pending from its draft.
+  const shared=(groups:string[],of:Map<string,string|undefined>)=>{
+   const found=[...new Set(groups.map(group=>of.get(group)))];
+   return found.length===1 ? found[0] : undefined;
+  };
   for(const row of rows.filter(row=>row.bundle)) {
-   const shared=[...new Set(selection(row,'components',components).map(group=>planned.get(group)))];
-   if(shared.length===1 && shared[0]) planned.set(row.grp,shared[0]);
+   live.set(row.grp,shared(components.get(row.grp)??[],live));
+   pending.set(row.grp,shared(staged(row,'components')??components.get(row.grp)??[],pending));
   }
   const writes=rows.flatMap(row=>{
-   const material=planned.get(row.grp);
-   if(!material) {unlinked.push(row.slug);return [];}
-   return [{id:row.id,body:{references:{material:[material]}}}];
+   const current=live.get(row.grp),draft=pending.get(row.grp);
+   if(!current && !draft) {unlinked.push(row.slug);return [];}
+   return [{row,current,draft:draft!==current&&row.data ? draft : undefined}];
   });
   // Validate every write before changing anything.
-  for(const write of writes) {
-   const errors=await validateCatalogWrite(db,'products',write.id,write.body);
-   if(errors.length) throw new Error(`Product ${write.id}: ${errors.join(' ')}`);
+  for(const {row,current,draft} of writes) for(const material of [current,draft]) {
+   if(!material) continue;
+   const errors=await validateCatalogWrite(db,'products',row.id,{references:{material:[material]}});
+   if(errors.length) throw new Error(`Product ${row.slug}: ${errors.join(' ')}`);
   }
-  for(const write of writes) {
-   const result=await handleContentUpdate(db,'products',write.id,write.body);
-   if(!result.success) throw new Error(`Product ${write.id}: ${result.error.message}`);
+  for(const {row,current,draft} of writes) {
+   if(current) {
+    const result=await handleContentUpdate(db,'products',row.id,{references:{material:[current]}});
+    if(!result.success) throw new Error(`Product ${row.slug}: ${result.error.message}`);
+   }
+   if(draft) {
+    const data=JSON.parse(row.data!);
+    data._references={...data._references,material:[draft]};
+    data._referencesBaseline={...data._referencesBaseline,material:current?[current]:[]};
+    await sql`UPDATE revisions SET data=${JSON.stringify(data)} WHERE id=(SELECT draft_revision_id FROM ec_products WHERE id=${row.id})`.execute(db);
+   }
   }
   linked=writes.length;
  }

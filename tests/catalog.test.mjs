@@ -42,7 +42,7 @@ test('bundle publication requires every component to use its material',()=>{
  changed.set('b',{...bottom,refs:{...bottom.refs,material:[]}});
  assert.ok(validateCatalogEntry(conjunto(),changed,{publish:true}).some(e=>e.includes('material')));
  assert.deepEqual(validateCatalogEntry(conjunto(),changed),[]);
- assert.deepEqual(validateCatalogEntry(conjunto(),changed,{publish:true,componentMaterials:false}).filter(e=>e.includes('material')),[]);
+ assert.deepEqual(validateCatalogEntry(conjunto(),changed,{publish:true,materials:false}).filter(e=>e.includes('material')),[]);
 });
 test('sizes need a known label and one category to publish',()=>{
  const xs=entries.get('bottom-XS');

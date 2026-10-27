@@ -29,7 +29,7 @@ async function legacyCatalog(t) {
  const terms=Object.fromEntries((await db.selectFrom('taxonomies').select(['slug','id']).where('name','=','category').execute()).map(t=>[t.slug,t.id]));
  const margarita=await group('collections','margarita');
  async function product(slug,category,references={},data={}) {
-  const created=await handleContentCreate(db,'products',{slug,data:{title:slug.toUpperCase(),...data},references:{collection:[margarita],...references}});
+  const created=await handleContentCreate(db,'products',{slug,data:{title:slug.toUpperCase(),price_cents:5000,gallery:[{image:{id:'photo'},alt:slug}],...data},references:{collection:[margarita],...references}});
   assert.equal(created.success,true,JSON.stringify(created));
   await db.insertInto('content_taxonomies').values({collection:'products',entry_id:created.data.item.id,taxonomy_id:terms[category]}).execute();
   return created.data.item.id;
@@ -39,13 +39,17 @@ async function legacyCatalog(t) {
 
 test('products move from their color to that color\'s material; Braguita Curve drafts are renamed and old fields dropped',async t=>{
  const {db,repo,group,product}=await legacyCatalog(t);
+ const publish=async id=>assert.equal((await handleContentPublish(db,'products',id)).success,true);
  const caoba=await group('colors','caoba'),rojo=await group('colors','rojo');
  const sizeS=await group('sizes','braguita-s');
  const curve=await product('braguita-curve','braguita',{color:[caoba],sizes:[sizeS]});
  const top=await product('top-tierra','top',{color:[caoba]});
  const set=await product('tierra','conjuntos',{components:[curve,top]},{bundle:true});
+ // A published line: its pieces' material writes must not trip over the conjunto's missing material.
+ for(const id of [curve,top,set]) await publish(id);
  // The live row says Rojo; the pending draft the editor shows says Caoba.
  const fuego=await product('braguita-curve-2','braguita',{color:[rojo]});
+ await publish(fuego);
  const revision=await new RevisionRepository(db).create({collection:'products',entryId:fuego,
   data:{title:'BRAGUITA CURVE',_slug:'braguita-curve-2',_references:{color:[caoba],sizes:[sizeS]},_referencesBaseline:{color:[rojo],sizes:[]}}});
  await repo.setDraftRevision('products',fuego,revision.id);
@@ -63,10 +67,14 @@ test('products move from their color to that color\'s material; Braguita Curve d
  assert.equal((await repo.findByIdOrSlug('products','braguita-curve-tierra')).data.title,'BRAGUITA CURVE TIERRA');
  assert.equal(await materialOf('top-tierra'),'caoba');
  assert.equal(await materialOf('tierra'),'caoba');
+ // The pending draft gets the staged color's material; the published product keeps its live one.
  assert.equal(await materialOf('braguita-curve-fuego'),'caoba');
+ const live=await readCatalogEntry(db,'products',fuego,false);
+ assert.equal((await repo.findById('materials',live.refs.material[0])).slug,'rojo');
  const draft=(await sql`SELECT r.data FROM ec_products p INNER JOIN revisions r ON r.id=p.draft_revision_id WHERE p.id=${fuego}`.execute(db)).rows[0];
  const staged=JSON.parse(draft.data);
  assert.equal(staged.title,'BRAGUITA CURVE FUEGO');assert.equal(staged._slug,'braguita-curve-fuego');
+ assert.deepEqual(staged._referencesBaseline.material,[live.refs.material[0]]);
  assert.equal(staged._references?.color,undefined);assert.equal(staged._references?.sizes,undefined);
  assert.equal(staged._referencesBaseline?.color,undefined);assert.equal(staged._referencesBaseline?.sizes,undefined);
  assert.equal(await repo.findByIdOrSlug('products','braguita-curve'),null);

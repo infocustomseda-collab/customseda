@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fixture} from './helpers/catalog.mjs';
-import {handleContentUpdate,handleContentGet} from 'emdash';
+import {handleContentCreate,handleContentUpdate,handleContentGet} from 'emdash';
 import {readCatalogEntry,validateCatalogWrite,catalogDependents,removalAllowed} from '../src/lib/cms/catalog-store.ts';
 
 test('runtime policies publish valid mixed-size bundles with their own price',async t=>{
@@ -185,4 +185,15 @@ test('component material changes never block on their conjunto',async t=>{
  assert.deepEqual(await validateCatalogWrite(f.db,'products',f.top,{references:{material:[other.data.item.id]}},{publish:true}),[]);
  assert.equal((await f.runtime.handleContentUpdate('products',f.top,{references:{material:[other.data.item.id]}})).success,true);
  assert.equal(await removalAllowed(f.db,'materials',f.materialId),false);
+});
+
+test('a published conjunto still missing its material never blocks edits to its pieces',async t=>{
+ const f=await fixture(t);
+ // Published before materials existed (written without the publication policy).
+ const legacy=await handleContentCreate(f.db,'products',{slug:'legacy-set',data:{...f.data,bundle:true,price_cents:8000},references:{components:[f.top,f.bottom]}});
+ assert.equal(legacy.success,true,JSON.stringify(legacy));
+ const {handleContentPublish}=await import('emdash');
+ assert.equal((await handleContentPublish(f.db,'products',legacy.data.item.id)).success,true);
+ await f.taxonomy.setTermsForEntry('products',legacy.data.item.id,'category',[f.lookups.conjuntos]);
+ assert.deepEqual(await validateCatalogWrite(f.db,'products',f.top,{data:{title:'Top editado'}}),[]);
 });

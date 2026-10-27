@@ -129,7 +129,7 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
     related.set(candidate.id,candidate);
     // Candidate may point at a different category/collection/color; load those too.
     for(const [key,value] of graph) related.set(key,value);
-    const failures=validateCatalogEntry(bundle,related,{publish:!draft&&bundle.status==='published',componentMaterials:false});
+    const failures=validateCatalogEntry(bundle,related,{publish:!draft&&bundle.status==='published',materials:false});
     if(failures.length) filtered.push(`El cambio rompería el conjunto «${bundle.data.title??bundle.id}»: ${failures[0]}`);
    }
   }

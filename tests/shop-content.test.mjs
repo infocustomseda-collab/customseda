@@ -58,3 +58,16 @@ test('boolean fields read back as booleans whether stored on the row or in a rev
  assert.equal(shop.site_settings[0].data.announcement_enabled,true);
  assert.equal(shop.products[0].data.available,true);
 });
+
+test('checkout loads every type a quote needs, so a published piece can be ordered',async t=>{
+ const f=await fixture(t);
+ const {QUOTE_TYPES,parseOrder,quoteOrder}=await import('../src/lib/commerce/checkout.ts');
+ const rule=await f.runtime.handleContentCreate('shipping_rules',{slug:'recogida',data:{title:'Recogida',enabled:true,zone:'pickup',price_cents:0}});
+ assert.equal(rule.success,true,JSON.stringify(rule));
+ assert.equal((await f.runtime.handleContentPublish('shipping_rules',rule.data.item.id)).success,true);
+ const shop=await loadShop(f.db,{drafts:false,only:[...QUOTE_TYPES]});
+ const form=new FormData();
+ for(const [key,value] of Object.entries({id:f.top,talla:'S',quantity:'1',price:'5000',shipping:rule.data.item.id})) form.set(key,value);
+ const quote=quoteOrder(shop,parseOrder(form));
+ assert.equal(quote.ok,true,JSON.stringify(quote));
+});
