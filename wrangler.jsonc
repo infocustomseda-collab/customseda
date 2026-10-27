@@ -64,12 +64,9 @@
     "staging-preview": {
       "name": "customseda-staging-preview",
       "workers_dev": true,
-      "assets": {
-        "run_worker_first": true
-      },
       "vars": {
         "EMDASH_SITE_URL": "https://customseda-staging-preview.customseda.workers.dev",
-        "FOUNDATION_LOCKED": "true",
+        "FOUNDATION_LOCKED": "false",
         "SITE_ROLE": "preview",
         "PUBLIC_SITE_URL": "https://customseda-staging.customseda.workers.dev",
         "DEPLOY_ENVIRONMENT": "staging",

@@ -108,13 +108,16 @@ test('gated environments must route static assets through the Worker', () => {
   assert.equal(validateTarget(c, 'production').environment, 'production');
 });
 
-test('the checked-in Wrangler config gates assets in both remote environments', async () => {
+test('the checked-in Wrangler config gates assets wherever the foundation gate is locked', async () => {
   const { readFile } = await import('node:fs/promises');
   const wrangler = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
   for (const name of ['staging', 'production']) {
     assert.equal(validateTarget(wrangler, name).environment, name);
-    assert.equal(wrangler.env[`${name}-preview`].assets.run_worker_first, true);
   }
+  // The staging preview is open; production's preview keeps the gate until its admin is set up.
+  assert.equal(wrangler.env['staging-preview'].vars.FOUNDATION_LOCKED, 'false');
+  assert.equal(wrangler.env['production-preview'].vars.FOUNDATION_LOCKED, 'true');
+  assert.equal(wrangler.env['production-preview'].assets.run_worker_first, true);
 });
 
 test('deploy scripts run like fdag: plain node, authenticated by wrangler login or the CI secret', async () => {

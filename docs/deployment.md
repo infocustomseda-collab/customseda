@@ -32,8 +32,7 @@ All secret files are ignored by git, have owner-only permissions (`chmod 600`), 
 | File | Holds | Used by |
 | --- | --- | --- |
 | `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | `pnpm dev`. Wrangler reads `.env` as the local Worker's secrets; copy `.env.example`. |
-| `.env.cloudflare-staging`, `.env.cloudflare-production` | Secrets of the public Workers (`EMDASH_ENCRYPTION_KEY`, Stripe keys, `FOUNDATION_ACCESS_TOKEN`) | `wrangler secret bulk` on first deploy, see below. Not loaded automatically. |
-| `.env.cloudflare-staging-preview`, `.env.cloudflare-production-preview` | Secrets of the `<env>-preview` Workers only (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, `GITHUB_REBUILD_TOKEN`; never Stripe keys) | `wrangler secret bulk` on first deploy, see below. Same owner-only permissions, git-ignored by `.env.*`. |
+| `.env.cloudflare-staging`, `.env.cloudflare-production` | Secrets shared by both Workers of the environment (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`) | `wrangler secret bulk` to both Workers on first deploy, see below. Not loaded automatically. |
 
 Never put a Cloudflare API token in `.env` or the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
 
@@ -41,16 +40,16 @@ Manual deploys authenticate like fdag: run `pnpm exec wrangler login` once, then
 
 Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN` (a secret of the `<env>-preview` Worker only), and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
 
-Secrets per Worker: the public Worker holds `EMDASH_ENCRYPTION_KEY`, the Stripe keys and `FOUNDATION_ACCESS_TOKEN`. The preview Worker needs the same `EMDASH_ENCRYPTION_KEY` as its pair (it reads the same encrypted settings), plus `FOUNDATION_ACCESS_TOKEN` and `GITHUB_REBUILD_TOKEN`. Stripe stays on the public Worker only. The key in `.env.cloudflare-<env>-preview` must be identical to the one in `.env.cloudflare-<env>`.
+Secrets per Worker: each Worker keeps its own copy. Both Workers of an environment need the same `EMDASH_ENCRYPTION_KEY` (they read the same encrypted settings) and `FOUNDATION_ACCESS_TOKEN`, so one file per environment holds exactly those and is uploaded to both. Keys that belong to one Worker only are added to it individually: the Stripe keys to the public Worker, `GITHUB_REBUILD_TOKEN` to the preview Worker. Keep them out of `.env.cloudflare-<env>`, since `secret bulk` uploads every key in the file.
 
 For the first deployment of an environment, upload its secrets through Wrangler, for example:
 
 ```sh
 pnpm exec wrangler secret bulk .env.cloudflare-production --env production
-pnpm exec wrangler secret bulk .env.cloudflare-production-preview --env production-preview
+pnpm exec wrangler secret bulk .env.cloudflare-production --env production-preview
+pnpm exec wrangler secret put STRIPE_SECRET_KEY --env production
+pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env production
 ```
-
-`.env.cloudflare-<env>-preview` holds only `EMDASH_ENCRYPTION_KEY` (identical to its public pair's), `FOUNDATION_ACCESS_TOKEN` and, once the rebuild token exists, `GITHUB_REBUILD_TOKEN`. Never put Stripe keys in it.
 
 Review the selected environment and secret file first. Subsequent deployments preserve remote secrets. The gate fails closed with 503 if locked and the access secret is missing. Do not turn it off until setup is complete and the intended exposure has been reviewed.
 
@@ -59,6 +58,8 @@ Review the selected environment and secret file first. Subsequent deployments pr
 Public pages are prerendered static assets. Cloudflare serves those without running the Worker, so the gate would not cover them. While `FOUNDATION_LOCKED` is `"true"`, each remote environment therefore sets `"assets": { "run_worker_first": true }` in `wrangler.jsonc`. Every request, pages and images included, then passes the gate, at the cost of one Worker invocation per request. `validateTarget` refuses a locked environment without it.
 
 **Launch switch (phase 7):** set `FOUNDATION_LOCKED` to `"false"` and remove `run_worker_first` together. Pages are then served directly from static assets.
+
+**Staging preview is open** (`staging-preview` has `FOUNDATION_LOCKED: "false"` and no `run_worker_first`). Its admin already has an owner, editors sign in with their passkey, and logged-out visitors are redirected to the gated public site, so the browser login only got in the way. `production-preview` stays gated until its first administrator is registered: an open, unclaimed setup wizard would let the first visitor become admin.
 
 ## Build, migrate, deploy, check
 
