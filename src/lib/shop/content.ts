@@ -24,6 +24,8 @@ export type ShopEntry = {
 	id: string;
 	slug: string;
 	status: string;
+	/** When the entry was published; drafts in a local preview fall back to their creation date. */
+	date?: string;
 	data: Record<string, unknown>;
 	/** Referenced entry IDs per reference field, in display order. */
 	refs: Record<string, string[]>;
@@ -63,7 +65,7 @@ export async function loadShop(db: Kysely<Database>, { drafts, only }: { drafts:
 			// SQLite stores booleans as 0/1 on the row; revisions keep JSON booleans.
 			for (const field of BOOLEAN_FIELDS) if (data[field] === 0 || data[field] === 1) data[field] = Boolean(data[field]);
 			const group = item.translationGroup ?? item.id;
-			loaded.push({ id: item.id, slug: item.slug ?? item.id, status: item.status, data, refs: {}, type, group, staged });
+			loaded.push({ id: item.id, slug: item.slug ?? item.id, status: item.status, date: item.publishedAt ?? item.createdAt, data, refs: {}, type, group, staged });
 		}
 	}
 

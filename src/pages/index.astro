@@ -1,5 +1,5 @@
 ---
-// Homepage, assembled from the editable site settings (hero, featured Conjunto, slideshow, intro, process).
+// Homepage, assembled from the editable site settings (hero, slideshow, intro, process), plus the latest Conjunto.
 import Button from "../components/Button.astro";
 import Gallery from "../components/Gallery.astro";
 import FeaturedProduct from "../components/home/FeaturedProduct.astro";
@@ -7,7 +7,7 @@ import Highlights from "../components/home/Highlights.astro";
 import HomeHero from "../components/home/HomeHero.astro";
 import RichText from "../components/RichText.astro";
 import Shop from "../layouts/Shop.astro";
-import { featuredItem } from "../lib/shop/catalog";
+import { latestConjunto } from "../lib/shop/catalog";
 import { byId, loadShopPage } from "../lib/shop/page";
 import { localHref, plainText } from "../lib/shop/site";
 import { galleryImages, imageView } from "../lib/shop/view";
@@ -16,7 +16,7 @@ export const prerender = true;
 
 const { shop, site, settings } = await loadShopPage(Astro);
 const data = settings?.data ?? {};
-const featured = featuredItem(shop, settings?.refs.featured_conjunto?.[0]);
+const featured = latestConjunto(shop);
 const featuredEntry = byId(shop.products, featured?.id);
 const color = shop.colors.find((entry) => entry.slug === featured?.color);
 const slides = galleryImages(data.slideshow);

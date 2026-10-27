@@ -92,7 +92,7 @@
 		}
 	}
 
-	/* Featured product: photo beside the details on wide screens. */
+	/* Latest Conjunto: photo beside the details on wide screens. */
 	.feature {
 		display: grid;
 		gap: var(--space-l-xl);
@@ -132,7 +132,7 @@
 
 	@media (min-width: 60rem) {
 		.feature {
-			grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 			align-items: center;
 		}
 	}
