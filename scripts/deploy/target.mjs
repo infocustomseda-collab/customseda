@@ -81,7 +81,8 @@ function validatePreview(config, environment, selected, publicOrigin, database, 
 /**
  * Migrations first (from the Astro config, since no build exists yet), so the snapshot reads the
  * migrated schema; then snapshot, image derivatives, a migrated local database for prerendering, build,
- * a check that no page is an error response, upload, and a check against the build's manifest.
+ * a check that no page is an error response, upload, then the server-rendered preview build and its
+ * upload, and a check against the build's manifest (both builds share one commit and config).
  */
 const migrationCommand = target => ['emdash', 'migrate', '--account-id', target.accountId, '--d1', target.databaseId, '--wrangler-config', 'wrangler.jsonc', '--wrangler-env', target.environment];
 
@@ -109,7 +110,10 @@ export function deploymentCommands(target, { fingerprint, allowEmpty = false } =
     ['prerender-db', target.environment],
     ['astro', 'build'],
     ['check-static'],
-    ['wrangler', 'deploy', '--env', target.environment],
+    // Each build writes a Wrangler config already flattened for its environment, so no --env.
+    ['wrangler', 'deploy', '-c', 'dist/server/wrangler.json'],
+    ['astro-preview', target.preview.environment],
+    ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json'],
     [...migration, '--check'],
   ];
 }

@@ -11,6 +11,20 @@
 - No sandbox runner or Worker Loader. These require Workers Paid.
 - The hourly maintenance handler and Wrangler Cron expression must match. Scheduled publications and backups still need resource-budget testing; an hourly trigger does not promise Free-tier compatibility for large jobs.
 
+## Two Workers per environment
+
+Each remote environment deploys two Workers that share one D1 database and one R2 bucket:
+
+| Environment | Public Worker | Preview Worker |
+| --- | --- | --- |
+| Staging | `customseda-staging`, <https://customseda-staging.customseda.workers.dev> | `customseda-staging-preview`, <https://customseda-staging-preview.customseda.workers.dev> |
+| Production | `customseda-production`, <https://customseda-production.customseda.workers.dev> | `customseda-production-preview`, <https://customseda-production-preview.customseda.workers.dev> |
+
+- **Public** (`SITE_ROLE=public`, built to `dist/`): prerendered static pages from the snapshot. Per request it runs only `/api/*`, `/checkout/*` and `/_emdash/api/media/file/*`.
+- **Preview** (`SITE_ROLE=preview`, built with `SITE_MODE=preview` to `dist-preview/`): the admin, all of `/_emdash`, and every page rendered on request. Signed-in editors (Contributor and above) see live pages with drafts, and `?_preview=` links work. Everyone else is redirected to the public origin. The hourly cron and the rebuild trigger run on the preview Worker.
+
+Moving the admin to the preview hostname means passkeys must be registered again: EmDash binds passkeys to the site hostname. Use EmDash's sign-in handover (`POST /_emdash/api/auth/handover`) to sign in on the new hostname, then register a passkey there.
+
 ## Credentials
 
 All secret files are ignored by git, have owner-only permissions (`chmod 600`), and follow the same layout as the fdag project:
@@ -26,11 +40,16 @@ Manual deploys authenticate like fdag: run `pnpm exec wrangler login` once, then
 
 Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN`, and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
 
+Secrets per Worker: the public Worker holds `EMDASH_ENCRYPTION_KEY`, the Stripe keys and `FOUNDATION_ACCESS_TOKEN`. The preview Worker needs the same `EMDASH_ENCRYPTION_KEY` as its pair (it reads the same encrypted settings), plus `FOUNDATION_ACCESS_TOKEN` and `GITHUB_REBUILD_TOKEN`. Stripe stays on the public Worker only.
+
 For the first deployment of an environment, upload its secrets through Wrangler, for example:
 
 ```sh
 pnpm exec wrangler secret bulk .env.cloudflare-production --env production
+pnpm exec wrangler secret bulk .env.cloudflare-production --env production-preview
 ```
+
+For the preview Worker, use a secret file that holds only its secrets (the three above), or accept that unused ones are uploaded too.
 
 Review the selected environment and secret file first. Subsequent deployments preserve remote secrets. The gate fails closed with 503 if locked and the access secret is missing. Do not turn it off until setup is complete and the intended exposure has been reviewed.
 
@@ -58,8 +77,10 @@ The runner validates account, database and origin separation, then runs these st
 6. Migrate a **local** stand-in of that environment's database. Prerendering runs EmDash in a local Worker, and EmDash refuses unmigrated databases; the remote database is not involved.
 7. Build. The build refuses a snapshot from another environment than `CLOUDFLARE_ENV` (`local` when unset).
 8. Check the static output: every page must be an HTML document, never an EmDash error response.
-9. Deploy that build.
-10. Check core migration status against the build's manifest.
+9. Deploy the public Worker: `wrangler deploy -c dist/server/wrangler.json`. The generated config is already flattened for the environment, so no `--env`.
+10. Build the preview Worker with `SITE_MODE=preview` and `CLOUDFLARE_ENV=<env>-preview` into `dist-preview/`.
+11. Deploy the preview Worker: `wrangler deploy -c dist-preview/server/wrangler.json`.
+12. Check core migration status against the build's manifest (both builds come from the same commit and config).
 
 A failed command stops the sequence. No generic `deploy` command targets an implicit environment. The `emdash migrate` steps need `CLOUDFLARE_API_TOKEN` in the environment (see [Credentials](#credentials)); a Wrangler OAuth login is not enough.
 
@@ -96,7 +117,7 @@ Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, `GI
 
 ## Publishing and rebuilds
 
-Public pages are prebuilt, so a CMS change appears after the next deploy of that environment. Three things trigger that deploy:
+Public pages are prebuilt, so a CMS change appears on the public site after the next deploy of that environment (editors see it immediately on the preview Worker). Three things trigger that deploy:
 
 - **Publish, unpublish, delete or restore** of shop content (products, Conjuntos, lookups, size guides, site settings, pages, popups, shipping rules). The catalog plugin dispatches `deploy.yml` for its own environment after the response, so the editor never waits.
 - **Scheduled publishing and menu changes,** within the hour. EmDash's scheduled sweep runs no plugin hooks, and menus have no hook at all. Before each hourly sweep, the Worker's scheduled handler checks two things: shop entries whose `scheduled_at` is due, which includes scheduled edits of live entries, and a fingerprint of the menus kept in `options`. It dispatches a rebuild if either changed.
@@ -107,7 +128,7 @@ Bursts coalesce before any job starts: waiting dispatch runs for an environment 
 The workflow is dispatched with a **fine-grained personal access token**, scoped to the `infocustomseda-collab/customseda` repository with "Actions: read and write" permission and nothing else. Store it per environment as a Worker secret:
 
 ```sh
-pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env staging
+pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env staging-preview
 ```
 
 `DEPLOY_ENVIRONMENT` and `GITHUB_REPOSITORY` are set as Worker vars in `wrangler.jsonc`. Local development has neither, so it never dispatches.

@@ -33,6 +33,12 @@ try {
         console.log(`Static build: ${(await checkStaticBuild()).pages} pages checked.`);
         continue;
       }
+      if (tool === 'astro-preview') {
+        const build = spawnSync('pnpm', ['exec', 'astro', 'build'], { stdio: 'inherit', env: { ...env, SITE_MODE: 'preview', CLOUDFLARE_ENV: args[0] } });
+        if (build.error) throw build.error;
+        if (build.status !== 0) throw Object.assign(new Error('astro preview build failed; deployment stopped.'), { exitCode: build.status ?? 1 });
+        continue;
+      }
       if (tool === 'images') {
         await buildImages({ environment: args[0] });
         continue;

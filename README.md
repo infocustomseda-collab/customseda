@@ -52,13 +52,13 @@ pnpm build
 
 ## Remote environments
 
-| Environment | Worker | Database | Media bucket |
-| --- | --- | --- | --- |
-| Local | `customseda-local` | Local D1 only | Local R2 only |
-| Staging | `customseda-staging` | `customseda-staging` | `customseda-staging-media` |
-| Production | `customseda-production` | `customseda-production` | `customseda-production-media` |
+| Environment | Worker | Preview Worker | Database | Media bucket |
+| --- | --- | --- | --- | --- |
+| Local | `customseda-local` | none | Local D1 only | Local R2 only |
+| Staging | `customseda-staging` | `customseda-staging-preview` | `customseda-staging` | `customseda-staging-media` |
+| Production | `customseda-production` | `customseda-production-preview` | `customseda-production` | `customseda-production-media` |
 
-Staging: <https://customseda-staging.customseda.workers.dev/_emdash/admin/>
+Each remote environment has two Workers sharing one database and bucket: the static public site and a `-preview` Worker that hosts the admin and live drafts for editors. Staging site: <https://customseda-staging.customseda.workers.dev/>. Staging admin now lives on the preview Worker: <https://customseda-staging-preview.customseda.workers.dev/_emdash/admin/>. See [deployment](docs/deployment.md#two-workers-per-environment).
 
 The temporary HTTP Basic gate uses username `seda` and the `FOUNDATION_ACCESS_TOKEN` value in the ignored `.env.cloudflare-staging` file. This gate protects the initial setup wizard and is additional to EmDash's passkey login. CLI clients that need `Authorization` for an EmDash API token (for example `emdash site import`) send the same Basic credentials in an `X-Foundation-Access` header instead. Do not send the token in a URL or commit it. The merchant must register their own passkey. Production has resources but is not published, and `customseda.com` still points to Shopify.
 
