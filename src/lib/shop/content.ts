@@ -30,7 +30,7 @@ export type ShopEntry = {
 };
 export type ShopContent = Record<ShopType, ShopEntry[]> & { categories: ShopEntry[] };
 
-const BOOLEAN_FIELDS = ["bundle", "enabled", "announcement_enabled"];
+const BOOLEAN_FIELDS = ["bundle", "special_edition", "enabled", "announcement_enabled"];
 
 type Loaded = ShopEntry & { type: ShopType; group: string; staged?: Record<string, unknown> };
 

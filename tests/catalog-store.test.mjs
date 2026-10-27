@@ -98,6 +98,16 @@ test('publication reads pending prices and rejects unfinished media uploads',asy
  assert.ok(errors.some(e=>e.includes('imagen')),JSON.stringify(errors));
 });
 
+test('the admin\'s unchanged stored 0/1 booleans save; other values are still rejected',async t=>{
+ const f=await fixture(t);
+ // EmDash stores booleans as 0/1 and the admin form sends an untouched switch back as stored.
+ assert.deepEqual(await validateCatalogWrite(f.db,'materials',f.materialId,{data:{title:'Rosa',special_edition:0}}),[]);
+ assert.deepEqual(await validateCatalogWrite(f.db,'materials',f.materialId,{data:{title:'Rosa',special_edition:1}}),[]);
+ assert.deepEqual(await validateCatalogWrite(f.db,'products',f.top,{data:{title:'top-test',bundle:0}}),[]);
+ assert.ok((await validateCatalogWrite(f.db,'materials',f.materialId,{data:{special_edition:2}})).length);
+ assert.ok((await validateCatalogWrite(f.db,'materials',f.materialId,{data:{special_edition:'sí'}})).length);
+});
+
 test('Contributor REST create and reference-only PUT cannot bypass relationship rules',async t=>{
  const f=await fixture(t);
  const {catalogWriteMiddleware}=await import('../src/lib/cms/write-middleware.ts');
