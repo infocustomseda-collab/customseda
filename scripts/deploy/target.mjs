@@ -109,6 +109,21 @@ export function migrationToken(env, wranglerLoginToken) {
   return token;
 }
 
+/**
+ * Environment of one spawned step. Only EmDash's migration CLI gets the token; Wrangler uses its own
+ * login (or the CI token). `wrangler deploy -c` reads a config the build already flattened for its
+ * environment: with CLOUDFLARE_ENV set, Wrangler looks for an env section there, finds none, and
+ * deploys a new Worker named "<name>-<env>" instead of updating the real one.
+ */
+export function commandEnv(tool, args, env, token) {
+  if (tool === 'emdash') return { ...env, CLOUDFLARE_API_TOKEN: token };
+  if (tool === 'wrangler' && args[0] === 'deploy' && args.includes('-c')) {
+    const { CLOUDFLARE_ENV: _flattened, ...rest } = env;
+    return rest;
+  }
+  return env;
+}
+
 /** Read-only migration status and target fingerprint, as the deploy's first step shows it. */
 export const statusCommand = target => [...migrationCommand(target), '--from-config', '--status'];
 
