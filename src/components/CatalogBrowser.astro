@@ -1,6 +1,6 @@
 ---
 // Progressive enhancement: all cards remain browsable without JavaScript.
-import { filterItems, type CatalogItem, type Category } from "../lib/shop/catalog";
+import { filterItems, type CatalogItem, type Category, type SizeGroup } from "../lib/shop/catalog";
 import { uniqueTransitions } from "../lib/shop/view";
 import Icon from "./Icon.astro";
 import ProductCard from "./ProductCard.astro";
@@ -8,10 +8,12 @@ import ProductCard from "./ProductCard.astro";
 interface Props {
 	items: CatalogItem[];
 	colors: { slug: string; label: string }[];
+	/** Size groups for the page; the browser shows those the current category offers. */
+	sizeGroups: SizeGroup[];
 	basePath: string;
 	initialCategory: Category;
 }
-const { items, colors, basePath, initialCategory } = Astro.props;
+const { items, colors, sizeGroups, basePath, initialCategory } = Astro.props;
 const initialItems = new Set(filterItems(items, { category: initialCategory, colors: [], available: false }).map(item => item.id));
 const data = items.map(({ card: _card, ...item }) => item);
 const cards = uniqueTransitions(items.map((item) => item.card));
@@ -49,6 +51,19 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 							</div>
 						</fieldset>
 					)}
+					{sizeGroups.map(group => (
+						<fieldset class="choice-group" data-size-group={group.category}>
+							<legend class="choice-group__legend">{group.label}</legend>
+							<div class="choice-group__options cluster">
+								{group.sizes.map(size => (
+									<label class="choice">
+										<input class="choice__input" type="checkbox" name="talla" value={size.value} data-label={`${group.label} ${size.label}`} />
+										<span class="choice__label">{size.label}</span>
+									</label>
+								))}
+							</div>
+						</fieldset>
+					))}
 					<label class="filters__availability">
 						<input type="checkbox" name="disponible" value="1" data-label="Solo disponibles" />
 						<span>Solo disponibles</span>
@@ -76,7 +91,7 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 
 <script>
 	import { CatalogGridMotion } from "../lib/shop/catalog-motion";
-	import { categoryHref, filterItems, filtersQuery, parseFilters, sortItems, type CatalogItem, type Category } from "../lib/shop/filters";
+	import { categoryHref, filterItems, filtersQuery, parseFilters, sizeValue, sortItems, type CatalogItem, type Category } from "../lib/shop/filters";
 	class CatalogBrowser extends HTMLElement {
 		controller?: AbortController;
 		motion?: CatalogGridMotion;
@@ -116,17 +131,32 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 			const sort = this.querySelector("select") as HTMLSelectElement;
 			const inputs = [...form.querySelectorAll<HTMLInputElement>("input")];
 			const colors = [...new Set(items.flatMap(item => item.color ? [item.color] : []))];
+			const sizeInputs = inputs.filter(input => input.name === "talla");
+			const sizes = sizeInputs.map(input => input.value);
+			const sizeGroups = [...form.querySelectorAll<HTMLFieldSetElement>("[data-size-group]")];
+			// Show only the sizes the current category's items offer; a hidden size cannot stay selected.
+			const scopeSizes = () => {
+				const offered = new Set(filterItems(items, { category, colors: [], available: false })
+					.flatMap(item => Object.entries(item.sizesByCategory).flatMap(([group, labels]) => labels.map(label => sizeValue(group, label)))));
+				for (const input of sizeInputs) {
+					const hidden = !offered.has(input.value);
+					input.closest<HTMLElement>(".choice")!.hidden = hidden;
+					if (hidden) input.checked = false;
+				}
+				for (const group of sizeGroups) group.hidden = ![...group.querySelectorAll<HTMLInputElement>("input")].some(input => offered.has(input.value));
+			};
 			const basePath = this.dataset.basePath!;
 			const links = [...this.closest(".catalog-page")!.querySelectorAll<HTMLAnchorElement>("[data-category]")];
 			let category: Category = "";
 			const restore = (defaultCategory: Category = "") => {
-				const state = parseFilters(location.search, { colors, categories: links.map(link=>link.dataset.category!), defaultCategory });
+				const state = parseFilters(location.search, { colors, sizes, categories: links.map(link=>link.dataset.category!), defaultCategory });
 				category = state.category;
-				for (const input of inputs) input.checked = input.name === "color" ? state.colors.includes(input.value) : state.available;
+				for (const input of inputs) input.checked = input.name === "color" ? state.colors.includes(input.value) : input.name === "talla" ? state.sizes.includes(input.value) : state.available;
 				sort.value = state.sort;
 			};
 			const apply = (historyMode: "replace" | "push" | "none" = "replace", animate = true) => {
-				const filters = { ...parseFilters(`?${new URLSearchParams(new FormData(form) as unknown as Record<string, string>)}`, { colors }), category };
+				scopeSizes();
+				const filters = { ...parseFilters(`?${new URLSearchParams(new FormData(form) as unknown as Record<string, string>)}`, { colors, sizes }), category };
 				const visible = sortItems(filterItems(items, filters), filters.sort);
 				const shown = new Set(visible.map(item => item.id));
 

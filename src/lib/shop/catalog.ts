@@ -1,8 +1,8 @@
 // One product catalog. Native taxonomy terms classify both pieces and bundles.
 import type { ShopContent, ShopEntry } from "./content.ts";
 import { productCard } from "./site.ts";
-import { orderSizes } from "./view.ts";
-import { filterItems, type CatalogItem } from "./filters.ts";
+import { orderSizes, SIZE_ORDER, type SizeCode } from "./view.ts";
+import { filterItems, sizeValue, type CatalogItem } from "./filters.ts";
 export * from "./filters.ts";
 type Lookups = Pick<ShopContent, "categories" | "collections" | "colors" | "materials" | "sizes" | "products">;
 const code = (entries: ShopEntry[], id: string | undefined, field = "code") => {
@@ -20,7 +20,7 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
   });
   // Colors are identified by their native slug, which is also the filter value.
   return { entry, color: shop.colors.find(color=>color.id===material?.refs.color?.[0])?.slug ?? null, collection: code(shop.collections,entry.refs.collection?.[0]),
-   sizes: orderSizes(sizes) };
+   category: code(shop.categories,category), sizes: orderSizes(sizes) };
  };
  const pieces = new Map(shop.products.filter(entry=>entry.data.bundle!==true).map(entry=>[entry.id,piece(entry)]));
  return shop.products.flatMap((entry): CatalogItem[] => {
@@ -46,6 +46,7 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
   return [{id:entry.id,slug:entry.slug,kind:bundle?'bundle':'pieza',category:category?String(category.data.code):null,categories,
    title:String(entry.data.title??''),price:Number(entry.data.price_cents??0),available,color,collection,
    sizes:bundle?orderSizes(included.flatMap(component=>component.sizes)):own.sizes,
+   sizesByCategory:Object.fromEntries((bundle?included:[own]).flatMap(part=>part.category?[[part.category,part.sizes]]:[])),
    card:{...productCard(entry),available,metadata},
   }];
  });
@@ -90,6 +91,16 @@ export const catalogView=(handle:string,shop:Pick<ShopContent,'categories'>)=>ca
 export function facetOptions(items:CatalogItem[],shop:Pick<ShopContent,'colors'>) {
  const colors=new Set(items.map(item=>item.color));
  return {colors:shop.colors.flatMap(entry=>colors.has(entry.slug)?[{slug:entry.slug,label:String(entry.data.title??entry.slug)}]:[])};
+}
+export type SizeGroup = { category:string; label:string; sizes:{ value:string; label:SizeCode }[] };
+/** One size group per category whose pieces offer sizes among these items, in category order. */
+export function sizeGroups(items:CatalogItem[],shop:Pick<ShopContent,'categories'>):SizeGroup[] {
+ return categoryOptions(shop.categories).flatMap(term=>{
+  const category=String(term.data.code);
+  const offered=new Set(items.flatMap(item=>item.sizesByCategory[category]??[]));
+  const sizes=SIZE_ORDER.filter(label=>offered.has(label)).map(label=>({value:sizeValue(category,label),label}));
+  return sizes.length?[{category,label:String(term.data.title??category),sizes}]:[];
+ });
 }
 export function featuredItem(shop:Lookups,id:string|undefined):CatalogItem|null {
  return buildCatalog(shop).find(item=>item.kind==='bundle'&&item.id===id)??null;

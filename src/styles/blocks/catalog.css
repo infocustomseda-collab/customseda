@@ -330,6 +330,9 @@
 		.category-tabs { --cluster-space: var(--space-l); }
 		.category-tabs__link { font-size: var(--step-2); }
 		.filters { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+		/* Filter groups stack on the left; availability stays at the end of the last row. */
+		.filters > .choice-group { grid-column: 1; }
+		.filters__availability { grid-column: 2; }
 	}
 }
 

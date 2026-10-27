@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {productDetail} from '../src/lib/shop/detail.ts';
-import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,featuredItem,categoryHref} from '../src/lib/shop/catalog.ts';
+import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,featuredItem,categoryHref,sizeGroups} from '../src/lib/shop/catalog.ts';
 
 const entry=(type,id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,gallery:[],...data},refs});
 const lookups={
@@ -81,8 +81,43 @@ test('filters combine color and availability, without size filtering',()=>{
  assert.deepEqual(slugs({colors:['rojo'],available:false}),['fuego','top-fuego','braguita-flow']);
  assert.deepEqual(slugs({colors:['caoba','rojo'],available:true}),['tierra','top-tierra','braguita-curve','top-fuego']);
  assert.deepEqual(slugs({colors:['rojo'],available:true}),['top-fuego']);
- // Old bookmarked size selections must not constrain the catalog invisibly.
+ // Old label-only size bookmarks have no category and are ignored.
  assert.equal(slugs({colors:[],sizes:['XS'],available:false}).length,6);
+});
+
+test('each item keeps its sizes per category; a Conjunto keeps each piece\'s',()=>{
+ const items=buildCatalog(shop);const by=slug=>items.find(i=>i.slug===slug);
+ assert.deepEqual(by('tierra').sizesByCategory,{top:['S','M','L'],braguita:['XS','S','M']});
+ assert.deepEqual(by('fuego').sizesByCategory,{top:['S','M','L','XL'],braguita:[]});
+ assert.deepEqual(by('top-tierra').sizesByCategory,{top:['S','M','L']});
+ assert.deepEqual(by('braguita-flow').sizesByCategory,{braguita:[]});
+});
+
+test('size filters: AND within a category; one category keeps its pieces and matching Conjuntos; two keep only Conjuntos',()=>{
+ const items=buildCatalog(shop);
+ const slugs=(sizes,more={})=>filterItems(items,{colors:[],available:false,sizes,...more}).map(i=>i.slug);
+ assert.deepEqual(slugs(['top-m']),['tierra','fuego','top-tierra','top-fuego']);
+ assert.deepEqual(slugs(['braguita-s']),['tierra','braguita-curve']);
+ // Both sizes must be offered by the same piece.
+ assert.deepEqual(slugs(['top-m','top-xl']),['fuego','top-fuego']);
+ assert.deepEqual(slugs(['top-m','braguita-s']),['tierra']);
+ assert.deepEqual(slugs(['top-xl','braguita-s']),[]);
+ // Combined with color and availability: Fuego is Agotado (Braguita Flow has no sizes).
+ assert.deepEqual(slugs(['top-m'],{colors:['rojo']}),['fuego','top-fuego']);
+ assert.deepEqual(slugs(['top-m'],{colors:['rojo'],available:true}),['top-fuego']);
+});
+
+test('size groups follow category order and list only sizes the items offer',()=>{
+ const items=buildCatalog(shop);
+ const values=groups=>groups.map(group=>[group.category,group.label,group.sizes.map(size=>`${size.value}:${size.label}`)]);
+ assert.deepEqual(values(sizeGroups(items,shop)),[
+  ['top','Top',['top-s:S','top-m:M','top-l:L','top-xl:XL']],
+  ['braguita','Braguita',['braguita-xs:XS','braguita-s:S','braguita-m:M']],
+ ]);
+ // A single-category view offers only that category's group.
+ assert.deepEqual(values(sizeGroups(items.filter(i=>i.category==='top'),shop)),[['top','Top',['top-s:S','top-m:M','top-l:L','top-xl:XL']]]);
+ // A category without sizes in the view has no group.
+ assert.deepEqual(sizeGroups(items.filter(i=>i.slug==='braguita-flow'),shop),[]);
 });
 
 test('sorting by price or name is stable and the default keeps catalog order',()=>{
@@ -94,9 +129,10 @@ test('sorting by price or name is stable and the default keeps catalog order',()
 });
 
 test('filters round-trip through the query string and ignore unknown values',()=>{
- const filters=parseFilters('?color=rojo&color=nada&talla=m&talla=XL&disponible=1&orden=precio-asc&x=1',{colors:['caoba','rojo']});
- assert.deepEqual(filters,{category:'',colors:['rojo'],available:true,sort:'precio-asc'});
- assert.equal(filtersQuery(filters),'?color=rojo&disponible=1&orden=precio-asc');
+ const filters=parseFilters('?color=rojo&color=nada&talla=m&talla=top-m&talla=top-m&talla=braguita-xl&disponible=1&orden=precio-asc&x=1',{colors:['caoba','rojo'],sizes:['top-m','braguita-s']});
+ assert.deepEqual(filters,{category:'',colors:['rojo'],sizes:['top-m'],available:true,sort:'precio-asc'});
+ assert.equal(filtersQuery(filters),'?color=rojo&talla=top-m&disponible=1&orden=precio-asc');
+ assert.deepEqual(parseFilters('?talla=top-m',{colors:[]}).sizes,[]);
  assert.equal(filtersQuery({colors:[],available:false,sort:'destacados'}),'');
  assert.equal(parseFilters('?orden=raro',{colors:[]}).sort,'destacados');
 });
@@ -105,7 +141,6 @@ test('facet options list only values present in the view, in lookup order',()=>{
  const items=buildCatalog(shop);
  const facets=facetOptions(items.filter(i=>i.category==='top'),shop);
  assert.deepEqual(facets.colors,[{slug:'caoba',label:'Caoba'},{slug:'rojo',label:'Rojo'}]);
- assert.equal(facets.sizes,undefined);
 });
 
 test('the featured Conjunto resolves through catalog rules and disappears without a component',()=>{
