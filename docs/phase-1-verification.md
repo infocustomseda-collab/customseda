@@ -58,7 +58,7 @@ Both D1 databases had all **90 core migrations applied through the CLI**, with z
 
 ## Decisions
 
-- Stay on `master`, honoring the user's explicit preference.
+- The initial master-only working preference was retired at the user's request on 2026-10-27; work follows the selected feature branch.
 - Keep the official starter's temporary Posts/Pages instead of implementing phase 2's shop schema early.
 - Keep runtime image transformations disabled until the build-time media pipeline is implemented; no Cloudflare Images usage is required by this foundation.
 - Use separate ignored, owner-readable secret files for local/staging/production. Protect unclaimed setup with HTTP Basic in addition to normal CMS authentication.

@@ -52,7 +52,7 @@ One maker cuts and sews each piece in Canarias after it is ordered ("hecho con m
 
 ## Evidence on Hand
 
-- Imported Shopify catalog (local drafts): 11 Products, 5 Conjuntos, 7 Pages, a size guide, with original photography in local R2. See `docs/import/`.
+- Local catalog (drafts): 11 Products, 5 Conjuntos, 7 Pages and a size guide. Original photography is in local R2 and `assets/originals/`; see `docs/content-maintenance.md`.
 - Product and lifestyle photography: Atlantic beach, sea and sky, with models wearing the pieces.
 - No testimonials, reviews, press, sales figures or customer counts exist in the repo. Do not invent them.
 

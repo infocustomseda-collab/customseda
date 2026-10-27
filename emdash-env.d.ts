@@ -15,8 +15,6 @@ export interface Product {
   gallery?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "focal_x"?: number | null; "focal_y"?: number | null }[];
   price_cents: number;
   available?: boolean;
-  shopify_id?: string;
-  shopify_source?: unknown;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -35,8 +33,6 @@ export interface Conjunto {
   gallery?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "focal_x"?: number | null; "focal_y"?: number | null }[];
   price_cents: number;
   available?: boolean;
-  shopify_id?: string;
-  shopify_source?: unknown;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -67,7 +63,6 @@ export interface Collection {
   code: string;
   description?: PortableTextBlock[];
   image?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } };
-  shopify_source?: unknown;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -98,7 +93,6 @@ export interface Color {
   title: string;
   code: string;
   hex?: string;
-  shopify_source?: unknown;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -113,7 +107,6 @@ export interface SizeGuide {
   status: string;
   title: string;
   content?: PortableTextBlock[];
-  shopify_source?: unknown;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -137,7 +130,6 @@ export interface SiteSetting {
   contact_email?: string;
   instagram_url?: string;
   production_text?: PortableTextBlock[];
-  shopify_source?: unknown;
   slideshow?: { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "alt": string; "focal_x"?: number | null; "focal_y"?: number | null }[];
   intro_title?: string;
   intro_text?: PortableTextBlock[];
@@ -199,7 +191,6 @@ export interface Page {
   status: string;
   title: string;
   content?: PortableTextBlock[];
-  shopify_source?: unknown;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;

@@ -241,32 +241,9 @@
   - Check one product page in Chrome DevTools MCP (isolated profile) for the image requests and LCP.
 - [ ] **Step 5: Commit** `feat: build-time responsive image derivatives`.
 
-### Task 8: Import the Shopify catalog into staging
+### Task 8: Transfer the approved catalog to staging (phase 7)
 
-**Files:**
-- Create: `scripts/import/shopify-remote.mjs`, `scripts/import/remote-runtime.mjs`
-- Modify: `package.json` (`import:shopify:staging`), `docs/import/shopify-local-import.md` (staging section)
-- Test: `tests/shopify-remote.test.mjs`
-
-**Interfaces:**
-- Consumes: `buildCatalogPlan`, `assertShopifyAsset` and `verifyUploadedMedia` (`scripts/import/shopify-plan.mjs`); `applyShopifySourceSchema` and `importShopifyDraft` (`src/lib/cms/shopify-import.ts`); `createCatalogPolicy` (`src/lib/cms/policy.ts`); EmDash `handleContentCreate`, `handleMediaCreate` and `handleContentPublish`; the cached originals in `backups/shopify-import-local` when present.
-- Produces:
-  - `openRemoteRuntime(environment: "staging"): Promise<{ runtime, db, media, dispose }>`. It runs `EmDashRuntime` in Node on the remote D1 (`CatalogD1Dialect`) and R2 (`openBindings`) with the catalog policy plugin, following `tests/helpers/catalog.mjs`. It refuses `production`.
-  - `pnpm import:shopify:staging --dry-run|--apply [--publish]`:
-    - the dry run prints the planned creates, skips and uploads;
-    - `--apply` creates missing media and drafts idempotently by slug and storage hash, applies the storefront fields, homepage settings, popup, menus and shipping rules from `scripts/cms/storefront-content.mjs`;
-    - `--publish` publishes in dependency order: lookups, products, Conjuntos, pages, size guides, site settings, popups, shipping rules (Canarias, Península, pickup; EU stays disabled), each through `handleContentPublish` so the catalog policies run.
-- If `EmDashRuntime` cannot run against the remote binding, stop and report the blocker. Do not fall back to SQL dumps or copying the local database.
-
-- [ ] **Step 1: Write the failing test** `remote import refuses production and plans idempotently`: `openRemoteRuntime('production')` rejects, and the plan builder run twice against a fixture database reports zero creates the second time (in-memory SQLite via the same runtime factory with an injected dialect).
-- [ ] **Step 2:** Run it. Expected: FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run `pnpm test`. Expected: PASS.
-- [ ] **Step 5: Remote run** (authorized for staging by the spec):
-  - `pnpm import:shopify:staging --dry-run` and review the counts against [docs/import/shopify-local-import.md](../../import/shopify-local-import.md): 16 products and Conjuntos (5 Conjuntos, 5 Tops, 6 Braguitas).
-  - `--apply`, then `--apply --publish`.
-  - `pnpm snapshot --env staging` prints the matching counts.
-- [ ] **Step 6: Commit** `feat: import the Shopify catalog into staging`.
+The completed source importer, raw inventory and source ID fields were retired on 2026-10-27. Its former staging-import proposal is superseded. Phase 7 must design an explicit content/media transfer from the approved EmDash catalog and `assets/originals/`, with validation and reconciliation, before any remote write. Never copy the whole local database or recreate source metadata. See [content maintenance](../../content-maintenance.md).
 
 ### Task 9: Cross-document view transitions
 

@@ -14,7 +14,7 @@ export type ShopSnapshot = {
 	menus: { primary: Menu; footer: Menu };
 };
 
-// Public paths of referenced content; the CMS url_pattern values predate the retained Shopify paths.
+// Public paths of referenced content; the CMS url_pattern values predate the existing public paths.
 const PUBLIC_PATHS: Record<string, string> = { products: "/products/", conjuntos: "/products/", pages: "/pages/", collections: "/collections/" };
 
 type ItemRow = { id: string; sort_order: number; type: string; custom_url: string | null; reference_collection: string | null; reference_id: string | null; label: string; title_attr: string | null; target: string | null; css_classes: string | null };
