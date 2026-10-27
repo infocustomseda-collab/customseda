@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { siteMode, canPreviewDrafts, draftsVisible } from '../src/lib/site-mode.ts';
+import { siteMode, canPreviewDrafts, draftsVisible, registersServiceWorker } from '../src/lib/site-mode.ts';
 
 test('dev runtime wins over the configured mode', () => {
   assert.equal(siteMode(true, 'preview'), 'dev');
@@ -21,4 +21,11 @@ test('drafts are visible only in dev, or in preview for editors or preview-token
   assert.equal(draftsVisible('preview', { editor: true, previewToken: false }), true);
   assert.equal(draftsVisible('preview', { editor: false, previewToken: true }), true);
   assert.equal(draftsVisible('dev', { editor: false, previewToken: false }), true);
+});
+
+test('service worker registers only in public production builds', () => {
+  assert.equal(registersServiceWorker('preview', true), false);
+  assert.equal(registersServiceWorker('public', true), true);
+  assert.equal(registersServiceWorker('dev', false), false);
+  assert.equal(registersServiceWorker('public', false), false);
 });

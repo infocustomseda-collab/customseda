@@ -17,3 +17,8 @@ export function draftsVisible(mode: SiteMode, access: { editor: boolean; preview
   if (mode === 'preview') return access.editor || access.previewToken;
   return false;
 }
+
+/** The service worker (and its update banner) ships only with deployed public builds, never preview. */
+export function registersServiceWorker(mode: SiteMode, isProd: boolean): boolean {
+  return isProd && mode !== 'preview';
+}
