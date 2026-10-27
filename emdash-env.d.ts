@@ -45,8 +45,8 @@ export interface Size {
   slug: string | null;
   status: string;
   title: string;
-  code: string;
   sort_order?: number;
+  label: string;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -60,8 +60,21 @@ export interface Color {
   slug: string | null;
   status: string;
   title: string;
-  code: string;
   hex?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Material {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  special_edition?: boolean;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -186,10 +199,14 @@ export interface Post {
 
 export interface ProductReferences {
   collection: ReferencePage<Collection>;
-  color: ReferencePage<Color>;
-  sizes: ReferencePage<Size>;
   size_guide: ReferencePage<SizeGuide>;
   components: ReferencePage<Product>;
+  material: ReferencePage<Material>;
+}
+
+export interface MaterialReferences {
+  color: ReferencePage<Color>;
+  sizes: ReferencePage<Size>;
 }
 
 export interface SiteSettingReferences {
@@ -202,6 +219,7 @@ declare module "emdash" {
     collections: Collection;
     sizes: Size;
     colors: Color;
+    materials: Material;
     pages: Page;
     size_guides: SizeGuide;
     site_settings: SiteSetting;
@@ -211,6 +229,7 @@ declare module "emdash" {
   }
   interface EmDashCollectionReferences {
     products: ProductReferences;
+    materials: MaterialReferences;
     site_settings: SiteSettingReferences;
   }
 }

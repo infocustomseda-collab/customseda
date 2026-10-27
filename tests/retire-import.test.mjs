@@ -41,7 +41,8 @@ test('model removes retired fields, revision metadata and mappings while preserv
  assert.equal(await options.get('customseda.shopify-source.v1'),null);
  assert.deepEqual(await options.get('merchant-option'),{keep:true});
  assert.deepEqual(await db.selectFrom('taxonomies').selectAll().execute(),before);
- assert.equal((await schema.getField('products','sizes')).required,false);
+ // Product sizes now come from the material; the current model has no product sizes field to relax.
+ assert.equal(await schema.getField('products','sizes'),null);
  assert.ok((await applyModelMigrations(db)).every(r=>!r.applied));
 });
 

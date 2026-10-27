@@ -1,13 +1,10 @@
 ---
-// Catalog listings at existing public paths: /collections/bikinis (Mujeres), conjuntos, top, braguitas,
-// and one view per CMS collection (e.g. margarita).
+// Catalog listings at existing public paths: /collections/bikinis (Mujeres), conjuntos, top, braguitas.
 import CatalogBrowser from "../../components/CatalogBrowser.astro";
-import RichText from "../../components/RichText.astro";
 import Shop from "../../layouts/Shop.astro";
 import { buildCatalog, catalogView, catalogCategories, facetOptions } from "../../lib/shop/catalog";
 import { loadShopContent, loadShopPage } from "../../lib/shop/page";
 import { collectionPaths } from "../../lib/shop/paths";
-import { plainText } from "../../lib/shop/site";
 
 export const prerender = true;
 export async function getStaticPaths() {
@@ -26,11 +23,10 @@ const facets = facetOptions(items, shop);
 const tabs = [{category:'',label:'Todo'},...catalogCategories(listing, shop.categories).map(term=>({category:term.slug,label:String(term.data.title??term.slug)}))];
 ---
 
-<Shop title={listing.title} description={plainText(listing.description) || `${listing.title} de Seda`} site={site}>
+<Shop title={listing.title} description={`${listing.title} de Seda`} site={site}>
 	<div class="catalog-page wrapper region stack" style="--stack-space: var(--space-m-l)">
 		<header class="catalog-page__header stack" style="--stack-space: var(--space-s)">
 			<h1>{listing.title}</h1>
-			<RichText value={listing.description} />
 			<nav aria-label="Categorías">
 				<ul class="cluster category-tabs" role="list">
 					{tabs.map((tab) => (

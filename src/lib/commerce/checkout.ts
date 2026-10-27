@@ -1,7 +1,7 @@
 // Buy-now checkout: one product or Conjunto per Stripe Checkout Session. Prices, availability and
 // sizes come from the database, never from the form; the form's price only detects a stale page.
 import { buildCatalog } from "../shop/catalog.ts";
-import type { ShopContent } from "../shop/content.ts";
+import type { ShopContent, ShopType } from "../shop/content.ts";
 import { shippingCost, shippingRules, type ShippingRule } from "./shipping.ts";
 
 export const MAX_QUANTITY = 10;
@@ -43,7 +43,9 @@ export type Quote =
 	  }
 	| { ok: false; error: CheckoutError };
 
-type QuoteShop = Pick<ShopContent, "categories" | "collections" | "colors" | "sizes" | "products" | "shipping_rules">;
+/** Content a quote reads; the checkout route loads exactly these (categories always load). */
+export const QUOTE_TYPES = ["collections", "colors", "materials", "sizes", "products", "shipping_rules"] as const satisfies readonly ShopType[];
+type QuoteShop = Pick<ShopContent, "categories" | (typeof QUOTE_TYPES)[number]>;
 
 export function quoteOrder(shop: QuoteShop, order: Order): Quote {
 	const items = buildCatalog(shop);

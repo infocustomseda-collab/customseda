@@ -8,8 +8,9 @@ export type CatalogEntry = {
  group?: string;
 };
 export type CatalogEntries = ReadonlyMap<string, CatalogEntry>;
-export const catalogTypes = new Set(['products','collections','colors','sizes','size_guides','site_settings','popups','shipping_rules']);
-export const sizeCodes = ['XS','S','M','L','XL'];
+export const catalogTypes = new Set(['products','collections','colors','materials','sizes','size_guides','site_settings','popups','shipping_rules']);
+/** Shopper-facing size labels. Each size record belongs to one category; its code stays unique. */
+export const sizeLabels = ['XS','S','M','L','XL'];
 export function mainImage(gallery: unknown): Record<string, unknown> | null {
  if (!Array.isArray(gallery)) return null;
  return gallery[0]?.image ?? null;
@@ -18,7 +19,9 @@ export function bundleAvailable(bundle: CatalogEntry, ...components: CatalogEntr
  return [bundle,...components].every(e => e.status === 'published' && e.data.available !== false);
 }
 const money = (n: unknown) => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
-export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntries, {publish=false,references=true}: {publish?:boolean;references?:boolean}={}): string[] {
+// materials: the material rules (one material, pieces in the conjunto's material). Off when a conjunto is
+// re-checked because one of its pieces changed: edits to a piece never block on its conjunto's material.
+export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntries, {publish=false,references=true,materials=true}: {publish?:boolean;references?:boolean;materials?:boolean}={}): string[] {
  const errors: string[]=[];
  const {type,data,refs}=entry;
  const fail=(message:string)=>errors.push(message);
@@ -32,7 +35,9 @@ export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntrie
    return [value];
   });
  };
- if(type==='sizes' && !sizeCodes.includes(String(data.code))) fail('Talla: el código debe ser XS, S, M, L o XL.');
+ if(type==='sizes' && !sizeLabels.includes(String(data.label))) fail('Talla: la etiqueta debe ser XS, S, M, L o XL.');
+ // Category assignments are edited after a draft is created, as for products.
+ if(type==='sizes' && references && publish) ref('category','category');
  if(type==='products') {
   if(data.bundle!==undefined && typeof data.bundle!=='boolean') fail('Bundle product: usa Sí o No.');
   if((publish || data.price_cents!==undefined) && !money(data.price_cents)) fail('El precio debe ser un entero en céntimos EUR, mayor o igual a cero.');
@@ -54,19 +59,25 @@ export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntrie
   // Publication requires exactly one category, independent of bundle behavior.
   if(publish) ref('category','category');
   if(refs.size_guide?.length) ref('size_guide','size_guides');
+  // Color and sizes come from the material; drafts may omit it.
+  if(materials && (publish || refs.material?.length)) ref('material','materials');
   if(data.bundle===true) {
    const components=ref('components','products',true);
    if((refs.components?.length??0)<2) fail('Un conjunto necesita al menos dos productos diferentes.');
    for(const component of components) {
     if(component.id===entry.id || component.data.bundle===true) fail('Los productos incluidos deben ser productos individuales; no se permiten conjuntos anidados.');
+    if(publish && materials && (!component.refs.material?.length || component.refs.material[0]!==refs.material?.[0])) fail(`Las piezas del conjunto deben usar el material del conjunto («${component.data.title??component.id}»).`);
    }
   } else {
    if(refs.components?.length) fail('Activa Bundle product para seleccionar productos incluidos.');
-   ref('collection','collections');ref('color','colors');
-   const sizes=ref('sizes','sizes',true);
-   const category=entries.get(refs.category?.[0]??'');
-   if(category?.data.code==='top' && sizes.some(s=>s.data.code==='XS')) fail('Top admite tallas S, M, L y XL; XS solo está disponible para Braguita.');
+   ref('collection','collections');
   }
+ }
+ if(type==='materials') {
+  if(data.special_edition!==undefined && typeof data.special_edition!=='boolean') fail('Edición especial: usa Sí o No.');
+  // Drafts may be incomplete; publication needs exactly one color. Disponibilidad is optional.
+  if(references && (publish || refs.color?.length)) ref('color','colors');
+  if(references && refs.sizes?.length) ref('sizes','sizes',true);
  }
  if(type==='popups') {
   const start=data.starts_at,end=data.ends_at;

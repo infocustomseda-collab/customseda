@@ -4,8 +4,11 @@ import { catalogTypes, validateCatalogEntry, type CatalogEntry } from './catalog
 
 export type CatalogDb = Kysely<Database>;
 const targets: Record<string, Record<string,string>> = {
- products:{collection:'collections',color:'colors',sizes:'sizes',size_guide:'size_guides',components:'products'},
+ products:{collection:'collections',material:'materials',size_guide:'size_guides',components:'products'},
+ materials:{color:'colors',sizes:'sizes'},
 };
+// Collections whose entries carry one native category term.
+const categorized=new Set(['products','sizes']);
 export type CatalogWrite = {data?:Record<string,unknown>;references?:Record<string,string[]>;slug?:string|null};
 export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=true):Promise<CatalogEntry|null> {
  if(type==='category') {
@@ -23,7 +26,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
   data={...data,...Object.fromEntries(Object.entries(revision.data).filter(([key])=>!key.startsWith('_')))};
   staged=(revision.data._references??{}) as Record<string,unknown>;
  }
- for(const field of ['available','bundle']) if(data[field]===0 || data[field]===1) data[field]=Boolean(data[field]);
+ for(const field of ['available','bundle','special_edition']) if(data[field]===0 || data[field]===1) data[field]=Boolean(data[field]);
  const refs:Record<string,string[]>={};
  const selections=Object.entries(targets[type]??{}).map(([field,target])=>{
   refs[field]=[];
@@ -35,7 +38,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
        WHERE rel.slug=${`${type}_${field}`} AND e.parent_group=${item.translationGroup??item.id}
        AND e.child_group=child.translation_group)`;
   // The model defines only parent-side references. A UNION has at most five
-  // terms (Products' five fields), matching D1's compound SELECT limit.
+  // terms (Products have four fields), matching D1's compound SELECT limit.
   return sql<{field:string;id:string}>`SELECT ${field} AS field, child.id
    FROM ${sql.table(`ec_${target}`)} child WHERE child.deleted_at IS NULL
     AND ${draft?sql`1=1`:sql`child.status='published'`} AND ${membership}`;
@@ -45,7 +48,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
   for(const row of result.rows) refs[row.field]!.push(row.id);
  }
 
- if(type==='products') refs.category=[...new Set((await db.selectFrom('content_taxonomies as ct').innerJoin('taxonomies as t','t.translation_group','ct.taxonomy_id').select('ct.taxonomy_id').where('ct.collection','=','products').where('ct.entry_id','=',item.translationGroup??item.id).where('t.name','=','category').execute()).map(term=>term.taxonomy_id))];
+ if(categorized.has(type)) refs.category=[...new Set((await db.selectFrom('content_taxonomies as ct').innerJoin('taxonomies as t','t.translation_group','ct.taxonomy_id').select('ct.taxonomy_id').where('ct.collection','=',type).where('ct.entry_id','=',item.translationGroup??item.id).where('t.name','=','category').execute()).map(term=>term.taxonomy_id))];
  return {id:item.id,type,status:item.status,data,refs,group:item.translationGroup??item.id};
 }
 
@@ -56,7 +59,7 @@ async function loadGraph(db:CatalogDb,root:CatalogEntry,draftRelated=false,read:
  const pending=[root];
  while(pending.length) {
   const entry=pending.shift()!;
-  for(const [field,type] of Object.entries(entry.type==='products'?{...targets.products,category:'category'}:targets[entry.type]??{})) {
+  for(const [field,type] of Object.entries(categorized.has(entry.type)?{...targets[entry.type],category:'category'}:targets[entry.type]??{})) {
    for(const id of entry.refs[field]??[]) {
     if(entries.has(id)) continue;
     const related=await read(type,id,draftRelated);
@@ -108,10 +111,12 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
  const filtered=errors;
  if(existing) {
   const dependents=await catalogDependents(db,existing);
-  if(['collections','colors','sizes'].includes(type)) {
+  if(type==='collections' && dependents.length) {
    const live=await read(type,existing.id,false);
-   if(live && live.data.code!==candidate.data.code && (type==='sizes'||dependents.length)) filtered.push('El código es estable y no se puede cambiar mientras esté en uso.');
+   if(live && live.data.code!==candidate.data.code) filtered.push('El código es estable y no se puede cambiar mientras esté en uso.');
   }
+  // Products validate their sizes against their own category; keep used sizes in theirs.
+  if(type==='sizes' && dependents.length && String(existing.refs.category??[])!==String(candidate.refs.category??[])) filtered.push('La categoría de una talla en uso no se puede cambiar; crea una talla nueva para la otra categoría.');
   if(type==='products' && checkReferences) for(const dep of dependents) {
    // Validate both live and staged bundle selections against the proposed component.
    for(const draft of [false,true]) {
@@ -124,7 +129,7 @@ export async function validateCatalogWrite(db:CatalogDb,type:string,id:string|un
     related.set(candidate.id,candidate);
     // Candidate may point at a different category/collection/color; load those too.
     for(const [key,value] of graph) related.set(key,value);
-    const failures=validateCatalogEntry(bundle,related,{publish:!draft&&bundle.status==='published'});
+    const failures=validateCatalogEntry(bundle,related,{publish:!draft&&bundle.status==='published',materials:false});
     if(failures.length) filtered.push(`El cambio rompería el conjunto «${bundle.data.title??bundle.id}»: ${failures[0]}`);
    }
   }

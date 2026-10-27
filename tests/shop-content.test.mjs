@@ -11,7 +11,11 @@ test('production reads published entries with live values and resolved reference
  assert.deepEqual(shop.products.map(e=>e.slug).sort(),['bottom-test','top-test']);
  const top=shop.products.find(p=>p.slug==='top-test');
  assert.deepEqual(top.refs.category,[f.lookups.top]);
- assert.deepEqual(top.refs.sizes.sort(),[f.lookups.S,f.lookups.M].sort());
+ assert.deepEqual(top.refs.material,[f.materialId]);
+ // Materials resolve their sizes, and sizes carry their category for the product page filter.
+ const material=shop.materials.find(m=>m.id===f.materialId);
+ assert.ok(material.refs.sizes.includes(f.lookups['top-s']));assert.deepEqual(material.refs.color,[f.colorId]);
+ assert.deepEqual(shop.sizes.find(size=>size.id===f.lookups['top-s']).refs.category,[f.lookups.top]);
  assert.equal(top.data.price_cents,5000);
 
  const edit=await f.runtime.handleContentUpdate('products',f.top,{data:{title:'Top editado'}});
@@ -53,4 +57,17 @@ test('boolean fields read back as booleans whether stored on the row or in a rev
  assert.equal(shop.popups[0].data.enabled,true);
  assert.equal(shop.site_settings[0].data.announcement_enabled,true);
  assert.equal(shop.products[0].data.available,true);
+});
+
+test('checkout loads every type a quote needs, so a published piece can be ordered',async t=>{
+ const f=await fixture(t);
+ const {QUOTE_TYPES,parseOrder,quoteOrder}=await import('../src/lib/commerce/checkout.ts');
+ const rule=await f.runtime.handleContentCreate('shipping_rules',{slug:'recogida',data:{title:'Recogida',enabled:true,zone:'pickup',price_cents:0}});
+ assert.equal(rule.success,true,JSON.stringify(rule));
+ assert.equal((await f.runtime.handleContentPublish('shipping_rules',rule.data.item.id)).success,true);
+ const shop=await loadShop(f.db,{drafts:false,only:[...QUOTE_TYPES]});
+ const form=new FormData();
+ for(const [key,value] of Object.entries({id:f.top,talla:'S',quantity:'1',price:'5000',shipping:rule.data.item.id})) form.set(key,value);
+ const quote=quoteOrder(shop,parseOrder(form));
+ assert.equal(quote.ok,true,JSON.stringify(quote));
 });

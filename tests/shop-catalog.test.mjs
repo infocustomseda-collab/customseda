@@ -1,26 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {productDetail} from '../src/lib/shop/detail.ts';
 import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,featuredItem,categoryHref} from '../src/lib/shop/catalog.ts';
 
 const entry=(type,id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
 const lookups={
  categories:[entry('categories','women',{code:'mujeres',title:'Mujeres'}),entry('categories','cat-top',{code:'top',title:'Top'}),entry('categories','cat-bottom',{code:'braguita',title:'Braguita'}),entry('categories','cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code,data:{...term.data,parent:term.id==='women'?null:'women'}})),
  collections:[entry('collections','col-m',{code:'margarita',title:'Margarita'})],
- colors:[entry('colors','c-caoba',{code:'caoba',title:'Caoba'}),entry('colors','c-rojo',{code:'rojo',title:'Rojo'})],
- sizes:['XS','S','M','L','XL'].map((code,i)=>entry('sizes',`s-${code}`,{code,sort_order:i})),
+ // Colors are identified by slug; the ID differs to show the slug is what the shop reads.
+ colors:[{...entry('colors','c-caoba',{title:'Caoba'}),slug:'caoba'},{...entry('colors','c-rojo',{title:'Rojo'}),slug:'rojo'}],
+ // Each size belongs to one category.
+ sizes:[...['S','M','L','XL'].map((label,i)=>entry('sizes',`t-${label}`,{label,sort_order:i+1},{category:['cat-top']})),
+  ...['XS','S','M','L','XL'].map((label,i)=>entry('sizes',`b-${label}`,{label,sort_order:i},{category:['cat-bottom']}))],
+ // Products take color and sizes from their material. Rojo has no braguita sizes left.
+ materials:[entry('materials','m-caoba',{},{color:['c-caoba'],sizes:['t-S','t-M','t-L','b-XS','b-S','b-M']}),
+  entry('materials','m-rojo',{},{color:['c-rojo'],sizes:['t-S','t-M','t-L','t-XL']})],
 };
-const piece=(id,cat,color,sizes,data={})=>entry('products',id,data,{category:[cat],collection:['col-m'],color:[color],sizes:sizes.map(s=>`s-${s}`)});
+const piece=(id,cat,material,data={})=>entry('products',id,data,{category:[cat],collection:['col-m'],material:[material]});
 const shop={
  ...lookups,site_settings:[],pages:[],size_guides:[],popups:[],
  products:[
-  entry('products','tierra',{bundle:true,price_cents:5000},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),
-  entry('products','fuego',{bundle:true,price_cents:5500},{category:['cat-sets'],components:['top-fuego','braguita-flow']}),
-  entry('products','huerfano',{bundle:true,price_cents:5000},{category:['cat-sets'],components:['missing','braguita-curve']}),
+  entry('products','tierra',{bundle:true,price_cents:5000},{category:['cat-sets'],material:['m-caoba'],components:['top-tierra','braguita-curve']}),
+  entry('products','fuego',{bundle:true,price_cents:5500},{category:['cat-sets'],material:['m-rojo'],components:['top-fuego','braguita-flow']}),
+  entry('products','huerfano',{bundle:true,price_cents:5000},{category:['cat-sets'],material:['m-caoba'],components:['missing','braguita-curve']}),
 
-  piece('top-tierra','cat-top','c-caoba',['S','M','L'],{price_cents:3000}),
-  piece('braguita-curve','cat-bottom','c-caoba',['XS','S','M'],{price_cents:2600}),
-  piece('top-fuego','cat-top','c-rojo',['S','M','L','XL'],{price_cents:3200,available:false}),
-  piece('braguita-flow','cat-bottom','c-rojo',[],{price_cents:2600}),
+  piece('top-tierra','cat-top','m-caoba',{price_cents:3000}),
+  piece('braguita-curve','cat-bottom','m-caoba',{price_cents:2600}),
+  piece('top-fuego','cat-top','m-rojo',{price_cents:3200,available:false}),
+  piece('braguita-flow','cat-bottom','m-rojo',{price_cents:2600}),
  ],
 };
 
@@ -37,16 +44,31 @@ test('catalog combines pieces and complete Conjuntos with derived color, sizes a
  assert.equal(items.find(i=>i.slug==='braguita-curve').category,'braguita');
 });
 
-test('views cover the combined catalog, categories and collections; unknown handles are absent',()=>{
+test('sizes come from the material, limited to the product category',()=>{
+ // m-caoba offers Top S, M, L and Braguita XS, S, M.
+ const items=buildCatalog(shop);const by=slug=>items.find(i=>i.slug===slug);
+ assert.deepEqual(by('top-tierra').sizes,['S','M','L']);
+ assert.deepEqual(by('braguita-curve').sizes,['XS','S','M']);
+ assert.equal(by('top-tierra').color,'caoba');
+ assert.equal(by('tierra').color,'caoba');
+});
+
+test('a material without sizes for the category leaves the piece unbuyable',()=>{
+ // braguita-flow uses m-rojo, whose sizes are all Top sizes
+ assert.deepEqual(buildCatalog(shop).find(i=>i.slug==='braguita-flow').sizes,[]);
+ assert.equal(productDetail(shop,'braguita-flow').purchasable,false);
+});
+
+test('views cover the combined catalog and categories; collections and unknown handles are absent',()=>{
  const items=buildCatalog(shop);
  const slugs=handle=>catalogView(handle,shop).items(items).map(i=>i.slug);
  assert.equal(slugs('bikinis').length,6);
  assert.deepEqual(slugs('conjuntos'),['tierra','fuego']);
  assert.deepEqual(slugs('top'),['top-tierra','top-fuego']);
  assert.deepEqual(slugs('braguita'),['braguita-curve','braguita-flow']);
- assert.equal(slugs('margarita').length,6);
+ assert.equal(catalogView('margarita',shop),null);
  assert.equal(catalogView('gran-canaria',shop),null);
- assert.deepEqual(catalogViews(shop).map(v=>v.handle),['bikinis','mujeres','top','braguita','conjuntos','margarita','braguitas']);
+ assert.deepEqual(catalogViews(shop).map(v=>v.handle),['bikinis','mujeres','top','braguita','conjuntos','braguitas']);
  assert.equal(catalogView('top',shop).title,'Top');
 });
 
@@ -79,7 +101,7 @@ test('filters round-trip through the query string and ignore unknown values',()=
 test('facet options list only values present in the view, in lookup order',()=>{
  const items=buildCatalog(shop);
  const facets=facetOptions(items.filter(i=>i.category==='top'),shop);
- assert.deepEqual(facets.colors,[{code:'caoba',label:'Caoba'},{code:'rojo',label:'Rojo'}]);
+ assert.deepEqual(facets.colors,[{slug:'caoba',label:'Caoba'},{slug:'rojo',label:'Rojo'}]);
  assert.equal(facets.sizes,undefined);
 });
 

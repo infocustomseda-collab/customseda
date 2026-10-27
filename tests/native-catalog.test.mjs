@@ -7,8 +7,12 @@ import {parseOrder,quoteOrder,orderMetadata} from '../src/lib/commerce/checkout.
 const entry=(id,data={},refs={})=>({id,slug:id,type:'products',status:'published',data:{title:id,price_cents:3000,available:true,gallery:[{image:{id:'photo'},alt:id}],...data},refs});
 const category=(id,slug,parent=null)=>({...entry(id,{title:slug,code:slug,parent}),type:'category',slug});
 const categories=[category('women','mujeres'),category('top','top','women'),category('bottom','braguita','women'),category('sets','conjuntos','women'),category('men','hombres'),category('swim','banador','men')];
-const products=[entry('a',{}, {category:['top'],color:['red'],collection:['col'],sizes:['s']}),entry('b',{}, {category:['bottom'],color:['blue'],collection:['col'],sizes:['s']}),entry('c',{}, {category:['swim'],color:['red'],collection:['col'],sizes:['s']}),entry('set',{bundle:true,price_cents:8000},{category:['sets'],components:['a','b','c'],collection:['col'],color:[]})];
-const shop={categories,products,collections:[entry('col',{code:'margarita'})],colors:[entry('red',{code:'red'}),entry('blue',{code:'blue'})],sizes:[entry('s',{code:'S'})],shipping_rules:[entry('pickup',{enabled:true,zone:'pickup',price_cents:0})]};
+// One material offers S in each piece's category; the conjunto uses the same material.
+const products=[entry('a',{}, {category:['top'],material:['m'],collection:['col']}),entry('b',{}, {category:['bottom'],material:['m'],collection:['col']}),entry('c',{}, {category:['swim'],material:['m'],collection:['col']}),entry('set',{bundle:true,price_cents:8000},{category:['sets'],material:['m'],components:['a','b','c'],collection:['col']})];
+const sizes=['top','bottom','swim'].map(cat=>({...entry(`s-${cat}`,{label:'S'},{category:[cat]}),type:'sizes'}));
+const shop={categories,products,collections:[entry('col',{code:'margarita'})],colors:[entry('red'),entry('blue')],sizes,
+ materials:[{...entry('m',{},{color:['red'],sizes:sizes.map(size=>size.id)}),type:'materials'},{...entry('other',{},{color:['blue'],sizes:[]}),type:'materials'}],
+ shipping_rules:[entry('pickup',{enabled:true,zone:'pickup',price_cents:0})]};
 test('schema uses native hierarchical category and a single products collection with components',()=>{
  assert.ok(!seed.collections.some(c=>['categories','conjuntos'].includes(c.slug)));
  const product=seed.collections.find(c=>c.slug==='products');
@@ -16,12 +20,15 @@ test('schema uses native hierarchical category and a single products collection 
  assert.equal(product.fields.find(f=>f.slug==='bundle').type,'boolean');
  assert.equal(product.fields.find(f=>f.slug==='components').validation.targetCollection,'products');
  const taxonomy=seed.taxonomies.find(t=>t.name==='category');
- assert.equal(taxonomy.hierarchical,true);assert.deepEqual(taxonomy.collections,['products']);
+ assert.equal(taxonomy.hierarchical,true);assert.deepEqual(taxonomy.collections,['products','sizes']);
  assert.equal(taxonomy.terms.find(t=>t.slug==='banador').parent,'hombres');
 });
-test('bundles accept more than two ordinary products with different colors',()=>{
- const graph=new Map([...categories,...shop.collections.map(e=>({...e,type:'collections'})),...shop.colors.map(e=>({...e,type:'colors'})),...shop.sizes.map(e=>({...e,type:'sizes'})),...products].map(e=>[e.id,e]));
+test('bundles accept more than two ordinary products in the conjunto material',()=>{
+ const graph=new Map([...categories,...shop.collections.map(e=>({...e,type:'collections'})),...shop.colors.map(e=>({...e,type:'colors'})),...shop.sizes,...shop.materials,...products].map(e=>[e.id,e]));
  assert.deepEqual(validateCatalogEntry(products[3],graph,{publish:true}),[]);
+ graph.set('c',{...products[2],refs:{...products[2].refs,material:['other']}});
+ assert.ok(validateCatalogEntry(products[3],graph,{publish:true}).length);
+ graph.set('c',products[2]);
  assert.ok(validateCatalogEntry({...products[3],refs:{...products[3].refs,components:['a']}},graph,{publish:true}).length);
  graph.set('a',{...products[0],data:{...products[0].data,bundle:true}});
  assert.ok(validateCatalogEntry(products[3],graph,{publish:true}).length);

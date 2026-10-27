@@ -7,7 +7,7 @@ import ProductCard from "./ProductCard.astro";
 
 interface Props {
 	items: CatalogItem[];
-	colors: { code: string; label: string }[];
+	colors: { slug: string; label: string }[];
 	basePath: string;
 	initialCategory: Category;
 }
@@ -42,7 +42,7 @@ const count = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`;
 							<div class="choice-group__options cluster">
 								{colors.map(color => (
 									<label class="choice">
-										<input class="choice__input" type="checkbox" name="color" value={color.code} data-label={color.label} />
+										<input class="choice__input" type="checkbox" name="color" value={color.slug} data-label={color.label} />
 										<span class="choice__label">{color.label}</span>
 									</label>
 								))}

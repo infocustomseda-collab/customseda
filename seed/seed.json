@@ -105,23 +105,13 @@
           }
         },
         {
-          "slug": "color",
-          "label": "Color",
+          "slug": "material",
+          "label": "Material",
           "type": "reference",
           "required": false,
           "validation": {
-            "targetCollection": "colors",
+            "targetCollection": "materials",
             "multiple": false
-          }
-        },
-        {
-          "slug": "sizes",
-          "label": "Tallas disponibles",
-          "type": "reference",
-          "required": false,
-          "validation": {
-            "targetCollection": "sizes",
-            "multiple": true
           }
         },
         {
@@ -156,16 +146,13 @@
       "slug": "collections",
       "label": "Colecciones",
       "labelSingular": "Colección",
-      "routable": true,
+      "routable": false,
       "sortOrder": 40,
       "group": "Catálogo",
       "supports": [
         "drafts",
-        "revisions",
-        "scheduling",
-        "seo"
+        "revisions"
       ],
-      "urlPattern": "/collections/{slug}",
       "fields": [
         {
           "slug": "title",
@@ -208,18 +195,16 @@
       "fields": [
         {
           "slug": "title",
-          "label": "Título",
+          "label": "Título (talla · categoría)",
           "type": "string",
           "required": true,
           "searchable": true
         },
         {
-          "slug": "code",
-          "label": "Código estable",
+          "slug": "label",
+          "label": "Etiqueta (talla visible en la tienda)",
           "type": "string",
-          "required": true,
-          "unique": true,
-          "indexed": true
+          "required": true
         },
         {
           "slug": "sort_order",
@@ -248,20 +233,59 @@
           "searchable": true
         },
         {
-          "slug": "code",
-          "label": "Código estable",
-          "type": "string",
-          "required": true,
-          "unique": true,
-          "indexed": true
-        },
-        {
           "slug": "hex",
           "label": "Color hexadecimal",
           "type": "string",
           "validation": {
             "pattern": "^#[0-9a-fA-F]{6}$"
           }
+        }
+      ]
+    },
+    {
+      "slug": "materials",
+      "label": "Materiales",
+      "labelSingular": "Material",
+      "routable": false,
+      "sortOrder": 65,
+      "group": "Catálogo",
+      "supports": [
+        "drafts",
+        "revisions"
+      ],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Nombre",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "color",
+          "label": "Color",
+          "type": "reference",
+          "required": false,
+          "validation": {
+            "targetCollection": "colors",
+            "multiple": false
+          }
+        },
+        {
+          "slug": "sizes",
+          "label": "Disponibilidad",
+          "type": "reference",
+          "required": false,
+          "validation": {
+            "targetCollection": "sizes",
+            "multiple": true
+          }
+        },
+        {
+          "slug": "special_edition",
+          "label": "Edición especial",
+          "type": "boolean",
+          "defaultValue": false
         }
       ]
     },
@@ -555,53 +579,138 @@
     ],
     "sizes": [
       {
-        "id": "sizes-XS",
-        "slug": "xs",
+        "id": "sizes-top-s",
+        "slug": "top-s",
         "status": "published",
         "data": {
-          "title": "XS",
-          "code": "XS",
-          "sort_order": 0
-        }
-      },
-      {
-        "id": "sizes-S",
-        "slug": "s",
-        "status": "published",
-        "data": {
-          "title": "S",
-          "code": "S",
+          "title": "S · Top",
+          "label": "S",
           "sort_order": 1
+        },
+        "taxonomies": {
+          "category": [
+            "top"
+          ]
         }
       },
       {
-        "id": "sizes-M",
-        "slug": "m",
+        "id": "sizes-top-m",
+        "slug": "top-m",
         "status": "published",
         "data": {
-          "title": "M",
-          "code": "M",
+          "title": "M · Top",
+          "label": "M",
           "sort_order": 2
+        },
+        "taxonomies": {
+          "category": [
+            "top"
+          ]
         }
       },
       {
-        "id": "sizes-L",
-        "slug": "l",
+        "id": "sizes-top-l",
+        "slug": "top-l",
         "status": "published",
         "data": {
-          "title": "L",
-          "code": "L",
+          "title": "L · Top",
+          "label": "L",
           "sort_order": 3
+        },
+        "taxonomies": {
+          "category": [
+            "top"
+          ]
         }
       },
       {
-        "id": "sizes-XL",
-        "slug": "xl",
+        "id": "sizes-top-xl",
+        "slug": "top-xl",
         "status": "published",
         "data": {
-          "title": "XL",
-          "code": "XL",
+          "title": "XL · Top",
+          "label": "XL",
           "sort_order": 4
+        },
+        "taxonomies": {
+          "category": [
+            "top"
+          ]
+        }
+      },
+      {
+        "id": "sizes-braguita-xs",
+        "slug": "braguita-xs",
+        "status": "published",
+        "data": {
+          "title": "XS · Braguita",
+          "label": "XS",
+          "sort_order": 0
+        },
+        "taxonomies": {
+          "category": [
+            "braguita"
+          ]
+        }
+      },
+      {
+        "id": "sizes-braguita-s",
+        "slug": "braguita-s",
+        "status": "published",
+        "data": {
+          "title": "S · Braguita",
+          "label": "S",
+          "sort_order": 1
+        },
+        "taxonomies": {
+          "category": [
+            "braguita"
+          ]
+        }
+      },
+      {
+        "id": "sizes-braguita-m",
+        "slug": "braguita-m",
+        "status": "published",
+        "data": {
+          "title": "M · Braguita",
+          "label": "M",
+          "sort_order": 2
+        },
+        "taxonomies": {
+          "category": [
+            "braguita"
+          ]
+        }
+      },
+      {
+        "id": "sizes-braguita-l",
+        "slug": "braguita-l",
+        "status": "published",
+        "data": {
+          "title": "L · Braguita",
+          "label": "L",
+          "sort_order": 3
+        },
+        "taxonomies": {
+          "category": [
+            "braguita"
+          ]
+        }
+      },
+      {
+        "id": "sizes-braguita-xl",
+        "slug": "braguita-xl",
+        "status": "published",
+        "data": {
+          "title": "XL · Braguita",
+          "label": "XL",
+          "sort_order": 4
+        },
+        "taxonomies": {
+          "category": [
+            "braguita"
+          ]
         }
       }
     ]
@@ -614,7 +723,8 @@
       "labelSingular": "Categoría",
       "hierarchical": true,
       "collections": [
-        "products"
+        "products",
+        "sizes"
       ],
       "terms": [
         {

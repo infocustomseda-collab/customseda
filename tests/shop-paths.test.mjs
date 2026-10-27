@@ -1,19 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {collectionPaths,pagePaths,policyPaths,productPaths,rootRedirectPaths} from '../src/lib/shop/paths.ts';
+import {withMaterials} from './helpers/shop.mjs';
 
 const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id,price_cents:1000,available:true,gallery:[],...data},refs});
 const piece=(id,cat,sizes)=>entry(id,{},{category:[cat],collection:['col'],color:['c'],sizes:sizes.map(s=>`s-${s}`)});
-const shop={
+const shop=withMaterials({
  categories:[entry('cat-top',{code:'top'}),entry('cat-bottom',{code:'braguita'}),entry('cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code})),
  collections:[entry('col',{code:'margarita',title:'Margarita'}),entry('sin-codigo',{code:''})],
- colors:[entry('c',{code:'caoba'})],
- sizes:['S','M'].map(code=>entry(`s-${code}`,{code})),
+ colors:[{...entry('c'),slug:'caoba'}],
+ sizes:['S','M'].map(code=>entry(`s-${code}`,{code:`any-${code}`,label:code})),
  size_guides:[],
  products:[entry('tierra',{bundle:true},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),entry('incompleto',{bundle:true},{category:['cat-sets'],components:['top-tierra',]}),piece('top-tierra','cat-top',['S']),piece('braguita-curve','cat-bottom',['M']),piece('top-solo','cat-top',[]),],
  pages:['margarita','contact','envios-y-devoluciones','noticias','privacy-policy'].map(slug=>entry(slug)),
  site_settings:[],popups:[],shipping_rules:[],
-};
+});
 const params=paths=>paths.map(p=>Object.values(p.params)[0]).sort();
 
 test('product paths cover pieces and Conjuntos with both components, and skip a Conjunto missing one',()=>{
@@ -21,8 +22,8 @@ test('product paths cover pieces and Conjuntos with both components, and skip a 
  assert.deepEqual(productPaths(shop)[0].params,{slug:'tierra'});
 });
 
-test('collection paths include bikinis, conjuntos, top, braguitas and one per CMS collection code',()=>{
- assert.deepEqual(params(collectionPaths(shop)),['bikinis','braguita','braguitas','conjuntos','margarita','top']);
+test('collection paths include bikinis and category listings, not CMS collections',()=>{
+ assert.deepEqual(params(collectionPaths(shop)),['bikinis','braguita','braguitas','conjuntos','top']);
 });
 
 test('page and policy paths come from page slugs, leaving dedicated routes alone',()=>{

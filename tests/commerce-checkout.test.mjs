@@ -2,15 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseOrder,quoteOrder,sessionParams} from '../src/lib/commerce/checkout.ts';
 import {shippingRules,shippingCost,addressCheck} from '../src/lib/commerce/shipping.ts';
+import {withMaterials} from './helpers/shop.mjs';
 
 const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
 const piece=(id,cat,sizes,extra={})=>entry(id,extra,{category:[cat],collection:['col'],color:['c'],sizes:sizes.map(s=>`s-${s}`)});
 const rule=(id,data)=>entry(id,{enabled:true,price_cents:630,description:'24/48 h',...data});
-const shop=()=>({
+const shop=()=>withMaterials({
  categories:[entry('cat-top',{code:'top'}),entry('cat-bottom',{code:'braguita'}),entry('cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code})),
  collections:[entry('col',{code:'margarita',title:'Margarita'})],
- colors:[entry('c',{code:'caoba'})],
- sizes:['XS','S','M','L','XL'].map(code=>entry(`s-${code}`,{code})),
+ colors:[{...entry('c'),slug:'caoba'}],
+ sizes:['XS','S','M','L','XL'].map(code=>entry(`s-${code}`,{code:`any-${code}`,label:code})),
  products:[
   entry('tierra',{bundle:true,title:'Conjunto Tierra',price_cents:5000},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),
   entry('mixto',{bundle:true,title:'Mixto',price_cents:4000},{category:['cat-sets'],components:['top-agotado','braguita-curve']}),
@@ -149,4 +150,13 @@ test('pickup collects no address and sends no shipping options',()=>{
  assert.equal(params.shipping_options,undefined);
  assert.match(params.payment_intent_data.description,/Envío: Recogida en Gran Canaria/);
  assert.deepEqual(params.phone_number_collection,{enabled:true});
+});
+
+test('a size the material offers only for another category is refused',()=>{
+ const data=shop();
+ // XS is a Braguita size; the Top's material now offers it, but not for tops.
+ data.materials.find(material=>material.id==='m-top-tierra').refs.sizes.push('s-cat-bottom-XS');
+ const quote=quoteOrder(data,parseOrder(form({id:'top-tierra',talla:'XS',quantity:1,shipping:'recogida',price:3000})));
+ assert.equal(quote.ok,false);assert.equal(quote.error,'size');
+ assert.equal(quoteOrder(data,parseOrder(form({id:'top-tierra',talla:'S',quantity:1,shipping:'recogida',price:3000}))).ok,true);
 });
