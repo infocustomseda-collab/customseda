@@ -54,7 +54,7 @@ test('assertPublishable refuses another environment',()=>{
 test('assertPublishable refuses an empty catalog unless allowed',()=>{
  assert.throws(()=>assertPublishable(snap('production'),{environment:'production',allowEmpty:false}),/no published products/i);
  assert.doesNotThrow(()=>assertPublishable(snap('production'),{environment:'production',allowEmpty:true}));
- assert.doesNotThrow(()=>assertPublishable(snap('production',{conjuntos:[{}]}),{environment:'production',allowEmpty:false}));
+ assert.doesNotThrow(()=>assertPublishable(snap('production',{products:[{data:{bundle:true}}]}),{environment:'production',allowEmpty:false}));
 });
 
 test('a build refuses a snapshot from another environment than CLOUDFLARE_ENV',()=>{

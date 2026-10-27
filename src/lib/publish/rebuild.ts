@@ -1,6 +1,6 @@
 // Publish-triggered rebuilds: a CMS change dispatches the deploy workflow for this environment only.
 // GitHub's per-environment concurrency queue coalesces bursts; a failed build leaves the old site up.
-export const REBUILD_COLLECTIONS = ["products", "conjuntos", "categories", "collections", "colors", "sizes", "size_guides", "site_settings", "pages", "popups", "shipping_rules"];
+export const REBUILD_COLLECTIONS = ["products", "collections", "colors", "sizes", "size_guides", "site_settings", "pages", "popups", "shipping_rules"];
 
 export type RebuildConfig = { token: string; repository: string; environment: "staging" | "production" };
 
@@ -59,6 +59,17 @@ export async function scheduledRebuildReasons(db: D1Like, now: number): Promise<
 		await db.prepare("INSERT INTO options (name, value, revision) VALUES (?, ?, 1) ON CONFLICT(name) DO UPDATE SET value = excluded.value, revision = options.revision + 1").bind(MENU_FINGERPRINT, fingerprint).run();
 		// The first run only records the fingerprint.
 		if (stored) reasons.push("menu change");
+	}
+	// Taxonomy edits and assignments have no content lifecycle hook in EmDash 1.3.1.
+	const terms=await db.prepare("SELECT id, slug, label, parent_id, locale, translation_group, sort_order FROM taxonomies WHERE name = 'category' ORDER BY id").bind().all();
+	const assignments=await db.prepare("SELECT ct.entry_id, ct.taxonomy_id FROM content_taxonomies ct INNER JOIN ec_products p ON p.translation_group = ct.entry_id INNER JOIN taxonomies t ON t.translation_group = ct.taxonomy_id WHERE ct.collection = 'products' AND t.name = 'category' AND p.status = 'published' AND p.deleted_at IS NULL ORDER BY ct.entry_id, ct.taxonomy_id, t.id").bind().all();
+	const taxonomyDigest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([terms.results,assignments.results])));
+	const taxonomyFingerprint=JSON.stringify([...new Uint8Array(taxonomyDigest)].map(byte=>byte.toString(16).padStart(2,'0')).join(''));
+	const key='customseda.rebuild.taxonomy-fingerprint';
+	const prior=await db.prepare('SELECT value FROM options WHERE name = ?').bind(key).first<{value:string}>();
+	if(prior?.value!==taxonomyFingerprint) {
+		await db.prepare('INSERT INTO options (name, value, revision) VALUES (?, ?, 1) ON CONFLICT(name) DO UPDATE SET value = excluded.value, revision = options.revision + 1').bind(key,taxonomyFingerprint).run();
+		if(prior)reasons.push('taxonomy change');
 	}
 	return reasons;
 }

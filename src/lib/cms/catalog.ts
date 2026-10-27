@@ -8,14 +8,14 @@ export type CatalogEntry = {
  group?: string;
 };
 export type CatalogEntries = ReadonlyMap<string, CatalogEntry>;
-export const catalogTypes = new Set(['products','conjuntos','categories','collections','colors','sizes','size_guides','site_settings','popups','shipping_rules']);
+export const catalogTypes = new Set(['products','collections','colors','sizes','size_guides','site_settings','popups','shipping_rules']);
 export const sizeCodes = ['XS','S','M','L','XL'];
 export function mainImage(gallery: unknown): Record<string, unknown> | null {
  if (!Array.isArray(gallery)) return null;
  return gallery[0]?.image ?? null;
 }
-export function bundleAvailable(bundle: CatalogEntry, top: CatalogEntry, bottom: CatalogEntry): boolean {
- return [bundle,top,bottom].every(e => e.status === 'published' && e.data.available !== false);
+export function bundleAvailable(bundle: CatalogEntry, ...components: CatalogEntry[]): boolean {
+ return [bundle,...components].every(e => e.status === 'published' && e.data.available !== false);
 }
 const money = (n: unknown) => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
 export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntries, {publish=false,references=true}: {publish?:boolean;references?:boolean}={}): string[] {
@@ -32,9 +32,9 @@ export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntrie
    return [value];
   });
  };
- if(type==='categories' && !['top','braguita'].includes(String(data.code))) fail('Categoría: el código debe ser top o braguita.');
  if(type==='sizes' && !sizeCodes.includes(String(data.code))) fail('Talla: el código debe ser XS, S, M, L o XL.');
- if(type==='products'||type==='conjuntos') {
+ if(type==='products') {
+  if(data.bundle!==undefined && typeof data.bundle!=='boolean') fail('Bundle product: usa Sí o No.');
   if((publish || data.price_cents!==undefined) && !money(data.price_cents)) fail('El precio debe ser un entero en céntimos EUR, mayor o igual a cero.');
   if(data.available!==undefined && typeof data.available!=='boolean') fail('Disponibilidad: usa Sí o No.');
   const gallery=data.gallery;
@@ -50,19 +50,22 @@ export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntrie
   }
  }
  if(type==='products' && references) {
-  const [category]=ref('category','categories');ref('collection','collections');ref('color','colors');
-  const sizes=ref('sizes','sizes',true);
+  // Native taxonomy assignments are edited after a draft is created.
+  // Publication requires exactly one category, independent of bundle behavior.
+  if(publish) ref('category','category');
   if(refs.size_guide?.length) ref('size_guide','size_guides');
-  if(category?.data.code==='top' && sizes.some(s=>s.data.code==='XS')) fail('Top admite tallas S, M, L y XL; XS solo está disponible para Braguita.');
- } else if(type==='conjuntos' && references) {
-  const [top]=ref('top','products'), [bottom]=ref('bottom','products');
-  if(['sizes','size','category','color','collection'].some(key=>(refs[key]?.length??0)>0 || data[key]!=null)) fail('El conjunto hereda color y colección; las dos tallas se eligen por separado al comprar.');
-  if(top && bottom) {
-   const code=(e:CatalogEntry)=>entries.get(e.refs.category?.[0]??'')?.data.code;
-   if(top.id===bottom.id || top.id===entry.id || bottom.id===entry.id) fail('Selecciona dos productos diferentes.');
-   if(code(top)!=='top') fail('El componente Top debe pertenecer a la categoría Top.');
-   if(code(bottom)!=='braguita') fail('El componente Braguita debe pertenecer a la categoría Braguita.');
-   for(const field of ['color','collection']) if(!top.refs[field]?.[0] || top.refs[field][0]!==bottom.refs[field]?.[0]) fail(`Los componentes deben compartir ${field==='color'?'color':'colección'}.`);
+  if(data.bundle===true) {
+   const components=ref('components','products',true);
+   if((refs.components?.length??0)<2) fail('Un conjunto necesita al menos dos productos diferentes.');
+   for(const component of components) {
+    if(component.id===entry.id || component.data.bundle===true) fail('Los productos incluidos deben ser productos individuales; no se permiten conjuntos anidados.');
+   }
+  } else {
+   if(refs.components?.length) fail('Activa Bundle product para seleccionar productos incluidos.');
+   ref('collection','collections');ref('color','colors');
+   const sizes=ref('sizes','sizes',true);
+   const category=entries.get(refs.category?.[0]??'');
+   if(category?.data.code==='top' && sizes.some(s=>s.data.code==='XS')) fail('Top admite tallas S, M, L y XL; XS solo está disponible para Braguita.');
   }
  }
  if(type==='popups') {

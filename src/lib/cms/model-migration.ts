@@ -18,7 +18,7 @@ export async function applyCatalogModel(db:CatalogDb) {
  const {content,...schema}=seed;
  await applySeed(db,{...schema,collections:schema.collections?.map(collection=>({...collection,fields:[]}))},{includeContent:false,onConflict:'skip'});
  const result=await applySeed(db,schema,{includeContent:false,onConflict:'update'});
- const lookups=await applySeed(db,{version:'1',content},{includeContent:true,onConflict:'skip'});
+ const lookups=await applySeed(db,{version:'1',content,taxonomies:seed.taxonomies},{includeContent:true,onConflict:'skip'});
  const registry=new SchemaRegistry(db);
  if(await registry.getCollection('posts')) await registry.updateCollection('posts',{hidden:true});
  await options.set(modelVersion,{appliedAt:new Date().toISOString()});

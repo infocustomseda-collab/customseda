@@ -21,7 +21,7 @@ export function createCatalogPolicy(getDatabase:()=>CatalogDb|Promise<CatalogDb>
     // selection; publication policies recheck staged references for every writer.
     const errors=await validateCatalogWrite(await getDatabase(),event.collection,event.id,{data:event.content},{checkReferences:false});
     if(errors.length) throw new ContentSaveRejectedError(errors.join(' '));
-    if(event.isNew && ['products','conjuntos'].includes(event.collection) && event.content.available===undefined) return {...event.content,available:true};
+    if(event.isNew && event.collection==='products' && event.content.available===undefined) return {...event.content,available:true};
    }},
    'content:beforePublish':{errorPolicy:'abort',handler:publication},
    'content:beforeSchedule':{errorPolicy:'abort',handler:publication},

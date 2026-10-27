@@ -4,7 +4,7 @@ import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters
 
 const entry=(type,id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
 const lookups={
- categories:[entry('categories','cat-top',{code:'top'}),entry('categories','cat-bottom',{code:'braguita'})],
+ categories:[entry('categories','women',{code:'mujeres',title:'Mujeres'}),entry('categories','cat-top',{code:'top',title:'Top'}),entry('categories','cat-bottom',{code:'braguita',title:'Braguita'}),entry('categories','cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code,data:{...term.data,parent:term.id==='women'?null:'women'}})),
  collections:[entry('collections','col-m',{code:'margarita',title:'Margarita'})],
  colors:[entry('colors','c-caoba',{code:'caoba',title:'Caoba'}),entry('colors','c-rojo',{code:'rojo',title:'Rojo'})],
  sizes:['XS','S','M','L','XL'].map((code,i)=>entry('sizes',`s-${code}`,{code,sort_order:i})),
@@ -13,24 +13,23 @@ const piece=(id,cat,color,sizes,data={})=>entry('products',id,data,{category:[ca
 const shop={
  ...lookups,site_settings:[],pages:[],size_guides:[],popups:[],
  products:[
+  entry('products','tierra',{bundle:true,price_cents:5000},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),
+  entry('products','fuego',{bundle:true,price_cents:5500},{category:['cat-sets'],components:['top-fuego','braguita-flow']}),
+  entry('products','huerfano',{bundle:true,price_cents:5000},{category:['cat-sets'],components:['missing','braguita-curve']}),
+
   piece('top-tierra','cat-top','c-caoba',['S','M','L'],{price_cents:3000}),
   piece('braguita-curve','cat-bottom','c-caoba',['XS','S','M'],{price_cents:2600}),
   piece('top-fuego','cat-top','c-rojo',['S','M','L','XL'],{price_cents:3200,available:false}),
   piece('braguita-flow','cat-bottom','c-rojo',[],{price_cents:2600}),
  ],
- conjuntos:[
-  entry('conjuntos','tierra',{price_cents:5000},{top:['top-tierra'],bottom:['braguita-curve']}),
-  entry('conjuntos','fuego',{price_cents:5500},{top:['top-fuego'],bottom:['braguita-flow']}),
-  entry('conjuntos','huerfano',{price_cents:5000},{top:['missing'],bottom:['braguita-curve']}),
- ],
 };
 
 test('catalog combines pieces and complete Conjuntos with derived color, sizes and availability',()=>{
  const items=buildCatalog(shop);
- assert.deepEqual(items.map(i=>i.slug),['tierra','fuego','top-tierra','top-fuego','braguita-curve','braguita-flow']);
+ assert.deepEqual(items.map(i=>i.slug),['tierra','fuego','top-tierra','braguita-curve','top-fuego','braguita-flow']);
  const tierra=items.find(i=>i.slug==='tierra');
  // Buyers pick each piece's size, so a Conjunto matches any size either piece offers.
- assert.deepEqual([tierra.kind,tierra.color,tierra.collection,tierra.sizes,tierra.available],['conjunto','caoba','margarita',['XS','S','M','L'],true]);
+ assert.deepEqual([tierra.kind,tierra.color,tierra.collection,tierra.sizes,tierra.available],['bundle','caoba','margarita',['XS','S','M','L'],true]);
  // A Conjunto is available only when it and both components are.
  assert.equal(items.find(i=>i.slug==='fuego').available,false);
  assert.deepEqual(items.find(i=>i.slug==='fuego').sizes,['S','M','L','XL']);
@@ -44,11 +43,11 @@ test('views cover the combined catalog, categories and collections; unknown hand
  assert.equal(slugs('bikinis').length,6);
  assert.deepEqual(slugs('conjuntos'),['tierra','fuego']);
  assert.deepEqual(slugs('top'),['top-tierra','top-fuego']);
- assert.deepEqual(slugs('braguitas'),['braguita-curve','braguita-flow']);
+ assert.deepEqual(slugs('braguita'),['braguita-curve','braguita-flow']);
  assert.equal(slugs('margarita').length,6);
  assert.equal(catalogView('gran-canaria',shop),null);
- assert.deepEqual(catalogViews(shop).map(v=>v.handle),['bikinis','conjuntos','top','braguitas','margarita']);
- assert.equal(catalogView('top',shop).title,'Tops');
+ assert.deepEqual(catalogViews(shop).map(v=>v.handle),['bikinis','mujeres','top','braguita','conjuntos','margarita','braguitas']);
+ assert.equal(catalogView('top',shop).title,'Top');
 });
 
 test('filters combine color and availability, without size filtering',()=>{
@@ -71,8 +70,8 @@ test('sorting by price or name is stable and the default keeps catalog order',()
 
 test('filters round-trip through the query string and ignore unknown values',()=>{
  const filters=parseFilters('?color=rojo&color=nada&talla=m&talla=XL&disponible=1&orden=precio-asc&x=1',{colors:['caoba','rojo']});
- assert.deepEqual(filters,{category:'todos',colors:['rojo'],available:true,sort:'precio-asc'});
- assert.equal(filtersQuery(filters),'?category=todos&color=rojo&disponible=1&orden=precio-asc');
+ assert.deepEqual(filters,{category:'',colors:['rojo'],available:true,sort:'precio-asc'});
+ assert.equal(filtersQuery(filters),'?color=rojo&disponible=1&orden=precio-asc');
  assert.equal(filtersQuery({colors:[],available:false,sort:'destacados'}),'');
  assert.equal(parseFilters('?orden=raro',{colors:[]}).sort,'destacados');
 });
@@ -92,29 +91,29 @@ test('the featured Conjunto resolves through catalog rules and disappears withou
 });
 
 test('category links keep the catalog path and current refinements',()=>{
- const filters={category:'todos',colors:['rojo','caoba'],available:true,sort:'precio-desc'};
- assert.equal(categoryHref('/collections/bikinis',filters,'tops'),'/collections/bikinis?category=tops&color=rojo&color=caoba&disponible=1&orden=precio-desc');
+ const filters={category:'',colors:['rojo','caoba'],available:true,sort:'precio-desc'};
+ assert.equal(categoryHref('/collections/bikinis',filters,'top'),'/collections/bikinis?category=top&color=rojo&color=caoba&disponible=1&orden=precio-desc');
  assert.equal(categoryHref('/collections/bikinis',filters,'conjuntos'),'/collections/bikinis?category=conjuntos&color=rojo&color=caoba&disponible=1&orden=precio-desc');
- assert.equal(categoryHref('/collections/bikinis',{colors:[],available:false},'todos'),'/collections/bikinis?category=todos');
+ assert.equal(categoryHref('/collections/bikinis',{colors:[],available:false},''),'/collections/bikinis');
 });
 
 test('category queries filter the same catalog and combine with color and availability',()=>{
  const items=buildCatalog(shop);
- const slugs=query=>filterItems(items,parseFilters(query,{colors:['rojo','caoba']})).map(item=>item.slug);
- assert.deepEqual(slugs('?category=tops'),['top-tierra','top-fuego']);
+ const slugs=query=>filterItems(items,parseFilters(query,{colors:['rojo','caoba'],categories:['top','braguita','conjuntos']})).map(item=>item.slug);
+ assert.deepEqual(slugs('?category=top'),['top-tierra','top-fuego']);
  assert.deepEqual(slugs('?category=conjuntos'),['tierra','fuego']);
- assert.deepEqual(slugs('?category=braguitas'),['braguita-curve','braguita-flow']);
+ assert.deepEqual(slugs('?category=braguita'),['braguita-curve','braguita-flow']);
  assert.equal(slugs('?category=todos').length,6);
- assert.deepEqual(slugs('?category=tops&color=rojo&disponible=1'),[]);
- assert.deepEqual(slugs('?category=braguitas&color=rojo&disponible=1'),['braguita-flow']);
+ assert.deepEqual(slugs('?category=top&color=rojo&disponible=1'),[]);
+ assert.deepEqual(slugs('?category=braguita&color=rojo&disponible=1'),['braguita-flow']);
  assert.equal(slugs('?category=unknown').length,6);
- assert.equal(parseFilters('',{colors:[],defaultCategory:'tops'}).category,'tops');
- assert.equal(parseFilters('?category=todos',{colors:[],defaultCategory:'tops'}).category,'todos');
+ assert.equal(parseFilters('',{colors:[],categories:['top','braguita','conjuntos'],defaultCategory:'top'}).category,'top');
+ assert.equal(parseFilters('?category=todos',{colors:[],categories:['top','braguita','conjuntos'],defaultCategory:'top'}).category,'');
 });
 
 test('catalog cards identify the product type and localized color without changing titles',()=>{
  const items=buildCatalog(shop);
- assert.equal(items.find(i=>i.slug==='tierra').card.metadata,'Conjunto · Caoba');
+ assert.equal(items.find(i=>i.slug==='tierra').card.metadata,'Conjuntos · Caoba');
  assert.equal(items.find(i=>i.slug==='top-tierra').card.metadata,'Top · Caoba');
  assert.equal(items.find(i=>i.slug==='braguita-flow').card.metadata,'Braguita · Rojo');
  assert.equal(items.find(i=>i.slug==='tierra').card.title,'TIERRA');

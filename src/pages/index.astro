@@ -17,7 +17,7 @@ export const prerender = true;
 const { shop, site, settings } = await loadShopPage(Astro);
 const data = settings?.data ?? {};
 const featured = featuredItem(shop, settings?.refs.featured_conjunto?.[0]);
-const featuredEntry = byId(shop.conjuntos, featured?.id);
+const featuredEntry = byId(shop.products, featured?.id);
 const color = shop.colors.find((entry) => entry.data.code === featured?.color);
 const slides = galleryImages(data.slideshow);
 const highlights = (Array.isArray(data.highlights) ? data.highlights : []).flatMap((row: any) =>

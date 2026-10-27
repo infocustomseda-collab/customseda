@@ -3,7 +3,7 @@
   "version": "1",
   "meta": {
     "name": "Custom Seda catalog v1",
-    "description": "Made-to-order Products and Conjuntos. No inventory."
+    "description": "Made-to-order products, optional bundles, and native hierarchical categories. No inventory."
   },
   "collections": [
     {
@@ -95,20 +95,10 @@
           "defaultValue": true
         },
         {
-          "slug": "category",
-          "label": "Categoría",
-          "type": "reference",
-          "required": true,
-          "validation": {
-            "targetCollection": "categories",
-            "multiple": false
-          }
-        },
-        {
           "slug": "collection",
           "label": "Colección",
           "type": "reference",
-          "required": true,
+          "required": false,
           "validation": {
             "targetCollection": "collections",
             "multiple": false
@@ -118,7 +108,7 @@
           "slug": "color",
           "label": "Color",
           "type": "reference",
-          "required": true,
+          "required": false,
           "validation": {
             "targetCollection": "colors",
             "multiple": false
@@ -128,7 +118,7 @@
           "slug": "sizes",
           "label": "Tallas disponibles",
           "type": "reference",
-          "required": true,
+          "required": false,
           "validation": {
             "targetCollection": "sizes",
             "multiple": true
@@ -143,145 +133,22 @@
             "targetCollection": "size_guides",
             "multiple": false
           }
-        }
-      ]
-    },
-    {
-      "slug": "conjuntos",
-      "label": "Conjuntos",
-      "labelSingular": "Conjunto",
-      "routable": true,
-      "sortOrder": 20,
-      "group": "Catálogo",
-      "supports": [
-        "drafts",
-        "revisions",
-        "scheduling",
-        "seo"
-      ],
-      "urlPattern": "/conjuntos/{slug}",
-      "fields": [
-        {
-          "slug": "title",
-          "label": "Título",
-          "type": "string",
-          "required": true,
-          "searchable": true
         },
         {
-          "slug": "description",
-          "label": "Descripción",
-          "type": "portableText",
-          "searchable": true
-        },
-        {
-          "slug": "summary",
-          "label": "Descripción breve",
-          "type": "text"
-        },
-        {
-          "slug": "gallery",
-          "label": "Imágenes — arrastra para ordenar; la primera es la principal",
-          "type": "repeater",
-          "validation": {
-            "maxItems": 24,
-            "subFields": [
-              {
-                "slug": "image",
-                "label": "Imagen",
-                "type": "image",
-                "required": true
-              },
-              {
-                "slug": "alt",
-                "label": "Texto alternativo",
-                "type": "string",
-                "required": true
-              },
-              {
-                "slug": "focal_x",
-                "label": "Punto focal horizontal (0–1)",
-                "type": "number",
-                "validation": {
-                  "min": 0,
-                  "max": 1
-                }
-              },
-              {
-                "slug": "focal_y",
-                "label": "Punto focal vertical (0–1)",
-                "type": "number",
-                "validation": {
-                  "min": 0,
-                  "max": 1
-                }
-              }
-            ]
-          }
-        },
-        {
-          "slug": "price_cents",
-          "label": "Precio en céntimos EUR (ej. 5900 = 59 €)",
-          "type": "integer",
-          "required": true,
-          "validation": {
-            "min": 0
-          }
-        },
-        {
-          "slug": "available",
-          "label": "Disponible",
+          "slug": "bundle",
+          "label": "Producto en conjunto (Bundle product)",
           "type": "boolean",
-          "defaultValue": true
+          "defaultValue": false
         },
         {
-          "slug": "top",
-          "label": "Top",
+          "slug": "components",
+          "label": "Productos incluidos — selecciona al menos dos",
           "type": "reference",
-          "required": true,
+          "required": false,
           "validation": {
             "targetCollection": "products",
-            "multiple": false
+            "multiple": true
           }
-        },
-        {
-          "slug": "bottom",
-          "label": "Braguita",
-          "type": "reference",
-          "required": true,
-          "validation": {
-            "targetCollection": "products",
-            "multiple": false
-          }
-        }
-      ]
-    },
-    {
-      "slug": "categories",
-      "label": "Categorías",
-      "labelSingular": "Categoría",
-      "routable": false,
-      "sortOrder": 30,
-      "group": "Catálogo",
-      "supports": [
-        "drafts",
-        "revisions"
-      ],
-      "fields": [
-        {
-          "slug": "title",
-          "label": "Título",
-          "type": "string",
-          "required": true,
-          "searchable": true
-        },
-        {
-          "slug": "code",
-          "label": "Código estable",
-          "type": "string",
-          "required": true,
-          "unique": true,
-          "indexed": true
         }
       ]
     },
@@ -675,26 +542,6 @@
     }
   ],
   "content": {
-    "categories": [
-      {
-        "id": "categories-top",
-        "slug": "top",
-        "status": "published",
-        "data": {
-          "title": "Top",
-          "code": "top"
-        }
-      },
-      {
-        "id": "categories-braguita",
-        "slug": "braguita",
-        "status": "published",
-        "data": {
-          "title": "Braguita",
-          "code": "braguita"
-        }
-      }
-    ],
     "collections": [
       {
         "id": "collections-margarita",
@@ -759,5 +606,53 @@
       }
     ]
   },
-  "widgetAreas": []
+  "widgetAreas": [],
+  "taxonomies": [
+    {
+      "name": "category",
+      "label": "Categorías",
+      "labelSingular": "Categoría",
+      "hierarchical": true,
+      "collections": [
+        "products"
+      ],
+      "terms": [
+        {
+          "slug": "mujeres",
+          "label": "Mujeres",
+          "locale": "es"
+        },
+        {
+          "slug": "top",
+          "label": "Top",
+          "parent": "mujeres",
+          "locale": "es"
+        },
+        {
+          "slug": "braguita",
+          "label": "Braguita",
+          "parent": "mujeres",
+          "locale": "es"
+        },
+        {
+          "slug": "conjuntos",
+          "label": "Conjuntos",
+          "parent": "mujeres",
+          "locale": "es"
+        },
+        {
+          "slug": "hombres",
+          "label": "Hombres",
+          "locale": "es"
+        },
+        {
+          "slug": "banador",
+          "label": "Bañador",
+          "parent": "hombres",
+          "locale": "es"
+        }
+      ],
+      "locale": "es"
+    }
+  ]
 }

@@ -4,14 +4,14 @@ import { validateCatalogEntry, mainImage, bundleAvailable } from '../src/lib/cms
 
 const lookup = (type, id, code = id) => ({type,id,status:'published',data:{title:id,code},refs:{}});
 const entries = new Map([
- ['top',lookup('categories','top')],['bottom',lookup('categories','bottom','braguita')],
+ ['top',lookup('category','top')],['bottom',lookup('category','bottom','braguita')],
  ['margarita',lookup('collections','margarita')],['pink',lookup('colors','pink')],
  ...['XS','S','M','L','XL'].map(s=>[s,lookup('sizes',s)])
 ]);
 const product = (id='a', category='top', sizes=['S','M']) => ({id,type:'products',status:'published',data:{title:id,price_cents:5000,available:true,gallery:[{image:{id:'media_1'},alt:'Bikini'}]},refs:{category:[category],collection:['margarita'],color:['pink'],sizes}});
 const top=product(),bottom=product('b','bottom',['XS','S','XL']);
 entries.set('a',top); entries.set('b',bottom);
-const conjunto=()=>({id:'set',type:'conjuntos',status:'draft',data:{title:'Conjunto',price_cents:8500,available:true,gallery:[{image:{id:'media_2'},alt:'Conjunto'}]},refs:{top:['a'],bottom:['b']}});
+const conjunto=()=>({id:'set',type:'products',status:'draft',data:{title:'Conjunto',bundle:true,price_cents:8500,available:true,gallery:[{image:{id:'media_2'},alt:'Conjunto'}]},refs:{category:['top'],components:['a','b']}});
 const check=(entry,publish=false)=>validateCatalogEntry(entry,entries,{publish});
 test('valid products and separately priced mixed-size bundle publish',()=>{
  assert.deepEqual(check(top,true),[]); assert.deepEqual(check(bottom,true),[]);
@@ -22,19 +22,19 @@ test('prices must be nonnegative safe integer cents',()=>{
   assert.ok(check({...top,data:{...top.data,price_cents:value}}).some(e=>e.includes('precio')));
  }
 });
-test('category cardinality, duplicate sizes and Top XS are rejected',()=>{
+test('publication requires one native category and rejects duplicate sizes and Top XS',()=>{
  for(const refs of [{...top.refs,category:[]},{...top.refs,category:['top','bottom']},{...top.refs,sizes:['XS']},{...top.refs,sizes:['S','S']}]) {
-  assert.ok(check({...top,refs}).length);
+  assert.ok(check({...top,refs},true).length);
  }
 });
-test('bundle components must be Top and Braguita with matching color and collection',()=>{
- const set=conjunto(); set.refs.top=['b']; assert.ok(check(set).length);
- set.refs.top=['a']; set.refs.bottom=['a']; assert.ok(check(set).length);
- const changed = new Map(entries); changed.set('b',{...bottom,refs:{...bottom.refs,color:['other']}});
- assert.ok(validateCatalogEntry(conjunto(),changed).some(e=>e.includes('color')));
+test('bundles require distinct ordinary components and do not compare colors or collections',()=>{
+ const set=conjunto();set.refs.components=['a','a'];assert.ok(check(set).length);
+ const changed=new Map(entries);changed.set('b',{...bottom,refs:{...bottom.refs,color:['other'],collection:['other']}});
+ assert.deepEqual(validateCatalogEntry(conjunto(),changed),[]);
+ changed.set('b',{...bottom,data:{...bottom.data,bundle:true}});
+ assert.ok(validateCatalogEntry(conjunto(),changed).length);
 });
-test('bundle has no direct sizes; publishing requires live components',()=>{
- assert.ok(check({...conjunto(),refs:{...conjunto().refs,sizes:['S']}}).length);
+test('publishing a bundle requires published components',()=>{
  const changed=new Map(entries);changed.set('a',{...top,status:'draft'});
  assert.ok(validateCatalogEntry(conjunto(),changed,{publish:true}).length);
 });

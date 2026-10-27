@@ -2,7 +2,7 @@
 
 Astro + EmDash shop with Stripe Checkout on Cloudflare.
 
-The public Posts/Pages starter remains a deployment test. The local CMS now has Products, separate Conjuntos, lookup records, and supporting content. The imported design, Stripe, and public-page prerendering follow in later phases of the [plan](docs/superpowers/plans/2026-10-24-custom-seda.md). See the [catalog model and editor workflow](docs/catalog-model.md). Product pages buy one item at a time through Stripe Checkout; see [checkout and Stripe operations](docs/checkout.md). Public pages are prerendered from a snapshot of published content, and GitHub Actions deploys `master`; see [deployment](docs/deployment.md).
+The public Posts/Pages starter remains a deployment test. The local CMS now has Products (including bundle products), native category taxonomies, lookup records, and supporting content. The imported design, Stripe, and public-page prerendering follow in later phases of the [plan](docs/superpowers/plans/2026-10-24-custom-seda.md). See the [catalog model and editor workflow](docs/catalog-model.md). Product pages buy one item at a time through Stripe Checkout; see [checkout and Stripe operations](docs/checkout.md). Public pages are prerendered from a snapshot of published content, and GitHub Actions deploys `master`; see [deployment](docs/deployment.md).
 
 ## Local development
 
@@ -26,7 +26,7 @@ pnpm cms:model
 
 This applies the versioned catalog model to local D1 and regenerates CMS types. Repeat safely after setup; it preserves existing content. Refresh the admin panel to see the new types.
 
-The local Spanish catalog contains 11 Products and 5 Conjuntos. Media stays editable in EmDash/local R2. Byte-identical original photographs are also kept in [`assets/originals/`](assets/originals/README.md), separated into product and site folders with a SHA-256 manifest. Run `pnpm media:originals` to refresh that local archive. The completed importer and its source inventories have been retired; `pnpm cms:model` removes the obsolete fields and metadata from an existing local database. See [content maintenance](docs/content-maintenance.md).
+The local Spanish catalog contains 16 Products, including 5 bundles. Media stays editable in EmDash/local R2. Byte-identical original photographs are also kept in [`assets/originals/`](assets/originals/README.md), separated into product and site folders with a SHA-256 manifest. Run `pnpm media:originals` to refresh that local archive. The completed importer and its source inventories have been retired; `pnpm cms:model` removes the obsolete fields and metadata from an existing local database. See [content maintenance](docs/content-maintenance.md).
 
 `pnpm dev` prepares responsive WebP images from local draft content before starting. CMS text and settings still update live. After uploading new images, run `pnpm images:local` in the second terminal to prepare their derivatives; until then those images use their originals. The preparation reuses cached derivatives for unchanged photos.
 

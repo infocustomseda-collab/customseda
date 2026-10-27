@@ -1,10 +1,10 @@
 ---
-// Catalog listings at existing public paths: /collections/bikinis (everything), conjuntos, top, braguitas,
+// Catalog listings at existing public paths: /collections/bikinis (Mujeres), conjuntos, top, braguitas,
 // and one view per CMS collection (e.g. margarita).
 import CatalogBrowser from "../../components/CatalogBrowser.astro";
 import RichText from "../../components/RichText.astro";
 import Shop from "../../layouts/Shop.astro";
-import { buildCatalog, catalogView, facetOptions } from "../../lib/shop/catalog";
+import { buildCatalog, catalogView, catalogCategories, facetOptions } from "../../lib/shop/catalog";
 import { loadShopContent, loadShopPage } from "../../lib/shop/page";
 import { collectionPaths } from "../../lib/shop/paths";
 import { plainText } from "../../lib/shop/site";
@@ -17,21 +17,13 @@ export async function getStaticPaths() {
 const { shop, site } = await loadShopPage(Astro);
 const view = catalogView(Astro.params.handle ?? "", shop);
 if (!view) return Astro.rewrite("/404");
-// Retained category URLs initialize the same complete grid. Collection pages keep
-// their collection scope; category selection is then another query refinement.
-const legacyCategories = { bikinis: "todos", conjuntos: "conjuntos", top: "tops", braguitas: "braguitas" } as const;
-const initialCategory = legacyCategories[view.handle as keyof typeof legacyCategories] ?? "todos";
-const listing = view.handle in legacyCategories ? catalogView("bikinis", shop)! : view;
+const initialCategory = '';
+const listing = view;
 const basePath = `/collections/${listing.handle}`;
 const catalog = buildCatalog(shop);
 const items = listing.items(catalog);
 const facets = facetOptions(items, shop);
-const tabs = [
-	{ category: "todos", label: "Todo" },
-	{ category: "conjuntos", label: "Conjuntos" },
-	{ category: "tops", label: "Tops" },
-	{ category: "braguitas", label: "Braguitas" },
-];
+const tabs = [{category:'',label:'Todo'},...catalogCategories(listing, shop.categories).map(term=>({category:term.slug,label:String(term.data.title??term.slug)}))];
 ---
 
 <Shop title={listing.title} description={plainText(listing.description) || `${listing.title} de Seda`} site={site}>
@@ -42,7 +34,7 @@ const tabs = [
 			<nav aria-label="Categorías">
 				<ul class="cluster category-tabs" role="list">
 					{tabs.map((tab) => (
-						<li><a class="category-tabs__link" data-category={tab.category} href={`${basePath}?category=${tab.category}`} aria-current={tab.category === initialCategory ? "true" : undefined}>{tab.label}</a></li>
+						<li><a class="category-tabs__link" data-category={tab.category} href={tab.category ? `${basePath}?category=${encodeURIComponent(tab.category)}` : basePath} aria-current={tab.category === initialCategory ? "true" : undefined}>{tab.label}</a></li>
 					))}
 				</ul>
 			</nav>

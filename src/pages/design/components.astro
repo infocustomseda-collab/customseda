@@ -13,10 +13,12 @@ import { galleryImages, type ProductCardView } from "../../lib/shop/view";
 
 if (!import.meta.env.DEV) return new Response(null, { status: 404 });
 
-type Row = { slug: string; title: string; price_cents: number; available: number; gallery: string };
-const query = (table: "ec_products" | "ec_conjuntos") =>
-	env.DB.prepare(`SELECT slug, title, price_cents, available, gallery FROM ${table} WHERE deleted_at IS NULL ORDER BY created_at`).all<Row>();
-const [products, conjuntos] = await Promise.all([query("ec_products"), query("ec_conjuntos")]);
+type Row = { slug: string; title: string; price_cents: number; available: number; gallery: string; bundle: number };
+const query = (table: "ec_products") =>
+	env.DB.prepare(`SELECT slug, title, price_cents, available, gallery, bundle FROM ${table} WHERE deleted_at IS NULL ORDER BY created_at`).all<Row>();
+const products = await query("ec_products");
+const conjuntos = { results: products.results.filter(row=>row.bundle) };
+products.results = products.results.filter(row=>!row.bundle);
 const card = (row: Row): ProductCardView => ({
 	href: `/products/${row.slug}`,
 	title: row.title,

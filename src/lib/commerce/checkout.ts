@@ -8,14 +8,12 @@ export const MAX_QUANTITY = 10;
 export const MIN_PRICE_CENTS = 50;
 /** Marks sessions this site created; the webhook ignores others in the same Stripe account. */
 export const SESSION_SOURCE = "customseda";
-const SIZE_FIELDS = ["talla", "talla_top", "talla_braguita"] as const;
-
 export type Order = {
-	id: string;
-	sizes: Record<(typeof SIZE_FIELDS)[number], string | null>;
-	quantity: number;
-	shipping: string;
-	price: number;
+ id: string;
+ sizes: Record<string, string | null>;
+ quantity: number;
+ shipping: string;
+ price: number;
 };
 
 const text = (form: FormData, key: string) => {
@@ -30,22 +28,22 @@ export function parseOrder(form: FormData): Order | null {
 	const quantity = integer(text(form, "quantity"));
 	const price = integer(text(form, "price"));
 	if (!id || !shipping || price === null || quantity === null || quantity < 1 || quantity > MAX_QUANTITY) return null;
-	const sizes = Object.fromEntries(SIZE_FIELDS.map((field) => [field, text(form, field)])) as Order["sizes"];
+	const sizes = Object.fromEntries([...form.keys()].filter(field=>field === "talla" || field.startsWith("size_")).map(field=>[field,text(form,field)]));
 	return { id, sizes, quantity, shipping, price };
 }
 
 export type CheckoutError = "invalid" | "unavailable" | "size" | "price" | "shipping" | "config" | "stripe";
-export type Component = { role: "pieza" | "top" | "braguita"; id: string; title: string; size: string };
+export type Component = { role: "pieza" | "component"; id: string; title: string; size: string };
 export type Quote =
 	| {
 			ok: true;
-			line: { kind: "pieza" | "conjunto"; id: string; slug: string; title: string; detail: string; unitCents: number; quantity: number; subtotalCents: number; components: Component[] };
+			line: { kind: "pieza" | "bundle"; id: string; slug: string; title: string; detail: string; unitCents: number; quantity: number; subtotalCents: number; components: Component[] };
 			shipping: { rule: ShippingRule; cents: number };
 			totalCents: number;
 	  }
 	| { ok: false; error: CheckoutError };
 
-type QuoteShop = Pick<ShopContent, "categories" | "collections" | "colors" | "sizes" | "products" | "conjuntos" | "shipping_rules">;
+type QuoteShop = Pick<ShopContent, "categories" | "collections" | "colors" | "sizes" | "products" | "shipping_rules">;
 
 export function quoteOrder(shop: QuoteShop, order: Order): Quote {
 	const items = buildCatalog(shop);
@@ -58,11 +56,11 @@ export function quoteOrder(shop: QuoteShop, order: Order): Quote {
 		return found && size && (found.sizes as readonly string[]).includes(size) ? { role, id: found.id, title: found.title, size } : null;
 	};
 	let components: (Component | null)[];
-	if (item.kind === "conjunto") {
-		const entry = shop.conjuntos.find((set) => set.id === item.id)!;
-		components = [choose("top", entry.refs.top?.[0], order.sizes.talla_top), choose("braguita", entry.refs.bottom?.[0], order.sizes.talla_braguita)];
+	if (item.kind === "bundle") {
+		const entry = shop.products.find((product) => product.id === item.id)!;
+		components = (entry.refs.components??[]).map(id=>choose("component",id,order.sizes[`size_${id}`]??null));
 	} else {
-		components = [choose("pieza", item.id, order.sizes.talla)];
+		components = [choose("pieza", item.id, order.sizes.talla??null)];
 	}
 	if (components.some((component) => !component)) return { ok: false, error: "size" };
 	if (order.price !== item.price) return { ok: false, error: "price" };
@@ -70,7 +68,7 @@ export function quoteOrder(shop: QuoteShop, order: Order): Quote {
 	if (!rule) return { ok: false, error: "shipping" };
 
 	const chosen = components as Component[];
-	const detail = item.kind === "conjunto" ? `Top: ${chosen[0].size} · Braguita: ${chosen[1].size}` : `Talla: ${chosen[0].size}`;
+	const detail = item.kind === "bundle" ? chosen.map(component=>`${component.title}: ${component.size}`).join(" · ") : `Talla: ${chosen[0].size}`;
 	const subtotalCents = item.price * order.quantity;
 	const shippingCents = shippingCost(rule, subtotalCents);
 	return {
@@ -105,11 +103,20 @@ export function orderMetadata(quote: Extract<Quote, { ok: true }>): Record<strin
 		shipping_countries: shipping.rule.countries.join(","),
 		shipping_postal_prefixes: shipping.rule.postalPrefixes.join(","),
 	};
-	for (const component of line.components) {
-		const key = component.role === "pieza" ? "piece" : component.role;
-		metadata[`${key}_id`] = component.id;
-		metadata[`${key}_title`] = component.title;
-		metadata[`${key}_size`] = component.size;
+	// Indexed keys cover ordinary bundles; a compact JSON list preserves every component
+	// for larger bundles while respecting Stripe's 50-key / 500-character limits.
+	const componentData = line.components.map(({id,title,size})=>({id,title,size}));
+	if (line.components.length <= 8) {
+		for (const [index,component] of line.components.entries()) {
+			const key = component.role === "pieza" ? "piece" : `component_${index+1}`;
+			metadata[`${key}_id`]=component.id;
+			metadata[`${key}_title`]=component.title;
+			metadata[`${key}_size`]=component.size;
+		}
+	} else {
+		const json=JSON.stringify(componentData);
+		for(let offset=0;offset<json.length;offset+=500) metadata[`components_${offset/500+1}`]=json.slice(offset,offset+500);
+		if(Object.keys(metadata).length>50) throw new Error("Bundle details exceed Stripe metadata capacity.");
 	}
 	return Object.fromEntries(Object.entries(metadata).map(([key, value]) => [key, clip(value)]));
 }
@@ -139,4 +146,18 @@ export function sessionParams(quote: Extract<Quote, { ok: true }>, origin: strin
 		success_url: `${origin}/checkout/gracias?session_id={CHECKOUT_SESSION_ID}`,
 		cancel_url: `${origin}/checkout/cancelado?producto=${encodeURIComponent(line.slug)}`,
 	};
+}
+
+/** Selected sizes from both current bundle sessions and previously paid orders. */
+export function orderSizeSummary(metadata: Record<string,string>): string {
+ if(metadata.item_kind==='conjunto') return `Top: ${metadata.top_size} · Braguita: ${metadata.braguita_size}`;
+ if(metadata.item_kind!=='bundle') return metadata.piece_size?`Talla: ${metadata.piece_size}`:'';
+ if(metadata.components_1) {
+  const keys=Object.keys(metadata).filter(key=>/^components_\d+$/.test(key)).sort((a,b)=>Number(a.split('_')[1])-Number(b.split('_')[1]));
+  try {
+   const components:unknown=JSON.parse(keys.map(key=>metadata[key]).join(''));
+   if(Array.isArray(components)) return components.filter(component=>typeof component?.title==='string'&&typeof component?.size==='string').map(component=>`${component.title}: ${component.size}`).join(' · ');
+  } catch {return '';}
+ }
+ return Object.keys(metadata).filter(key=>/^component_\d+_size$/.test(key)).sort((a,b)=>Number(a.split('_')[1])-Number(b.split('_')[1])).map(key=>`${metadata[key.replace('_size','_title')]}: ${metadata[key]}`).join(' · ');
 }

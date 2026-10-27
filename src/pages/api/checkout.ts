@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request, url, redirect }) => {
 	// Same content mode as the pages: local drafts in development, published entries when deployed.
 	const shop = await loadShop(await getDb(), {
 		drafts: import.meta.env.DEV,
-		only: ["categories", "collections", "colors", "sizes", "products", "conjuntos", "shipping_rules"],
+		only: ["collections", "colors", "sizes", "products", "shipping_rules"],
 	});
 	const quote = quoteOrder(shop, order);
 	if (!quote.ok) return back(quote.error);

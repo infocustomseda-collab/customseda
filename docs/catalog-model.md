@@ -1,6 +1,6 @@
 # Local catalog model
 
-Phase 2 supplies the CMS model. Public shop pages, Shopify import, Stripe, and the approved visual system follow in later phases.
+The current local catalog uses one Products collection, native hierarchical categories, and optional bundle components. This supersedes the separate Conjuntos and Categories content types in the original phase 2 plan.
 
 ## Start and update locally
 
@@ -16,9 +16,9 @@ A pre-migration local SQLite backup is in ignored `backups/`. Normal deployment 
 
 | Type | Rules |
 | --- | --- |
-| Productos | Exactly one category, collection and color; one or more supported sizes. Top supports S–XL; Braguita supports XS–XL. |
-| Conjuntos | Exactly one Top and one Braguita. Own price, description and gallery. Component color and collection must match and are inherited. No direct size field. |
-| Categorías | Stable codes `top` and `braguita`. Conjuntos is a separate type, not a third category. |
+| Productos | One native Category term at publication. Individual products have one collection, one color and supported sizes. Top supports S–XL; Braguita supports XS–XL. |
+| Bundle products | Products with `bundle` enabled and at least two distinct individual products in ordered `components`. Own title, price, description, gallery and category. Sizes are chosen separately per component. Nested bundles are rejected. No component color or collection matching validation. |
+| Categories | Native `category` taxonomy: Mujeres → Top, Braguita, Conjuntos; Hombres → Bañador. Manage under Taxonomies → Category. Assign the specific category; parent filtering includes descendants. |
 | Colecciones | Initial record Margarita. Stable code for import and matching. |
 | Tallas | Initial records XS, S, M, L, XL with display order. Codes are stable. |
 | Colores | Editable names and optional hexadecimal swatch. Create actual colors during import; no invented colors are seeded. |
@@ -27,11 +27,11 @@ Prices are integer **EUR cents**: enter `5900` for €59. Availability defaults 
 
 The gallery uses EmDash's native reorderable repeater. Each row has a media image, required alternative text, and optional horizontal/vertical focal coordinates from 0 to 1. The first row is the main image. Uploads must be ready before publication; at least one image is required to publish. Drafts can have an empty gallery.
 
-Create and publish lookup entries before products, then create Conjuntos from those products. A bundle's price is independent of the sum of its component prices. Unavailable components make the bundle unavailable; they do not force deletion or block drafting.
+Create and publish lookup entries before products, then create bundle products from those products. A bundle's price is independent of the sum of its component prices. Unavailable components make the bundle unavailable; they do not force deletion or block drafting.
 
-REST saves reject incompatible references, including requests containing only references. Native publish and scheduling policies recheck pending fields and references for all runtime writers, including MCP and plugins. EmDash 1.3.1 does not pass the pending reference payload to its before-save hook: a non-REST writer can stage an invalid selection, but cannot publish it through the runtime. Importers must call `validateCatalogWrite` before saving; do not write catalog SQL directly.
+REST saves reject incompatible references, including requests containing only references. Native category assignments may be incomplete while drafting; publication requires one category, and taxonomy edits of published products preserve that rule. Native publish and scheduling policies recheck pending fields and references for all runtime writers, including MCP and plugins. EmDash 1.3.1 does not pass the pending reference payload to its before-save hook: a non-REST writer can stage an invalid selection, but cannot publish it through the runtime. Importers must call `validateCatalogWrite` before saving; do not write catalog SQL directly.
 
-Components cannot be deleted or unpublished while referenced. Recategorization or color/collection changes that would break an existing Conjunto are rejected. Protection covers both live and current draft links; obsolete revision history does not block removal. Unlink or trash the dependent bundle first. Changes to lookup labels/copy are allowed; stable category/size codes, and used collection/color codes, are protected.
+Components cannot be deleted or unpublished while referenced. Turning a referenced component into a nested bundle is rejected. Component colors and collections may differ. Protection covers both live and current draft links; obsolete revision history does not block removal. Unlink or trash the dependent bundle first. Changes to lookup labels/copy are allowed; stable size codes, and used collection/color codes, are protected.
 
 ## Supporting content
 
@@ -44,7 +44,7 @@ Components cannot be deleted or unpublished while referenced. Recategorization o
 
 No sample products, bundles, merchant shipping prices, or source images are imported by the model migration. Initial lookup records retain the current database locale; field labels are Spanish. The import must settle the site's locale configuration before loading the Spanish catalog.
 
-The local Spanish catalog contains 11 Products and 5 Conjuntos. The completed import has been retired: `customseda.catalog-cleanup.v1` removes original-source fields, revision metadata and import mappings, and renames the settings slug to `home`. Existing content IDs, prices, galleries, relationships and publication states are retained. Native drafts may omit sizes; catalog write/publication validation continues to enforce supported sizes. Original photographs are preserved under `assets/originals/`; see [content maintenance](content-maintenance.md).
+The local Spanish catalog contains 16 Products, including 5 bundles. The 2026-10-27 one-time local migration retained IDs, URLs, draft revisions, prices, galleries and homepage links, assigned native categories, and removed the old Categories and Conjuntos types (including Felpa). No migration script is retained. Fresh database definitions use the new model; this is not a retained upgrade path for other old databases. The completed import has been retired: `customseda.catalog-cleanup.v1` removes original-source fields, revision metadata and import mappings, and renames the settings slug to `home`. Existing content IDs, prices, galleries, relationships and publication states are retained. Native drafts may omit sizes; catalog write/publication validation continues to enforce supported sizes. Original photographs are preserved under `assets/originals/`; see [content maintenance](content-maintenance.md).
 
 ## Storefront model and homepage content
 
@@ -52,7 +52,7 @@ The local Spanish catalog contains 11 Products and 5 Conjuntos. The completed im
 
 `pnpm cms:storefront` (local only, with `pnpm dev` running) fills those fields from the approved storefront copy. It also sets the source announcement, the primary and footer menus, and restores the Margarita page's source order (photo rows between paragraphs, final "Ver colección" link). All writes go through EmDash's REST API as drafts. Rerunning leaves already-ordered or editor-changed content alone.
 
-Public pages read content through `src/lib/shop/content.ts`. Production reads published rows only. Development also shows drafts with their pending revision and staged references, because the imported catalog is still unpublished. Phase 6 replaces this live read with the build-time snapshot.
+Category filters and navigation come from native terms. `?category=top`, `?category=conjuntos` and parent categories all filter taxonomy membership; `/collections/bikinis` is permanently scoped to Mujeres and its descendants, with no category parameter needed. Its category filters show only descendants (Top, Braguita and Conjuntos); Todo removes the category parameter and shows all products within Mujeres. Query filters cannot expand the page to Hombres. Native category archives use their own fixed scopes; collection-specific listings retain their collection scope. Public pages read content through `src/lib/shop/content.ts`. Production snapshots read published rows only. Development shows drafts with pending revisions and staged references. Category assignments use native taxonomy storage and take effect immediately in the editor; deployed pages update after a new snapshot/build. Scheduled rebuild checks detect category changes alongside menu edits.
 
 ## Deployment boundary
 
@@ -73,7 +73,16 @@ Use `production` explicitly to select production. Both commands display the sele
 
 The query-budget tests cover focused catalog reads and use at most five terms in compound SELECTs, matching D1. They are not a measurement of deployed Worker CPU or a guarantee that complete admin workflows fit Free-tier limits. Remote editing and publishing require a separate measured acceptance check.
 
-## Verification recorded for Phase 2
+## Verification recorded for 2026-10-27
+
+- 182 unit/runtime tests pass; the isolated local D1 integration test passes.
+- Astro typecheck: no errors or warnings (two existing specimen hints). Local draft preview build: 44 static pages checked.
+- Native admin tree and storefront filters inspected in the isolated Chrome profile. Top filters five products; migrated bundles retain Incluye.
+- Complete local product requests: create 152 ms, category assignment 72 ms, save 116 ms, publish 159 ms. Bundle requests: create 214 ms, category assignment 50 ms, save 185 ms, publish 142 ms. These are single local development observations, not deployed performance acceptance. Temporary verification entries were permanently removed.
+- All 16 existing IDs, URLs, copy, galleries, prices, draft pointers and publication states compared with the pre-migration backup. Obsolete type relationships removed; SQLite foreign-key check clean.
+- One-time migration files were removed. No remote data changes or deployments.
+
+## Historical verification recorded for Phase 2
 
 - `pnpm test`: 36 tests pass, including real EmDash runtime and SQLite policies, Contributor create/reference-only writes, optional size-guide publication, staged prices/references, dependency protection, media readiness, availability defaults, and interrupted model installation.
 - `pnpm test:d1`: isolated local D1 rehearsal passes; first/repeated apply, marker checks and locks exercised without contacting remote D1.

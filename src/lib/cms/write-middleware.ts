@@ -1,8 +1,25 @@
 import type {MiddlewareHandler} from 'astro';
 import { catalogTypes } from './catalog.ts';
-import { validateCatalogWrite, type CatalogWrite } from './catalog-store.ts';
+import { readCatalogEntry, validateCatalogWrite, type CatalogWrite } from './catalog-store.ts';
 
 export const catalogWriteMiddleware:MiddlewareHandler=async ({request,url,locals},next)=>{
+ // Native taxonomy assignments are immediate; protect already-published products.
+ const assignment=url.pathname.match(/^\/_emdash\/api\/content\/products\/([^/]+)\/terms\/category\/?$/);
+ if(assignment && request.method==='POST' && locals.user && locals.user.role>=20) {
+  const parsed:unknown=await request.clone().json().catch(()=>null);
+  const termIds=parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?(parsed as Record<string,unknown>).termIds:null;
+  if(Array.isArray(termIds) && termIds.every((id:unknown):id is string=>typeof id==='string')) {
+   const id=decodeURIComponent(assignment[1]!);
+   const entry=await readCatalogEntry(locals.emdash.db,'products',id,false);
+   if(entry?.status==='published') {
+    const terms=termIds.length?await locals.emdash.db.selectFrom('taxonomies').select(['id','translation_group']).where('name','=','category').where('id','in',termIds).execute():[];
+    const selected=termIds.map((id:string)=>terms.find(term=>term.id===id)?.translation_group??id);
+    const errors=await validateCatalogWrite(locals.emdash.db,'products',id,{references:{category:selected}},{publish:true});
+    if(errors.length)return Response.json({success:false,error:{code:'VALIDATION_ERROR',message:errors.join(' ')}},{status:400});
+   }
+  }
+  return next();
+ }
  const match=url.pathname.match(/^\/_emdash\/api\/content\/([a-z_]+)(?:\/([^/]+))?\/?$/);
  if(!match || !['POST','PUT','PATCH'].includes(request.method) || !catalogTypes.has(match[1]!) || !locals.user || locals.user.role<20) return next();
  const parsed:unknown=await request.clone().json().catch(()=>null);
