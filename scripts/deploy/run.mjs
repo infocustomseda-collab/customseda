@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
-import { validateTarget, deploymentCommands, migrationToken } from './target.mjs';
+import { validateTarget, deploymentCommands, migrationToken, commandEnv } from './target.mjs';
 import { wranglerLoginToken } from './login-token.mjs';
 import { withDeploymentLock } from './lock.mjs';
 import { remoteCatalogModel } from '../cms/remote-model.mjs';
@@ -49,8 +49,7 @@ try {
         console.log(`${model.version}: ${model.applied ? 'applied' : 'present'}.`);
         continue;
       }
-      // Only EmDash's migration CLI gets the token; Wrangler uses its own login (or the CI token).
-      const result = spawnSync('pnpm', ['exec', tool, ...args], { stdio: 'inherit', env: tool === 'emdash' ? { ...env, CLOUDFLARE_API_TOKEN: token } : env });
+      const result = spawnSync('pnpm', ['exec', tool, ...args], { stdio: 'inherit', env: commandEnv(tool, args, env, token) });
       if (result.error) throw result.error;
       if (result.status !== 0) throw Object.assign(new Error(`${tool} failed; deployment stopped.`), { exitCode: result.status ?? 1 });
     }

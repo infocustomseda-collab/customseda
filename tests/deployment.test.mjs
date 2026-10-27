@@ -1,6 +1,22 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { validateTarget, deploymentCommands } from '../scripts/deploy/target.mjs';
+import { validateTarget, deploymentCommands, commandEnv } from '../scripts/deploy/target.mjs';
+
+test('wrangler deploys a generated config without CLOUDFLARE_ENV, so the Worker keeps its own name', () => {
+  const env = { PATH: '/bin', CLOUDFLARE_ENV: 'staging', CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32) };
+  // With CLOUDFLARE_ENV set, Wrangler looks for env.staging in the flattened file, finds none,
+  // and deploys a new Worker named "<name>-staging".
+  const deploy = commandEnv('wrangler', ['deploy', '-c', 'dist-preview/server/wrangler.json'], env, 'tok');
+  assert.equal('CLOUDFLARE_ENV' in deploy, false);
+  assert.equal(deploy.CLOUDFLARE_ACCOUNT_ID, env.CLOUDFLARE_ACCOUNT_ID);
+  assert.equal(deploy.CLOUDFLARE_API_TOKEN, undefined);
+  // EmDash's migration CLI needs the token and the selected environment.
+  const migrate = commandEnv('emdash', ['migrate', '--check'], env, 'tok');
+  assert.equal(migrate.CLOUDFLARE_ENV, 'staging');
+  assert.equal(migrate.CLOUDFLARE_API_TOKEN, 'tok');
+  // The caller's object is never changed.
+  assert.equal(env.CLOUDFLARE_ENV, 'staging');
+});
 
 const origin = name => `https://customseda-${name}.example.workers.dev`;
 const config = () => ({
