@@ -32,24 +32,25 @@ All secret files are ignored by git, have owner-only permissions (`chmod 600`), 
 | File | Holds | Used by |
 | --- | --- | --- |
 | `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | `pnpm dev`. Wrangler reads `.env` as the local Worker's secrets; copy `.env.example`. |
-| `.env.cloudflare-staging`, `.env.cloudflare-production` | Remote Worker secrets per environment | `wrangler secret bulk` on first deploy, see below. Not loaded automatically. |
+| `.env.cloudflare-staging`, `.env.cloudflare-production` | Secrets of the public Workers (`EMDASH_ENCRYPTION_KEY`, Stripe keys, `FOUNDATION_ACCESS_TOKEN`) | `wrangler secret bulk` on first deploy, see below. Not loaded automatically. |
+| `.env.cloudflare-staging-preview`, `.env.cloudflare-production-preview` | Secrets of the `<env>-preview` Workers only (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, `GITHUB_REBUILD_TOKEN`; never Stripe keys) | `wrangler secret bulk` on first deploy, see below. Same owner-only permissions, git-ignored by `.env.*`. |
 
 Never put a Cloudflare API token in `.env` or the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
 
 Manual deploys authenticate like fdag: run `pnpm exec wrangler login` once, then `pnpm deploy:<env>`. EmDash's core migrations run from the deploy, never inside the Worker, so they can't exceed Workers Free CPU limits (the problem fdag hit). `emdash migrate` needs a bearer token, so the runner hands it the token of your Wrangler login (`wrangler auth token`). In CI, `CLOUDFLARE_API_TOKEN` comes from the GitHub environment secret, and Wrangler uses it too. Use a custom token on this account with the "Edit Cloudflare Workers" template plus Account → D1 → Edit (and Workers R2 Storage → Edit if missing). Keep one token for manual use, stored in a password manager, and a second one as the GitHub environment secret, so either can be revoked alone.
 
-Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN`, and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
+Runtime secrets are `EMDASH_ENCRYPTION_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [checkout](checkout.md); test keys for staging, live keys only in production), `GITHUB_REBUILD_TOKEN` (a secret of the `<env>-preview` Worker only), and, while the temporary gate is enabled, `FOUNDATION_ACCESS_TOKEN`. Back up encryption keys in a password manager before relying on encrypted settings.
 
-Secrets per Worker: the public Worker holds `EMDASH_ENCRYPTION_KEY`, the Stripe keys and `FOUNDATION_ACCESS_TOKEN`. The preview Worker needs the same `EMDASH_ENCRYPTION_KEY` as its pair (it reads the same encrypted settings), plus `FOUNDATION_ACCESS_TOKEN` and `GITHUB_REBUILD_TOKEN`. Stripe stays on the public Worker only.
+Secrets per Worker: the public Worker holds `EMDASH_ENCRYPTION_KEY`, the Stripe keys and `FOUNDATION_ACCESS_TOKEN`. The preview Worker needs the same `EMDASH_ENCRYPTION_KEY` as its pair (it reads the same encrypted settings), plus `FOUNDATION_ACCESS_TOKEN` and `GITHUB_REBUILD_TOKEN`. Stripe stays on the public Worker only. The key in `.env.cloudflare-<env>-preview` must be identical to the one in `.env.cloudflare-<env>`.
 
 For the first deployment of an environment, upload its secrets through Wrangler, for example:
 
 ```sh
 pnpm exec wrangler secret bulk .env.cloudflare-production --env production
-pnpm exec wrangler secret bulk .env.cloudflare-production --env production-preview
+pnpm exec wrangler secret bulk .env.cloudflare-production-preview --env production-preview
 ```
 
-For the preview Worker, use a secret file that holds only its secrets (the three above), or accept that unused ones are uploaded too.
+`.env.cloudflare-<env>-preview` holds only `EMDASH_ENCRYPTION_KEY` (identical to its public pair's), `FOUNDATION_ACCESS_TOKEN` and, once the rebuild token exists, `GITHUB_REBUILD_TOKEN`. Never put Stripe keys in it.
 
 Review the selected environment and secret file first. Subsequent deployments preserve remote secrets. The gate fails closed with 503 if locked and the access secret is missing. Do not turn it off until setup is complete and the intended exposure has been reviewed.
 
@@ -67,7 +68,7 @@ pnpm deploy:staging
 pnpm deploy:production
 ```
 
-The runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV`:
+The runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV` (the preview build in step 10 uses `<env>-preview` instead):
 
 1. Show the migration target and status (manifest built from the Astro config with `--from-config`, since no build exists yet).
 2. Run core migration. It is interactive, unless `EMDASH_EXPECTED_TARGET_FINGERPRINT` holds the reviewed fingerprint, as in CI.
@@ -113,7 +114,7 @@ One-time setup per environment, in GitHub → Settings → Environments (`stagin
 - **Repository variable `STAGING_DEPLOY_ENABLED=true`:** set once the `staging` environment secret and fingerprint exist. Until then pushes only run tests and the staging job is skipped.
 - **Repository variable `PRODUCTION_DEPLOY_ENABLED=true`:** set only after the supervised first production setup in phase 7 (secrets, administrator, reviewed fingerprint, Stripe keys).
 
-Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, `GITHUB_REBUILD_TOKEN`) stay in Cloudflare (`wrangler secret put --env …`) and are never copied to GitHub. Manual deploys from a developer machine keep working (`pnpm deploy:staging`). Do not run one while the same environment's workflow is deploying.
+Runtime secrets (`EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN`, Stripe, and `GITHUB_REBUILD_TOKEN` on the preview Worker) stay in Cloudflare (`wrangler secret put --env …`) and are never copied to GitHub. Manual deploys from a developer machine keep working (`pnpm deploy:staging`). Do not run one while the same environment's workflow is deploying.
 
 ## Publishing and rebuilds
 
@@ -125,7 +126,7 @@ Public pages are prebuilt, so a CMS change appears on the public site after the 
 
 Bursts coalesce before any job starts: waiting dispatch runs for an environment replace each other. A deploy always checks out the current `master`. A failed build or deploy leaves the previous site serving; check the Actions tab.
 
-The workflow is dispatched with a **fine-grained personal access token**, scoped to the `infocustomseda-collab/customseda` repository with "Actions: read and write" permission and nothing else. Store it per environment as a Worker secret:
+The workflow is dispatched with a **fine-grained personal access token**, scoped to the `infocustomseda-collab/customseda` repository with "Actions: read and write" permission and nothing else. Store it as a secret of each `<env>-preview` Worker (the rebuild trigger runs there):
 
 ```sh
 pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env staging-preview
@@ -135,7 +136,7 @@ pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env staging-preview
 
 | Token | Owner | Expires | Renewal |
 | --- | --- | --- | --- |
-| `GITHUB_REBUILD_TOKEN` (staging) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
+| `GITHUB_REBUILD_TOKEN` (`staging-preview` Worker) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
 
 When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
 
