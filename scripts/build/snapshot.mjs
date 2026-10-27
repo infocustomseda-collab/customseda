@@ -10,7 +10,7 @@ export async function writeSnapshot({environment,allowEmpty=false,drafts=false,o
  if(!ENVIRONMENTS.includes(environment)) throw new Error('Choose --env local, staging or production.');
  const bindings=await open(environment);
  try {
-  const snapshot=await createSnapshot(bindings.db,environment,{drafts});
+  const snapshot=await createSnapshot(bindings.db,environment,{drafts,allowMissing:allowEmpty});
   assertPublishable(snapshot,{environment,allowEmpty});
   await mkdir(dirname(path),{recursive:true});
   await writeFile(`${path}.tmp`,JSON.stringify(snapshot));

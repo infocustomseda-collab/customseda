@@ -1,13 +1,19 @@
 ---
 // The CMS pages collection still builds `/<slug>` links (admin previews, older references); send those
-// to the public path. Prerendered as redirect pages; unknown slugs fall through to the 404.
+// to the public path. The public build prerenders them as permanent redirect pages; preview renders them on
+// request and redirects temporarily, keeping the query so `?_preview=<token>` links survive. Unknown slugs fall through to the 404.
 import { loadShopContent } from "../lib/shop/page";
-import { rootRedirectPaths } from "../lib/shop/paths";
+import { rootRedirect, rootRedirectPaths, rootRedirectTarget } from "../lib/shop/paths";
+import { siteMode } from "../lib/site-mode";
 
 export const prerender = true;
 export async function getStaticPaths() {
 	return rootRedirectPaths(await loadShopContent());
 }
 
-return Astro.redirect((Astro.props as { target: string }).target, 301);
+// Preview builds render on request and have no static props, so look the target up.
+const target = (Astro.props as { target?: string }).target ?? rootRedirectTarget(await loadShopContent(), Astro.params.slug ?? "");
+if (!target) return Astro.rewrite("/404");
+const { location, status } = rootRedirect(target, Astro.url.search, siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE));
+return Astro.redirect(location, status);
 ---

@@ -25,3 +25,11 @@ test('locked runtime challenges missing, wrong and malformed credentials', () =>
 test('correct foundation credentials pass through without replacing CMS authentication', () => {
   assert.equal(foundationAccess(request(secret), { FOUNDATION_LOCKED: 'true', FOUNDATION_ACCESS_TOKEN: secret }), null);
 });
+test('CLI clients send the credentials in X-Foundation-Access, keeping Authorization for their CMS token', () => {
+  const env = { FOUNDATION_LOCKED: 'true', FOUNDATION_ACCESS_TOKEN: secret };
+  const cli = (password) => new Request('https://staging.example/_emdash/api/import', {
+    headers: { Authorization: 'Bearer ec_pat_token', 'X-Foundation-Access': `Basic ${btoa(`seda:${password}`)}` },
+  });
+  assert.equal(foundationAccess(cli(secret), env), null);
+  assert.equal(foundationAccess(cli('wrong'), env).status, 401);
+});

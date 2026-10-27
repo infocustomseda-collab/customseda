@@ -4,6 +4,7 @@ import { d1, r2 } from "@emdash-cms/cloudflare";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 import { readFileSync } from "node:fs";
+import { routePrerender } from "./src/lib/build/route-mode.ts";
 import { assertBuildEnvironment, SNAPSHOT_PATH } from "./src/lib/shop/snapshot.ts";
 
 /** @param {string} family @param {number} weight @param {"normal" | "italic"} style */
@@ -13,8 +14,13 @@ const fontsource = (family, weight, style) => ({
 	src: [`./node_modules/@fontsource/${family}/files/${family}-latin-${weight}-${style}.woff2`],
 });
 
+// SITE_MODE=preview builds the server-rendered preview Worker; anything else is the static public build.
+const isPreview = process.env.SITE_MODE === "preview";
+
 export default defineConfig({
 	output: "server",
+	outDir: isPreview ? "./dist-preview" : "./dist",
+	vite: { define: { "import.meta.env.SITE_MODE": JSON.stringify(isPreview ? "preview" : "public") } },
 	// Public pages prerender to <path>.html so they keep the existing slash-free public paths.
 	build: { format: "file" },
 	trailingSlash: "never",
@@ -67,7 +73,14 @@ export default defineConfig({
             hooks: {
                 // Staging content must never prerender into a production build, or the other way round.
                 "astro:build:start"() {
+                    if (isPreview) return; // preview reads live content, not the snapshot
                     assertBuildEnvironment(JSON.parse(readFileSync(SNAPSHOT_PATH, "utf8")), process.env.CLOUDFLARE_ENV);
+                },
+                // Only our own pages; EmDash's and the injected customseda routes are already server routes.
+                "astro:route:setup"({ route }) {
+                    if (!route.component.startsWith("src/pages/")) return;
+                    const prerender = routePrerender(isPreview ? "preview" : "public", route.prerender);
+                    if (prerender !== undefined) route.prerender = prerender;
                 },
                 "astro:config:setup"({ injectRoute }) {
                     injectRoute({

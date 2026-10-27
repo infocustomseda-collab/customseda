@@ -36,13 +36,66 @@ export function validateTarget(config, environment) {
   if (!otherOrigin || url.origin === otherOrigin) {
     throw new Error('Staging and production require distinct public origins.');
   }
-  return { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin };
+  const target = { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin };
+  const role = selected.vars?.SITE_ROLE;
+  if (role === 'preview') return { ...target, rendering: 'live', preview: validateLive(config, environment, selected) };
+  if (role !== 'public') throw new Error(`Set SITE_ROLE to "public" or "preview" in the ${environment} environment.`);
+  return { ...target, rendering: 'static', preview: validatePreview(config, environment, selected, url.origin, database, bucket) };
+}
+
+/** A live environment is one Worker rendering every page on request: no static partner to send visitors to. */
+function validateLive(config, environment, selected) {
+  if (config.env?.[`${environment}-preview`]) {
+    throw new Error(`A live ${environment} environment has no ${environment}-preview partner; remove it or set SITE_ROLE to "public".`);
+  }
+  if (selected.vars?.PUBLIC_SITE_URL || selected.vars?.PREVIEW_SITE_URL) {
+    throw new Error(`A live ${environment} environment serves everyone itself; remove PUBLIC_SITE_URL and PREVIEW_SITE_URL.`);
+  }
+  return undefined;
+}
+
+/** The preview Worker shares its pair's database and bucket; only its role, name and origin differ. */
+function validatePreview(config, environment, selected, publicOrigin, database, bucket) {
+  const previewEnvironment = `${environment}-preview`;
+  const preview = config.env?.[previewEnvironment];
+  if (!preview) throw new Error(`The ${previewEnvironment} environment is missing from the Wrangler config.`);
+  const expectedName = `${selected.name.trim()}-preview`;
+  if (preview.name !== expectedName) throw new Error(`The ${previewEnvironment} Worker name must be ${expectedName}.`);
+  if (preview.d1_databases?.find(x => x.binding === 'DB')?.database_id !== database.database_id) {
+    throw new Error(`The ${previewEnvironment} environment must use the same database_id as ${environment}.`);
+  }
+  if (preview.r2_buckets?.find(x => x.binding === 'MEDIA')?.bucket_name !== bucket.bucket_name) {
+    throw new Error(`The ${previewEnvironment} environment must use the same media bucket as ${environment}.`);
+  }
+  if (preview.vars?.SITE_ROLE !== 'preview') throw new Error(`Set SITE_ROLE to "preview" in the ${previewEnvironment} environment.`);
+  let previewUrl;
+  try { previewUrl = new URL(preview.vars?.EMDASH_SITE_URL); } catch { /* The check below reports the missing origin. */ }
+  if (!previewUrl || previewUrl.protocol !== 'https:' || previewUrl.username || previewUrl.password || previewUrl.pathname !== '/' || previewUrl.search || previewUrl.hash || ['localhost', '127.0.0.1'].includes(previewUrl.hostname)) {
+    throw new Error(`Set the ${previewEnvironment} EMDASH_SITE_URL to its public HTTPS origin.`);
+  }
+  for (const [name, other] of Object.entries(config.env ?? {})) {
+    if (name === previewEnvironment) continue;
+    let otherOrigin;
+    try { otherOrigin = new URL(other?.vars?.EMDASH_SITE_URL).origin; } catch { /* Not an origin to compare. */ }
+    if (otherOrigin === previewUrl.origin) throw new Error(`The ${previewEnvironment} preview origin must differ from the ${name} origin.`);
+  }
+  if (selected.vars?.PREVIEW_SITE_URL !== previewUrl.origin) {
+    throw new Error(`Set PREVIEW_SITE_URL in ${environment} to the ${previewEnvironment} origin.`);
+  }
+  if (preview.vars?.PUBLIC_SITE_URL !== publicOrigin) {
+    throw new Error(`Set PUBLIC_SITE_URL in ${previewEnvironment} to the ${environment} origin.`);
+  }
+  if (preview.vars?.FOUNDATION_LOCKED === 'true' && preview.assets?.run_worker_first !== true) {
+    throw new Error('Gated preview environments must run the Worker before static assets.');
+  }
+  return { environment: previewEnvironment, origin: previewUrl.origin };
 }
 
 /**
  * Migrations first (from the Astro config, since no build exists yet), so the snapshot reads the
  * migrated schema; then snapshot, image derivatives, a migrated local database for prerendering, build,
- * a check that no page is an error response, upload, and a check against the build's manifest.
+ * a check that no page is an error response, upload, then the server-rendered preview build and its
+ * upload, and a check against the build's manifest (both builds share one commit and config).
  */
 const migrationCommand = target => ['emdash', 'migrate', '--account-id', target.accountId, '--d1', target.databaseId, '--wrangler-config', 'wrangler.jsonc', '--wrangler-env', target.environment];
 
@@ -61,16 +114,30 @@ export const statusCommand = target => [...migrationCommand(target), '--from-con
 
 export function deploymentCommands(target, { fingerprint, allowEmpty = false } = {}) {
   const migration = migrationCommand(target);
-  return [
+  const migrate = [
     statusCommand(target),
     [...migration, '--from-config', ...(fingerprint ? ['--expected-target-fingerprint', fingerprint] : [])],
     ['catalog-model'],
+  ];
+  // A live environment renders every page on request: no snapshot, derivatives or prerendering.
+  if (target.rendering === 'live') return [
+    ...migrate,
+    ['astro-preview', target.environment],
+    ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json'],
+    [...migration, '--check'],
+  ];
+  return [
+    ...migrate,
     ['snapshot', target.environment, allowEmpty],
     ['images', target.environment],
     ['prerender-db', target.environment],
     ['astro', 'build'],
     ['check-static'],
-    ['wrangler', 'deploy', '--env', target.environment],
+    // Build the preview variant before any upload, so a failed build stops the deploy early.
+    ['astro-preview', target.preview.environment],
+    // Each build writes a Wrangler config already flattened for its environment, so no --env.
+    ['wrangler', 'deploy', '-c', 'dist/server/wrangler.json'],
+    ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json'],
     [...migration, '--check'],
   ];
 }

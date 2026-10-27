@@ -1,10 +1,11 @@
-// Shared data for public shop pages: content and site chrome. Development reads live content with
-// drafts; builds and deployed live routes read the build-time snapshot, so no page queries D1.
+// Shared data for public shop pages: content and site chrome. Development and the preview Worker read live content; builds and deployed live routes read the build-time snapshot, so no page queries D1.
 import { getMenu } from "emdash";
 import { getDb } from "emdash/runtime";
 import type { SiteChrome } from "../../layouts/Shop.astro";
+import { siteMode } from "../site-mode.ts";
 import { loadShop, type ShopContent, type ShopEntry } from "./content.ts";
 import { annotateImages, generatedImages } from "./images.ts";
+import { shopSource } from "./source.ts";
 import { popupViews, settingsOf, siteChrome } from "./site.ts";
 import type { ShopSnapshot } from "./snapshot.ts";
 
@@ -19,10 +20,15 @@ function snapshot(): ShopSnapshot {
 	return found;
 }
 
-/** Content for getStaticPaths and pages: live with drafts in development, the snapshot otherwise. */
+const currentMode = () => siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE);
+
+/** Content for getStaticPaths and pages: live in dev and preview (drafts per request), the snapshot in the public build. */
 export async function loadShopContent(): Promise<ShopContent> {
-	if (!import.meta.env.DEV) return snapshot().shop;
-	const live = await loadShop(await getDb(), { drafts: true });
+	const mode = currentMode();
+	const source = shopSource(mode);
+	if (!source.live) return snapshot().shop;
+	const live = await loadShop(await getDb(), { drafts: source.drafts });
+	if (mode !== "dev") return live;
 	const prepared = Object.values(snapshots)[0];
 	// Never borrow derivatives from another environment. CMS edits remain live; newly
 	// uploaded media falls back to its original until the next local image preparation.
@@ -31,7 +37,7 @@ export async function loadShopContent(): Promise<ShopContent> {
 
 export async function loadShopPage(Astro: { url: URL }): Promise<ShopPage> {
 	let shop: ShopContent, primary, footer;
-	if (import.meta.env.DEV) {
+	if (shopSource(currentMode()).live) {
 		[shop, primary, footer] = await Promise.all([loadShopContent(), getMenu("primary"), getMenu("footer")]);
 	} else {
 		({ shop, menus: { primary, footer } } = snapshot());

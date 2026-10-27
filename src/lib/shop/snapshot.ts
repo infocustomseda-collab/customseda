@@ -2,7 +2,7 @@
 // it, so they never read D1 per request. Written by `pnpm snapshot`; never committed.
 import type { Database, Menu, MenuItem } from "emdash";
 import { sql, type Kysely } from "kysely";
-import { loadShop, type ShopContent } from "./content.ts";
+import { loadShop, shopTypes, type ShopContent, type ShopType } from "./content.ts";
 
 export const SNAPSHOT_PATH = "src/generated/shop-snapshot.json";
 export type SnapshotEnvironment = "local" | "staging" | "production";
@@ -43,10 +43,18 @@ async function readMenu(db: Kysely<Database>, name: string): Promise<Menu> {
 	return { id: menu.id, name, label: menu.label, items, locale: menu.locale, translationGroup: menu.translation_group };
 }
 
-/** `drafts` previews unpublished local content in a local build; remote snapshots are always published-only. */
-export async function createSnapshot(db: Kysely<Database>, environment: SnapshotEnvironment, { drafts = false } = {}): Promise<ShopSnapshot> {
+/**
+ * `drafts` previews unpublished local content in a local build; remote snapshots are always published-only.
+ * `allowMissing` skips shop collections that do not exist yet: a blank database awaiting a site import.
+ */
+export async function createSnapshot(db: Kysely<Database>, environment: SnapshotEnvironment, { drafts = false, allowMissing = false } = {}): Promise<ShopSnapshot> {
 	if (drafts && environment !== "local") throw new Error("Draft snapshots are local only.");
-	const [shop, primary, footer] = [await loadShop(db, { drafts }), await readMenu(db, "primary"), await readMenu(db, "footer")];
+	let only: ShopType[] | undefined;
+	if (allowMissing) {
+		const existing = new Set((await db.selectFrom("_emdash_collections").select("slug").execute()).map((row) => row.slug));
+		only = (Object.keys(shopTypes) as ShopType[]).filter((type) => existing.has(type));
+	}
+	const [shop, primary, footer] = [await loadShop(db, { drafts, only }), await readMenu(db, "primary"), await readMenu(db, "footer")];
 	return { version: 1, environment, generatedAt: new Date().toISOString(), shop, menus: { primary, footer } };
 }
 

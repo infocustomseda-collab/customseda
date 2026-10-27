@@ -3,11 +3,13 @@
 // same markup serves live development data now and the build-time snapshot in phase 6.
 import { Font } from "astro:assets";
 import AnnouncementBar from "../components/AnnouncementBar.astro";
+import PreviewBanner from "../components/PreviewBanner.astro";
 import PageTransitions from "../components/PageTransitions.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import SitePopup from "../components/SitePopup.astro";
 import UpdateBanner from "../components/UpdateBanner.astro";
+import { registersServiceWorker, siteMode } from "../lib/site-mode";
 import type { PopupView } from "../lib/shop/site";
 import type { NavItem, SocialLink } from "../lib/shop/view";
 import "../styles/index.css";
@@ -32,6 +34,7 @@ interface Props {
 
 const { title, description, canonical, image, noindex, site } = Astro.props;
 const fullTitle = title === site.siteName ? title : `${title} — ${site.siteName}`;
+const mode = siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE);
 ---
 
 <!doctype html>
@@ -69,6 +72,7 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 	</head>
 	<body>
 		<a class="skip-link" href="#contenido">Saltar al contenido</a>
+		<PreviewBanner />
 		{site.announcement?.text && <AnnouncementBar text={site.announcement.text} href={site.announcement.href} />}
 		<SiteHeader nav={site.nav} />
 		<main id="contenido" tabindex="-1">
@@ -76,6 +80,6 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 		</main>
 		<SiteFooter links={site.footerLinks} social={site.social} />
 		{site.popups && site.popups.length > 0 && !noindex && <SitePopup popups={site.popups} />}
-		{import.meta.env.PROD && <UpdateBanner />}
+		{registersServiceWorker(mode, import.meta.env.PROD) && <UpdateBanner />}
 	</body>
 </html>

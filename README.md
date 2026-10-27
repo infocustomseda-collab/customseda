@@ -52,15 +52,15 @@ pnpm build
 
 ## Remote environments
 
-| Environment | Worker | Database | Media bucket |
-| --- | --- | --- | --- |
-| Local | `customseda-local` | Local D1 only | Local R2 only |
-| Staging | `customseda-staging` | `customseda-staging` | `customseda-staging-media` |
-| Production | `customseda-production` | `customseda-production` | `customseda-production-media` |
+| Environment | Worker | Preview Worker | Database | Media bucket |
+| --- | --- | --- | --- | --- |
+| Local | `customseda-local` | none | Local D1 only | Local R2 only |
+| Staging | `customseda-staging` (live, renders on request) | none | `customseda-staging` | `customseda-staging-media` |
+| Production | `customseda-production` | `customseda-production-preview` | `customseda-production` | `customseda-production-media` |
 
-Staging: <https://customseda-staging.customseda.workers.dev/_emdash/admin/>
+Staging is one live Worker: every page renders on request, with drafts for signed-in editors and `?_preview=` links. Site: <https://customseda-staging.customseda.workers.dev/>, admin: <https://customseda-staging.customseda.workers.dev/_emdash/admin/>. Production will be static, with its admin and drafts on a `-preview` Worker sharing its database and bucket. See [deployment](docs/deployment.md#workers-per-environment).
 
-The temporary HTTP Basic gate uses username `seda` and the `FOUNDATION_ACCESS_TOKEN` value in the ignored `.env.cloudflare-staging` file. This gate protects the initial setup wizard and is additional to EmDash's passkey login. Do not send the token in a URL or commit it. The merchant must register their own passkey. Production has resources but is not published, and `customseda.com` still points to Shopify.
+The temporary HTTP Basic gate uses username `seda` and the `FOUNDATION_ACCESS_TOKEN` value in the ignored `.env.cloudflare-staging` file. It covers the production Workers; staging is open, behind EmDash's passkey login only. This gate protects the initial setup wizard and is additional to EmDash's passkey login. CLI clients that need `Authorization` for an EmDash API token (for example `emdash site import`) send the same Basic credentials in an `X-Foundation-Access` header instead. Do not send the token in a URL or commit it. The merchant must register their own passkey. Production has resources but is not published, and `customseda.com` still points to Shopify.
 
 The deployment runner migrates EmDash core and then the versioned catalog model from the CLI before uploading the Worker. See [catalog migration boundaries](docs/catalog-model.md#deployment-boundary). `pnpm test:d1` rehearses the catalog migration against isolated local D1; actual remote catalog acceptance remains pending.
 
