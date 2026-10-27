@@ -14,7 +14,7 @@ export async function database() {
 }
 test('catalog seed exposes one product collection and native category taxonomy',()=>{
  assert.deepEqual(validateSeed(seed).errors,[]);
- assert.equal(seed.collections.length,9);
+ assert.equal(seed.collections.length,10);
  const product=seed.collections.find(c=>c.slug==='products');
  assert.equal(product.fields.find(f=>f.slug==='available').defaultValue,true);
  assert.equal(product.fields.find(f=>f.slug==='sizes').validation.multiple,true);

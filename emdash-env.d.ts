@@ -69,6 +69,20 @@ export interface Color {
   terms?: Record<string, TaxonomyTerm[]>;
 }
 
+export interface Material {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  special_edition?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
 export interface Page {
   id: string;
   slug: string | null;
@@ -191,6 +205,11 @@ export interface ProductReferences {
   components: ReferencePage<Product>;
 }
 
+export interface MaterialReferences {
+  color: ReferencePage<Color>;
+  sizes: ReferencePage<Size>;
+}
+
 export interface SiteSettingReferences {
   featured_conjunto: ReferencePage<Product>;
 }
@@ -201,6 +220,7 @@ declare module "emdash" {
     collections: Collection;
     sizes: Size;
     colors: Color;
+    materials: Material;
     pages: Page;
     size_guides: SizeGuide;
     site_settings: SiteSetting;
@@ -210,6 +230,7 @@ declare module "emdash" {
   }
   interface EmDashCollectionReferences {
     products: ProductReferences;
+    materials: MaterialReferences;
     site_settings: SiteSettingReferences;
   }
 }

@@ -22,6 +22,7 @@ A pre-migration local SQLite backup is in ignored `backups/`. Normal deployment 
 | Colecciones | Initial record Margarita. Stable code for import and matching. Classification only: not routable, no public listing page. |
 | Tallas | Each size belongs to one native Category term (required at publication). Title names size and category (`S · Top`) so the admin list and product picker distinguish them; **Etiqueta** is the shopper-facing size (XS, S, M, L, XL) shown on the storefront, at checkout and in Stripe. Initial records: Top S–XL, Braguita XS–XL, with native slugs `top-s`, `braguita-xs` (no separate code). A size's category cannot change while products use it. |
 | Colores | Editable names and optional hexadecimal swatch. Create actual colors during import; no invented colors are seeded. Identified by the native slug, which is also the storefront `?color=` filter value; there is no separate code. |
+| Materiales | Nombre, one Color (required at publication), Disponibilidad (optional multi-reference to Tallas) and Edición especial (Yes/No, default No). Not routable and not yet linked to products. Colors and sizes used by a material cannot be deleted or unpublished. |
 
 Prices are integer **EUR cents**: enter `5900` for €59. Availability defaults to Yes. This is an editorial sale switch, with no quantity or inventory tracking. A bundle is purchasable only when it and both components are published and available. At checkout the buyer selects a supported size for each component independently; checkout is phase 5.
 
@@ -53,6 +54,8 @@ The local Spanish catalog contains 16 Products, including 5 bundles. The 2026-10
 `customseda.collection-pages.v1` makes Colecciones non-routable (no URL pattern, scheduling or SEO). `/collections/<collection>` listings such as `/collections/margarita` no longer exist; `/collections/<handle>` serves only Bikinis and category listings. The Margarita story stays at `/pages/margarita`.
 
 `customseda.color-slugs.v1` drops the Colores code field (and its revision copies); existing slugs already matched the codes, so filter URLs are unchanged.
+
+`customseda.materials.v1` (`src/lib/cms/materials.ts`) adds Materiales and creates one published material per published color (same name and slug), available in every published size; Rojo Brillante is the special edition. It validates each entry with `validateCatalogWrite` before EmDash's create and publish handlers, and skips colors that already have a material with their slug. Applied locally on 2026-10-27: Caoba, Dorado, Rojo, Rojo Brillante and Turquesa (backup in `backups/pre-materials-2026-10-27.sqlite`).
 
 ## Storefront model and homepage content
 

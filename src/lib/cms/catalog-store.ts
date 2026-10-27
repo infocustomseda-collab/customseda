@@ -5,6 +5,7 @@ import { catalogTypes, validateCatalogEntry, type CatalogEntry } from './catalog
 export type CatalogDb = Kysely<Database>;
 const targets: Record<string, Record<string,string>> = {
  products:{collection:'collections',color:'colors',sizes:'sizes',size_guide:'size_guides',components:'products'},
+ materials:{color:'colors',sizes:'sizes'},
 };
 // Collections whose entries carry one native category term.
 const categorized=new Set(['products','sizes']);
@@ -25,7 +26,7 @@ export async function readCatalogEntry(db:CatalogDb,type:string,id:string,draft=
   data={...data,...Object.fromEntries(Object.entries(revision.data).filter(([key])=>!key.startsWith('_')))};
   staged=(revision.data._references??{}) as Record<string,unknown>;
  }
- for(const field of ['available','bundle']) if(data[field]===0 || data[field]===1) data[field]=Boolean(data[field]);
+ for(const field of ['available','bundle','special_edition']) if(data[field]===0 || data[field]===1) data[field]=Boolean(data[field]);
  const refs:Record<string,string[]>={};
  const selections=Object.entries(targets[type]??{}).map(([field,target])=>{
   refs[field]=[];

@@ -12,6 +12,7 @@ import {remoteCatalogModel} from '../../scripts/cms/remote-model.mjs';
 import {modelVersion,storefrontVersion,collectionPagesVersion,colorSlugsVersion} from '../../src/lib/cms/model-migration.ts';
 import {cleanupVersion} from '../../src/lib/cms/retire-import.ts';
 import {sizeCategoriesVersion} from '../../src/lib/cms/size-categories.ts';
+import {materialsVersion} from '../../src/lib/cms/materials.ts';
 import {checkoutVersion} from '../../src/lib/commerce/payments.ts';
 
 test('remote-model orchestration applies and retries against isolated local D1, never a remote binding',async t=>{
@@ -35,8 +36,8 @@ test('remote-model orchestration applies and retries against isolated local D1, 
  await assert.rejects(()=>remoteCatalogModel(target,{check:true,proxyFactory}),/has not been applied/);
  const first=await remoteCatalogModel(target,{proxyFactory});assert.equal(first.applied,true);
  const second=await remoteCatalogModel(target,{proxyFactory});assert.equal(second.applied,false);
- const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,colorSlugsVersion);
- assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion]);
+ const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,materialsVersion);
+ assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion]);
  assert.equal((await new SchemaRegistry(db).getField('site_settings','highlights')).type,'repeater');
  assert.equal((await db.selectFrom('taxonomies').selectAll().where('name','=','category').execute()).length,6);
  const options=new OptionsRepository(db);

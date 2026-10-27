@@ -9,6 +9,7 @@ import {applyCatalogModel,applyModelMigrations,modelVersion,storefrontVersion,co
 import {cleanupVersion} from '../src/lib/cms/retire-import.ts';
 import {checkoutVersion} from '../src/lib/commerce/payments.ts';
 import {sizeCategoriesVersion} from '../src/lib/cms/size-categories.ts';
+import {materialsVersion} from '../src/lib/cms/materials.ts';
 import storefront from '../seed/storefront.json' with {type:'json'};
 
 const fields=['featured_conjunto','slideshow','intro_title','intro_text','highlights','tiktok_url'];
@@ -33,12 +34,14 @@ test('storefront migration adds homepage fields to an existing catalog database 
  const settings=await repo.create({type:'site_settings',slug:'home',data:{title:'Seda',hero_title:'MARGARITA'}});
  // Colecciones were installed with public listing pages.
  await schema.updateCollection('collections',{routable:true,urlPattern:'/collections/{slug}',supports:['drafts','revisions','scheduling','seo']});
+ // Materiales did not exist yet.
+ await schema.deleteCollection('materials');
  // Colors were identified by a separate code.
  await schema.createField('colors',{slug:'code',label:'Código estable',type:'string',required:true,unique:true,indexed:true});
  const rosa=await repo.create({type:'colors',slug:'rosa',data:{title:'Rosa',code:'rosa'}});
 
  const first=await applyModelMigrations(db);
- assert.deepEqual(first.map(r=>[r.version,r.applied]),[[modelVersion,false],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true]]);
+ assert.deepEqual(first.map(r=>[r.version,r.applied]),[[modelVersion,false],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true]]);
  const collection=await schema.getCollectionWithFields('site_settings');
  const slugs=collection.fields.map(f=>f.slug);
  for(const slug of [...fields,'hero_title','hero_image','editor_notes']) assert.ok(slugs.includes(slug),slug);
@@ -50,10 +53,11 @@ test('storefront migration adds homepage fields to an existing catalog database 
  assert.equal(collections.routable,false);assert.equal(collections.urlPattern??null,null);
  assert.deepEqual(collections.supports,['drafts','revisions']);
  assert.equal(await schema.getField('colors','code'),null);
+ assert.deepEqual((await schema.getCollectionWithFields('materials')).fields.map(f=>f.slug),['title','color','sizes','special_edition']);
  const color=await repo.findById('colors',rosa.id);assert.equal(color.slug,'rosa');assert.equal(color.data.code,undefined);
 
  const second=await applyModelMigrations(db);
- assert.deepEqual(second.map(r=>r.applied),[false,false,false,false,false,false,false]);
+ assert.deepEqual(second.map(r=>r.applied),[false,false,false,false,false,false,false,false]);
  assert.ok(await new OptionsRepository(db).get(storefrontVersion));
  assert.equal((await db.selectFrom('_emdash_relations').selectAll().where('parent_collection','=','site_settings').execute()).length,1);
 });
@@ -62,7 +66,7 @@ test('a fresh database receives the catalog, storefront and checkout models in o
  const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
  await runMigrations(db);
  const results=await applyModelMigrations(db);
- assert.deepEqual(results.map(r=>[r.version,r.applied]),[[modelVersion,true],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true]]);
+ assert.deepEqual(results.map(r=>[r.version,r.applied]),[[modelVersion,true],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true]]);
  const repeater=(await new SchemaRegistry(db).getField('site_settings','highlights'));
  assert.equal(repeater.type,'repeater');
  assert.deepEqual(repeater.validation.subFields.map(f=>f.slug),['image','alt','title','text']);

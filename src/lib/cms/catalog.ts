@@ -8,7 +8,7 @@ export type CatalogEntry = {
  group?: string;
 };
 export type CatalogEntries = ReadonlyMap<string, CatalogEntry>;
-export const catalogTypes = new Set(['products','collections','colors','sizes','size_guides','site_settings','popups','shipping_rules']);
+export const catalogTypes = new Set(['products','collections','colors','materials','sizes','size_guides','site_settings','popups','shipping_rules']);
 /** Shopper-facing size labels. Each size record belongs to one category; its code stays unique. */
 export const sizeLabels = ['XS','S','M','L','XL'];
 export function mainImage(gallery: unknown): Record<string, unknown> | null {
@@ -70,6 +70,12 @@ export function validateCatalogEntry(entry: CatalogEntry, entries: CatalogEntrie
    const category=refs.category?.[0];
    for(const size of sizes) if(category && size.refs.category?.[0]!==category) fail(`Talla «${size.data.title??size.id}»: pertenece a otra categoría; elige tallas de la categoría del producto.`);
   }
+ }
+ if(type==='materials') {
+  if(data.special_edition!==undefined && typeof data.special_edition!=='boolean') fail('Edición especial: usa Sí o No.');
+  // Drafts may be incomplete; publication needs exactly one color. Disponibilidad is optional.
+  if(references && (publish || refs.color?.length)) ref('color','colors');
+  if(references && refs.sizes?.length) ref('sizes','sizes',true);
  }
  if(type==='popups') {
   const start=data.starts_at,end=data.ends_at;

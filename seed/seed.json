@@ -253,6 +253,53 @@
       ]
     },
     {
+      "slug": "materials",
+      "label": "Materiales",
+      "labelSingular": "Material",
+      "routable": false,
+      "sortOrder": 65,
+      "group": "Catálogo",
+      "supports": [
+        "drafts",
+        "revisions"
+      ],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Nombre",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "color",
+          "label": "Color",
+          "type": "reference",
+          "required": false,
+          "validation": {
+            "targetCollection": "colors",
+            "multiple": false
+          }
+        },
+        {
+          "slug": "sizes",
+          "label": "Disponibilidad",
+          "type": "reference",
+          "required": false,
+          "validation": {
+            "targetCollection": "sizes",
+            "multiple": true
+          }
+        },
+        {
+          "slug": "special_edition",
+          "label": "Edición especial",
+          "type": "boolean",
+          "defaultValue": false
+        }
+      ]
+    },
+    {
       "slug": "pages",
       "label": "Pages",
       "labelSingular": "Page",
