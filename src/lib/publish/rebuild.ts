@@ -1,6 +1,6 @@
 // Publish-triggered rebuilds: a CMS change dispatches the deploy workflow for this environment only.
 // GitHub's per-environment concurrency queue coalesces bursts; a failed build leaves the old site up.
-export const REBUILD_COLLECTIONS = ["products", "collections", "colors", "sizes", "size_guides", "site_settings", "pages", "popups", "shipping_rules"];
+export const REBUILD_COLLECTIONS = ["products", "collections", "colors", "materials", "sizes", "size_guides", "site_settings", "pages", "popups", "shipping_rules"];
 
 export type RebuildConfig = { token: string; repository: string; environment: "staging" | "production" };
 

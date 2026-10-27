@@ -7,9 +7,10 @@ import type { Kysely } from "kysely";
 
 /** Shop collections and their parent-side reference fields → target collection. */
 export const shopTypes = {
-	products: { collection: "collections", color: "colors", sizes: "sizes", size_guide: "size_guides", components: "products" },
+	products: { collection: "collections", material: "materials", size_guide: "size_guides", components: "products" },
 	collections: {},
 	colors: {},
+	materials: { color: "colors", sizes: "sizes" },
 	sizes: {},
 	size_guides: {},
 	site_settings: { featured_conjunto: "products" },
@@ -96,11 +97,12 @@ export async function loadShop(db: Kysely<Database>, { drafts, only }: { drafts:
 		id: term.translation_group ?? term.id, slug: term.slug, status: 'published',
 		data: { title: term.label, code: term.slug, parent: term.parent_id }, refs: {},
 	}])).values()];
-	const assignments = await db.selectFrom('content_taxonomies').select(['entry_id','taxonomy_id']).where('collection','=','products').execute();
+	// Sizes carry their category so product pages offer only the sizes of the product's category.
+	const assignments = await db.selectFrom('content_taxonomies').select(['collection','entry_id','taxonomy_id']).where('collection','in',['products','sizes']).execute();
 	const categories = new Set(content.categories.map(term => term.id));
-	for (const product of content.products) {
-		const group = loaded.find(entry => entry.type === 'products' && entry.id === product.id)!.group;
-		product.refs.category = [...new Set(assignments.filter(link => link.entry_id === group && categories.has(link.taxonomy_id)).map(link => link.taxonomy_id))];
+	for (const type of ['products', 'sizes'] as const) for (const item of content[type]) {
+		const group = loaded.find(entry => entry.type === type && entry.id === item.id)!.group;
+		item.refs.category = [...new Set(assignments.filter(link => link.collection === type && link.entry_id === group && categories.has(link.taxonomy_id)).map(link => link.taxonomy_id))];
 	}
 	return content;
 }

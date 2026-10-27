@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {productDetail} from '../src/lib/shop/detail.ts';
+import {withMaterials} from './helpers/shop.mjs';
 
 const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
 const piece=(id,cat,color,sizes,extra={})=>entry(id,extra,{category:[cat],collection:['col'],color:[color],sizes:sizes.map(s=>`s-${s}`),...(extra.guide?{size_guide:[extra.guide]}:{})});
-const shop={
+const shop=withMaterials({
  categories:[entry('cat-top',{code:'top',title:'Top'}),entry('cat-bottom',{code:'braguita',title:'Braguita'}),entry('cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code})),
  collections:[entry('col',{code:'margarita',title:'Margarita'})],
  // Colors are identified by slug; the ID differs to show the slug is what the shop reads.
@@ -19,7 +20,7 @@ const shop={
   piece('top-luz','cat-top','c-rojo',['S']),
  ],
  pages:[],site_settings:[],popups:[],
-};
+});
 
 test('a product resolves its labels, sizes, guide and related items',()=>{
  const detail=productDetail(shop,'top-tierra');

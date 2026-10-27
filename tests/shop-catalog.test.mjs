@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {productDetail} from '../src/lib/shop/detail.ts';
 import {buildCatalog,catalogView,catalogViews,filterItems,sortItems,parseFilters,filtersQuery,facetOptions,featuredItem,categoryHref} from '../src/lib/shop/catalog.ts';
 
 const entry=(type,id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id.toUpperCase(),price_cents:1000,available:true,gallery:[],...data},refs});
@@ -8,20 +9,25 @@ const lookups={
  collections:[entry('collections','col-m',{code:'margarita',title:'Margarita'})],
  // Colors are identified by slug; the ID differs to show the slug is what the shop reads.
  colors:[{...entry('colors','c-caoba',{title:'Caoba'}),slug:'caoba'},{...entry('colors','c-rojo',{title:'Rojo'}),slug:'rojo'}],
- sizes:['XS','S','M','L','XL'].map((code,i)=>entry('sizes',`s-${code}`,{code:`any-${code}`,label:code,sort_order:i})),
+ // Each size belongs to one category.
+ sizes:[...['S','M','L','XL'].map((label,i)=>entry('sizes',`t-${label}`,{label,sort_order:i+1},{category:['cat-top']})),
+  ...['XS','S','M','L','XL'].map((label,i)=>entry('sizes',`b-${label}`,{label,sort_order:i},{category:['cat-bottom']}))],
+ // Products take color and sizes from their material. Rojo has no braguita sizes left.
+ materials:[entry('materials','m-caoba',{},{color:['c-caoba'],sizes:['t-S','t-M','t-L','b-XS','b-S','b-M']}),
+  entry('materials','m-rojo',{},{color:['c-rojo'],sizes:['t-S','t-M','t-L','t-XL']})],
 };
-const piece=(id,cat,color,sizes,data={})=>entry('products',id,data,{category:[cat],collection:['col-m'],color:[color],sizes:sizes.map(s=>`s-${s}`)});
+const piece=(id,cat,material,data={})=>entry('products',id,data,{category:[cat],collection:['col-m'],material:[material]});
 const shop={
  ...lookups,site_settings:[],pages:[],size_guides:[],popups:[],
  products:[
-  entry('products','tierra',{bundle:true,price_cents:5000},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),
-  entry('products','fuego',{bundle:true,price_cents:5500},{category:['cat-sets'],components:['top-fuego','braguita-flow']}),
-  entry('products','huerfano',{bundle:true,price_cents:5000},{category:['cat-sets'],components:['missing','braguita-curve']}),
+  entry('products','tierra',{bundle:true,price_cents:5000},{category:['cat-sets'],material:['m-caoba'],components:['top-tierra','braguita-curve']}),
+  entry('products','fuego',{bundle:true,price_cents:5500},{category:['cat-sets'],material:['m-rojo'],components:['top-fuego','braguita-flow']}),
+  entry('products','huerfano',{bundle:true,price_cents:5000},{category:['cat-sets'],material:['m-caoba'],components:['missing','braguita-curve']}),
 
-  piece('top-tierra','cat-top','c-caoba',['S','M','L'],{price_cents:3000}),
-  piece('braguita-curve','cat-bottom','c-caoba',['XS','S','M'],{price_cents:2600}),
-  piece('top-fuego','cat-top','c-rojo',['S','M','L','XL'],{price_cents:3200,available:false}),
-  piece('braguita-flow','cat-bottom','c-rojo',[],{price_cents:2600}),
+  piece('top-tierra','cat-top','m-caoba',{price_cents:3000}),
+  piece('braguita-curve','cat-bottom','m-caoba',{price_cents:2600}),
+  piece('top-fuego','cat-top','m-rojo',{price_cents:3200,available:false}),
+  piece('braguita-flow','cat-bottom','m-rojo',{price_cents:2600}),
  ],
 };
 
@@ -36,6 +42,21 @@ test('catalog combines pieces and complete Conjuntos with derived color, sizes a
  assert.deepEqual(items.find(i=>i.slug==='fuego').sizes,['S','M','L','XL']);
  assert.deepEqual(items.find(i=>i.slug==='top-tierra').sizes,['S','M','L']);
  assert.equal(items.find(i=>i.slug==='braguita-curve').category,'braguita');
+});
+
+test('sizes come from the material, limited to the product category',()=>{
+ // m-caoba offers Top S, M, L and Braguita XS, S, M.
+ const items=buildCatalog(shop);const by=slug=>items.find(i=>i.slug===slug);
+ assert.deepEqual(by('top-tierra').sizes,['S','M','L']);
+ assert.deepEqual(by('braguita-curve').sizes,['XS','S','M']);
+ assert.equal(by('top-tierra').color,'caoba');
+ assert.equal(by('tierra').color,'caoba');
+});
+
+test('a material without sizes for the category leaves the piece unbuyable',()=>{
+ // braguita-flow uses m-rojo, whose sizes are all Top sizes
+ assert.deepEqual(buildCatalog(shop).find(i=>i.slug==='braguita-flow').sizes,[]);
+ assert.equal(productDetail(shop,'braguita-flow').purchasable,false);
 });
 
 test('views cover the combined catalog and categories; collections and unknown handles are absent',()=>{

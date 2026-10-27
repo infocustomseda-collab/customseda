@@ -43,7 +43,7 @@ export type Quote =
 	  }
 	| { ok: false; error: CheckoutError };
 
-type QuoteShop = Pick<ShopContent, "categories" | "collections" | "colors" | "sizes" | "products" | "shipping_rules">;
+type QuoteShop = Pick<ShopContent, "categories" | "collections" | "colors" | "materials" | "sizes" | "products" | "shipping_rules">;
 
 export function quoteOrder(shop: QuoteShop, order: Order): Quote {
 	const items = buildCatalog(shop);

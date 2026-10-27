@@ -11,7 +11,11 @@ test('production reads published entries with live values and resolved reference
  assert.deepEqual(shop.products.map(e=>e.slug).sort(),['bottom-test','top-test']);
  const top=shop.products.find(p=>p.slug==='top-test');
  assert.deepEqual(top.refs.category,[f.lookups.top]);
- assert.deepEqual(top.refs.sizes.sort(),[f.lookups['top-s'],f.lookups['top-m']].sort());
+ assert.deepEqual(top.refs.material,[f.materialId]);
+ // Materials resolve their sizes, and sizes carry their category for the product page filter.
+ const material=shop.materials.find(m=>m.id===f.materialId);
+ assert.ok(material.refs.sizes.includes(f.lookups['top-s']));assert.deepEqual(material.refs.color,[f.colorId]);
+ assert.deepEqual(shop.sizes.find(size=>size.id===f.lookups['top-s']).refs.category,[f.lookups.top]);
  assert.equal(top.data.price_cents,5000);
 
  const edit=await f.runtime.handleContentUpdate('products',f.top,{data:{title:'Top editado'}});

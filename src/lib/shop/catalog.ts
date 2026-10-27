@@ -4,18 +4,24 @@ import { productCard } from "./site.ts";
 import { orderSizes } from "./view.ts";
 import { filterItems, type CatalogItem } from "./filters.ts";
 export * from "./filters.ts";
-type Lookups = Pick<ShopContent, "categories" | "collections" | "colors" | "sizes" | "products">;
+type Lookups = Pick<ShopContent, "categories" | "collections" | "colors" | "materials" | "sizes" | "products">;
 const code = (entries: ShopEntry[], id: string | undefined, field = "code") => {
  const value = entries.find(entry => entry.id === id)?.data[field];
  return typeof value === "string" ? value : null;
 };
 export function buildCatalog(shop: Lookups): CatalogItem[] {
- const piece = (entry: ShopEntry) => ({
+ const piece = (entry: ShopEntry) => {
+  // Color and sizes come from the product's material: the sizes of the product's own category, by label.
+  const material = shop.materials.find(value=>value.id===entry.refs.material?.[0]);
+  const category = entry.refs.category?.[0];
+  const sizes = (material?.refs.sizes??[]).flatMap(id=>{
+   const size = shop.sizes.find(value=>value.id===id);
+   return size && category && size.refs.category?.[0]===category && typeof size.data.label==='string' ? [size.data.label] : [];
+  });
   // Colors are identified by their native slug, which is also the filter value.
-  entry, color: shop.colors.find(color=>color.id===entry.refs.color?.[0])?.slug ?? null, collection: code(shop.collections,entry.refs.collection?.[0]),
-  // Size codes are per category; shoppers see and order by the label.
-  sizes: orderSizes((entry.refs.sizes??[]).flatMap(id=>code(shop.sizes,id,"label")??[])), available: entry.data.available!==false,
- });
+  return { entry, color: shop.colors.find(color=>color.id===material?.refs.color?.[0])?.slug ?? null, collection: code(shop.collections,entry.refs.collection?.[0]),
+   sizes: orderSizes(sizes), available: entry.data.available!==false };
+ };
  const pieces = new Map(shop.products.filter(entry=>entry.data.bundle!==true).map(entry=>[entry.id,piece(entry)]));
  return shop.products.flatMap((entry): CatalogItem[] => {
   const bundle=entry.data.bundle===true;
@@ -30,9 +36,9 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
   for(let term=category;term&&!seen.has(term.id);term=shop.categories.find(parent=>parent.id===term!.data.parent)) {
    seen.add(term.id); categories.push(String(term.data.code));
   }
-  // A mixed-color bundle has no implied single color. This is display derivation, not validation.
-  const shared = (field: 'color'|'collection') => included.length && included.every(component=>component[field]===included[0]![field]) ? included[0]![field] : null;
-  const color=own.color ?? (bundle?shared('color'):null);
+  // A conjunto's color is its own material's. A mixed-collection bundle has no implied collection.
+  const shared = (field: 'collection') => included.length && included.every(component=>component[field]===included[0]![field]) ? included[0]![field] : null;
+  const color=own.color;
   const collection=own.collection ?? (bundle?shared('collection'):null);
   const colorLabel=shop.colors.find(value=>value.slug===color)?.data.title;
   const metadata=[category?.data.title,colorLabel].filter(Boolean).join(' · ');
