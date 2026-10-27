@@ -1,0 +1,16 @@
+---
+// Shown on the preview Worker when this request includes unpublished drafts.
+import { includeDrafts } from "../lib/draft-scope";
+import { siteMode } from "../lib/site-mode";
+
+const show = siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE) === "preview" && includeDrafts();
+---
+
+{
+	show && (
+		<div class="preview-banner cluster" role="status">
+			<p>Vista previa — esta página incluye borradores sin publicar.</p>
+			<a href="/_emdash/admin">Volver al panel</a>
+		</div>
+	)
+}

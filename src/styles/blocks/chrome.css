@@ -328,4 +328,19 @@
 	.update-banner[hidden] {
 		display: none;
 	}
+
+	/* Preview Worker only: drafts are included in this page. */
+	.preview-banner {
+		--cluster-justify: center;
+		--cluster-space: var(--space-s);
+		padding: var(--space-2xs) var(--space-s);
+		background: var(--color-surface-cacao);
+		color: var(--color-on-cacao);
+		font-size: var(--step--1);
+	}
+
+	.preview-banner a {
+		color: inherit;
+		text-decoration: underline;
+	}
 }

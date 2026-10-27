@@ -3,6 +3,7 @@
 // same markup serves live development data now and the build-time snapshot in phase 6.
 import { Font } from "astro:assets";
 import AnnouncementBar from "../components/AnnouncementBar.astro";
+import PreviewBanner from "../components/PreviewBanner.astro";
 import PageTransitions from "../components/PageTransitions.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHeader from "../components/SiteHeader.astro";
@@ -68,6 +69,7 @@ const fullTitle = title === site.siteName ? title : `${title} — ${site.siteNam
 		<PageTransitions />
 	</head>
 	<body>
+		<PreviewBanner />
 		<a class="skip-link" href="#contenido">Saltar al contenido</a>
 		{site.announcement?.text && <AnnouncementBar text={site.announcement.text} href={site.announcement.href} />}
 		<SiteHeader nav={site.nav} />
