@@ -15,7 +15,7 @@ export type ShopSnapshot = {
 };
 
 // Public paths of referenced content; the CMS url_pattern values predate the existing public paths.
-const PUBLIC_PATHS: Record<string, string> = { products: "/products/", pages: "/pages/", collections: "/collections/" };
+const PUBLIC_PATHS: Record<string, string> = { products: "/products/", pages: "/pages/" };
 
 type ItemRow = { id: string; sort_order: number; type: string; custom_url: string | null; reference_collection: string | null; reference_id: string | null; label: string; title_attr: string | null; target: string | null; css_classes: string | null };
 

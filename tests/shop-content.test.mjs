@@ -11,7 +11,7 @@ test('production reads published entries with live values and resolved reference
  assert.deepEqual(shop.products.map(e=>e.slug).sort(),['bottom-test','top-test']);
  const top=shop.products.find(p=>p.slug==='top-test');
  assert.deepEqual(top.refs.category,[f.lookups.top]);
- assert.deepEqual(top.refs.sizes.sort(),[f.lookups.S,f.lookups.M].sort());
+ assert.deepEqual(top.refs.sizes.sort(),[f.lookups['top-s'],f.lookups['top-m']].sort());
  assert.equal(top.data.price_cents,5000);
 
  const edit=await f.runtime.handleContentUpdate('products',f.top,{data:{title:'Top editado'}});

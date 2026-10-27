@@ -16,7 +16,7 @@ type Common = {
 export type ProductDetail = Common & { kind: "pieza" | "bundle"; categoryLabel: string | null; components: Piece[] };
 
 const label = (entries: ShopEntry[], key: string | null, field = "code") => {
-	const found = entries.find((entry) => entry.data[field] === key);
+	const found = entries.find((entry) => (field === "slug" ? entry.slug : entry.data[field]) === key);
 	return typeof found?.data.title === "string" ? found.data.title : null;
 };
 
@@ -37,7 +37,7 @@ export function productDetail(shop: Omit<ShopContent, "pages" | "site_settings" 
 	const guideFor = (entry: ShopEntry) => shop.size_guides.find((guide) => guide.id === entry.refs.size_guide?.[0]) ?? shop.size_guides[0];
 	const common = {
 		item,
-		colorLabel: label(shop.colors, item.color),
+		colorLabel: label(shop.colors, item.color, "slug"),
 		collectionLabel: label(shop.collections, item.collection),
 		related: related(items, item),
 	};

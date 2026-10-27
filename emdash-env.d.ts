@@ -45,8 +45,8 @@ export interface Size {
   slug: string | null;
   status: string;
   title: string;
-  code: string;
   sort_order?: number;
+  label: string;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -60,7 +60,6 @@ export interface Color {
   slug: string | null;
   status: string;
   title: string;
-  code: string;
   hex?: string;
   createdAt: Date;
   updatedAt: Date;

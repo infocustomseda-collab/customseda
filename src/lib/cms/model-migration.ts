@@ -5,6 +5,8 @@ import storefrontJson from '../../../seed/storefront.json' with {type:'json'};
 import type { CatalogDb } from './catalog-store.ts';
 import { applyCheckoutModel, checkoutVersion } from '../commerce/payments.ts';
 import {retireImport,cleanupVersion} from './retire-import.ts';
+import {applySizeCategories,sizeCategoriesVersion} from './size-categories.ts';
+import {dropField} from './drop-field.ts';
 
 export const modelVersion='customseda.catalog.v1';
 export async function applyCatalogModel(db:CatalogDb) {
@@ -38,8 +40,29 @@ export async function applyStorefrontModel(db:CatalogDb) {
  return {version:storefrontVersion,applied:true,result};
 }
 
+// Colecciones classify products only; they have no public listing page.
+export const collectionPagesVersion='customseda.collection-pages.v1';
+export async function retireCollectionPages(db:CatalogDb) {
+ const options=new OptionsRepository(db);
+ if(await options.get(collectionPagesVersion)) return {version:collectionPagesVersion,applied:false};
+ const collection=(seedJson as SeedFile).collections!.find(collection=>collection.slug==='collections')!;
+ await new SchemaRegistry(db).updateCollection('collections',{routable:false,urlPattern:null,supports:collection.supports});
+ await options.set(collectionPagesVersion,{appliedAt:new Date().toISOString()});
+ return {version:collectionPagesVersion,applied:true};
+}
+
+// Colors are identified by their native slug, which is also the storefront filter value.
+export const colorSlugsVersion='customseda.color-slugs.v1';
+export async function retireColorCodes(db:CatalogDb) {
+ const options=new OptionsRepository(db);
+ if(await options.get(colorSlugsVersion)) return {version:colorSlugsVersion,applied:false};
+ await dropField(db,'colors','code');
+ await options.set(colorSlugsVersion,{appliedAt:new Date().toISOString()});
+ return {version:colorSlugsVersion,applied:true};
+}
+
 /** Every application model version, in order. Deployment and the local route call this. */
-export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion];
+export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion];
 export async function applyModelMigrations(db:CatalogDb) {
- return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db)];
+ return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db)];
 }

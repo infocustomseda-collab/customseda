@@ -9,8 +9,8 @@ const rule=(id,data)=>entry(id,{enabled:true,price_cents:630,description:'24/48 
 const shop=()=>({
  categories:[entry('cat-top',{code:'top'}),entry('cat-bottom',{code:'braguita'}),entry('cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code})),
  collections:[entry('col',{code:'margarita',title:'Margarita'})],
- colors:[entry('c',{code:'caoba'})],
- sizes:['XS','S','M','L','XL'].map(code=>entry(`s-${code}`,{code})),
+ colors:[{...entry('c'),slug:'caoba'}],
+ sizes:['XS','S','M','L','XL'].map(code=>entry(`s-${code}`,{code:`any-${code}`,label:code})),
  products:[
   entry('tierra',{bundle:true,title:'Conjunto Tierra',price_cents:5000},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),
   entry('mixto',{bundle:true,title:'Mixto',price_cents:4000},{category:['cat-sets'],components:['top-agotado','braguita-curve']}),

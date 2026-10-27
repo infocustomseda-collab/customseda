@@ -30,7 +30,8 @@ export async function fixture(t,{onContentChange}={}) {
  const db=runtime.db;t.after(()=>db.destroy());await applyCatalogModel(db);
  const repo=new ContentRepository(db);
  const lookups={};
- for(const type of ['collections','sizes']) for(const entry of (await repo.findMany(type)).items) lookups[entry.data.code]=entry.id;
+ for(const entry of (await repo.findMany('collections')).items) lookups[entry.data.code]=entry.id;
+ for(const entry of (await repo.findMany('sizes')).items) lookups[entry.slug]=entry.id;
  const taxonomy={
   findByName:async name=>(await db.selectFrom('taxonomies').selectAll().where('name','=',name).execute()),
   setTermsForEntry:async(type,id,name,ids)=>{
@@ -40,12 +41,13 @@ export async function fixture(t,{onContentChange}={}) {
   },
  };
  for(const term of await taxonomy.findByName('category')) lookups[term.slug]=term.id;
- const color=await handleContentCreate(db,'colors',{slug:'rosa',data:{title:'Rosa',code:'rosa'}});assert.equal(color.success,true,JSON.stringify(color));
+ const color=await handleContentCreate(db,'colors',{slug:'rosa',data:{title:'Rosa'}});assert.equal(color.success,true,JSON.stringify(color));
  const colorId=color.data.item.id;await handleContentPublish(db,'colors',colorId);
  const image=await new MediaRepository(db).create({filename:'test.jpg',mimeType:'image/jpeg',storageKey:'test.jpg'});
  const data={title:'Test',price_cents:5000,available:true,gallery:[{image:{id:image.id},alt:'Bikini de prueba'}]};
  async function product(slug,category,sizes=['S','M']) {
-  const references={collection:[lookups.margarita],color:[colorId],sizes:sizes.map(s=>lookups[s])};
+  // Seeded size slugs are per category: top-s, braguita-xs.
+  const references={collection:[lookups.margarita],color:[colorId],sizes:sizes.map(s=>lookups[`${category}-${s.toLowerCase()}`])};
   const result=await runtime.handleContentCreate('products',{slug,data:{...data,title:slug},references});
   assert.equal(result.success,true,JSON.stringify(result));
   const id=result.data.item.id;

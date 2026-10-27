@@ -6,8 +6,9 @@ const entry=(type,id,data={},refs={})=>({id,slug:id,status:'published',data:{tit
 const lookups={
  categories:[entry('categories','women',{code:'mujeres',title:'Mujeres'}),entry('categories','cat-top',{code:'top',title:'Top'}),entry('categories','cat-bottom',{code:'braguita',title:'Braguita'}),entry('categories','cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code,data:{...term.data,parent:term.id==='women'?null:'women'}})),
  collections:[entry('collections','col-m',{code:'margarita',title:'Margarita'})],
- colors:[entry('colors','c-caoba',{code:'caoba',title:'Caoba'}),entry('colors','c-rojo',{code:'rojo',title:'Rojo'})],
- sizes:['XS','S','M','L','XL'].map((code,i)=>entry('sizes',`s-${code}`,{code,sort_order:i})),
+ // Colors are identified by slug; the ID differs to show the slug is what the shop reads.
+ colors:[{...entry('colors','c-caoba',{title:'Caoba'}),slug:'caoba'},{...entry('colors','c-rojo',{title:'Rojo'}),slug:'rojo'}],
+ sizes:['XS','S','M','L','XL'].map((code,i)=>entry('sizes',`s-${code}`,{code:`any-${code}`,label:code,sort_order:i})),
 };
 const piece=(id,cat,color,sizes,data={})=>entry('products',id,data,{category:[cat],collection:['col-m'],color:[color],sizes:sizes.map(s=>`s-${s}`)});
 const shop={
@@ -37,16 +38,16 @@ test('catalog combines pieces and complete Conjuntos with derived color, sizes a
  assert.equal(items.find(i=>i.slug==='braguita-curve').category,'braguita');
 });
 
-test('views cover the combined catalog, categories and collections; unknown handles are absent',()=>{
+test('views cover the combined catalog and categories; collections and unknown handles are absent',()=>{
  const items=buildCatalog(shop);
  const slugs=handle=>catalogView(handle,shop).items(items).map(i=>i.slug);
  assert.equal(slugs('bikinis').length,6);
  assert.deepEqual(slugs('conjuntos'),['tierra','fuego']);
  assert.deepEqual(slugs('top'),['top-tierra','top-fuego']);
  assert.deepEqual(slugs('braguita'),['braguita-curve','braguita-flow']);
- assert.equal(slugs('margarita').length,6);
+ assert.equal(catalogView('margarita',shop),null);
  assert.equal(catalogView('gran-canaria',shop),null);
- assert.deepEqual(catalogViews(shop).map(v=>v.handle),['bikinis','mujeres','top','braguita','conjuntos','margarita','braguitas']);
+ assert.deepEqual(catalogViews(shop).map(v=>v.handle),['bikinis','mujeres','top','braguita','conjuntos','braguitas']);
  assert.equal(catalogView('top',shop).title,'Top');
 });
 
@@ -79,7 +80,7 @@ test('filters round-trip through the query string and ignore unknown values',()=
 test('facet options list only values present in the view, in lookup order',()=>{
  const items=buildCatalog(shop);
  const facets=facetOptions(items.filter(i=>i.category==='top'),shop);
- assert.deepEqual(facets.colors,[{code:'caoba',label:'Caoba'},{code:'rojo',label:'Rojo'}]);
+ assert.deepEqual(facets.colors,[{slug:'caoba',label:'Caoba'},{slug:'rojo',label:'Rojo'}]);
  assert.equal(facets.sizes,undefined);
 });
 

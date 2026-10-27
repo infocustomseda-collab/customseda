@@ -7,8 +7,9 @@ const piece=(id,cat,color,sizes,extra={})=>entry(id,extra,{category:[cat],collec
 const shop={
  categories:[entry('cat-top',{code:'top',title:'Top'}),entry('cat-bottom',{code:'braguita',title:'Braguita'}),entry('cat-sets',{code:'conjuntos',title:'Conjuntos'})].map(term=>({...term,slug:term.data.code})),
  collections:[entry('col',{code:'margarita',title:'Margarita'})],
- colors:[entry('c-caoba',{code:'caoba',title:'Caoba'}),entry('c-rojo',{code:'rojo',title:'Rojo'})],
- sizes:['XS','S','M','L','XL'].map(code=>entry(`s-${code}`,{code})),
+ // Colors are identified by slug; the ID differs to show the slug is what the shop reads.
+ colors:[{...entry('c-caoba',{title:'Caoba'}),slug:'caoba'},{...entry('c-rojo',{title:'Rojo'}),slug:'rojo'}],
+ sizes:['XS','S','M','L','XL'].map(code=>entry(`s-${code}`,{code:`any-${code}`,label:code})),
  size_guides:[entry('guia-general',{title:'Guía de tallas'}),entry('guia-top',{title:'Guía top'})],
  products:[entry('tierra',{bundle:true,price_cents:5000},{category:['cat-sets'],components:['top-tierra','braguita-curve']}),
   piece('top-tierra','cat-top','c-caoba',['S','M','L']),

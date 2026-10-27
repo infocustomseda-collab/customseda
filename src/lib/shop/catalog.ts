@@ -5,14 +5,16 @@ import { orderSizes } from "./view.ts";
 import { filterItems, type CatalogItem } from "./filters.ts";
 export * from "./filters.ts";
 type Lookups = Pick<ShopContent, "categories" | "collections" | "colors" | "sizes" | "products">;
-const code = (entries: ShopEntry[], id: string | undefined) => {
- const value = entries.find(entry => entry.id === id)?.data.code;
+const code = (entries: ShopEntry[], id: string | undefined, field = "code") => {
+ const value = entries.find(entry => entry.id === id)?.data[field];
  return typeof value === "string" ? value : null;
 };
 export function buildCatalog(shop: Lookups): CatalogItem[] {
  const piece = (entry: ShopEntry) => ({
-  entry, color: code(shop.colors,entry.refs.color?.[0]), collection: code(shop.collections,entry.refs.collection?.[0]),
-  sizes: orderSizes((entry.refs.sizes??[]).flatMap(id=>code(shop.sizes,id)??[])), available: entry.data.available!==false,
+  // Colors are identified by their native slug, which is also the filter value.
+  entry, color: shop.colors.find(color=>color.id===entry.refs.color?.[0])?.slug ?? null, collection: code(shop.collections,entry.refs.collection?.[0]),
+  // Size codes are per category; shoppers see and order by the label.
+  sizes: orderSizes((entry.refs.sizes??[]).flatMap(id=>code(shop.sizes,id,"label")??[])), available: entry.data.available!==false,
  });
  const pieces = new Map(shop.products.filter(entry=>entry.data.bundle!==true).map(entry=>[entry.id,piece(entry)]));
  return shop.products.flatMap((entry): CatalogItem[] => {
@@ -32,7 +34,7 @@ export function buildCatalog(shop: Lookups): CatalogItem[] {
   const shared = (field: 'color'|'collection') => included.length && included.every(component=>component[field]===included[0]![field]) ? included[0]![field] : null;
   const color=own.color ?? (bundle?shared('color'):null);
   const collection=own.collection ?? (bundle?shared('collection'):null);
-  const colorLabel=shop.colors.find(value=>value.data.code===color)?.data.title;
+  const colorLabel=shop.colors.find(value=>value.slug===color)?.data.title;
   const metadata=[category?.data.title,colorLabel].filter(Boolean).join(' · ');
   return [{id:entry.id,slug:entry.slug,kind:bundle?'bundle':'pieza',category:category?String(category.data.code):null,categories,
    title:String(entry.data.title??''),price:Number(entry.data.price_cents??0),available,color,collection,
@@ -54,12 +56,12 @@ export function categoryOptions(terms:ShopEntry[]):ShopEntry[] {
  for(const term of terms)append(term);
  return ordered;
 }
-export type CatalogView = { handle:string; title:string; category?:string; scope?:string; description?:unknown; items:(all:CatalogItem[])=>CatalogItem[] };
-export function catalogViews(shop:Pick<ShopContent,'collections'|'categories'>):CatalogView[] {
+export type CatalogView = { handle:string; title:string; category?:string; scope?:string; items:(all:CatalogItem[])=>CatalogItem[] };
+/** Category listings only; Colecciones classify products and have no listing page. */
+export function catalogViews(shop:Pick<ShopContent,'categories'>):CatalogView[] {
  const views:CatalogView[]=[{handle:'bikinis',title:'Bikinis',scope:'mujeres',items:all=>filterItems(all,{category:'mujeres',colors:[],available:false})},
   ...categoryOptions(shop.categories).map(term=>({handle:term.slug,title:String(term.data.title??term.slug),category:term.slug,scope:term.slug,
-   items:(all:CatalogItem[])=>filterItems(all,{category:term.slug,colors:[],available:false})})),
-  ...shop.collections.flatMap((entry):CatalogView[]=>typeof entry.data.code==='string'&&entry.data.code?[{handle:entry.data.code,title:String(entry.data.title??entry.data.code),description:entry.data.description,items:all=>all.filter(item=>item.collection===entry.data.code)}]:[])];
+   items:(all:CatalogItem[])=>filterItems(all,{category:term.slug,colors:[],available:false})}))];
  // Preserve the existing public Braguitas URL while its category slug remains singular.
  const bottom=views.find(view=>view.category==='braguita');
  if(bottom)views.push({...bottom,handle:'braguitas'});
@@ -77,10 +79,10 @@ export function catalogCategories(view:CatalogView,terms:ShopEntry[]):ShopEntry[
   descendants.add(term.id);return true;
  });
 }
-export const catalogView=(handle:string,shop:Pick<ShopContent,'collections'|'categories'>)=>catalogViews(shop).find(view=>view.handle===handle)??null;
+export const catalogView=(handle:string,shop:Pick<ShopContent,'categories'>)=>catalogViews(shop).find(view=>view.handle===handle)??null;
 export function facetOptions(items:CatalogItem[],shop:Pick<ShopContent,'colors'>) {
  const colors=new Set(items.map(item=>item.color));
- return {colors:shop.colors.flatMap(entry=>typeof entry.data.code==='string'&&colors.has(entry.data.code)?[{code:entry.data.code,label:String(entry.data.title??entry.data.code)}]:[])};
+ return {colors:shop.colors.flatMap(entry=>colors.has(entry.slug)?[{slug:entry.slug,label:String(entry.data.title??entry.slug)}]:[])};
 }
 export function featuredItem(shop:Lookups,id:string|undefined):CatalogItem|null {
  return buildCatalog(shop).find(item=>item.kind==='bundle'&&item.id===id)??null;

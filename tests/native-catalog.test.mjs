@@ -8,7 +8,7 @@ const entry=(id,data={},refs={})=>({id,slug:id,type:'products',status:'published
 const category=(id,slug,parent=null)=>({...entry(id,{title:slug,code:slug,parent}),type:'category',slug});
 const categories=[category('women','mujeres'),category('top','top','women'),category('bottom','braguita','women'),category('sets','conjuntos','women'),category('men','hombres'),category('swim','banador','men')];
 const products=[entry('a',{}, {category:['top'],color:['red'],collection:['col'],sizes:['s']}),entry('b',{}, {category:['bottom'],color:['blue'],collection:['col'],sizes:['s']}),entry('c',{}, {category:['swim'],color:['red'],collection:['col'],sizes:['s']}),entry('set',{bundle:true,price_cents:8000},{category:['sets'],components:['a','b','c'],collection:['col'],color:[]})];
-const shop={categories,products,collections:[entry('col',{code:'margarita'})],colors:[entry('red',{code:'red'}),entry('blue',{code:'blue'})],sizes:[entry('s',{code:'S'})],shipping_rules:[entry('pickup',{enabled:true,zone:'pickup',price_cents:0})]};
+const shop={categories,products,collections:[entry('col',{code:'margarita'})],colors:[entry('red'),entry('blue')],sizes:[entry('s',{code:'any-s',label:'S'})],shipping_rules:[entry('pickup',{enabled:true,zone:'pickup',price_cents:0})]};
 test('schema uses native hierarchical category and a single products collection with components',()=>{
  assert.ok(!seed.collections.some(c=>['categories','conjuntos'].includes(c.slug)));
  const product=seed.collections.find(c=>c.slug==='products');
@@ -16,7 +16,7 @@ test('schema uses native hierarchical category and a single products collection 
  assert.equal(product.fields.find(f=>f.slug==='bundle').type,'boolean');
  assert.equal(product.fields.find(f=>f.slug==='components').validation.targetCollection,'products');
  const taxonomy=seed.taxonomies.find(t=>t.name==='category');
- assert.equal(taxonomy.hierarchical,true);assert.deepEqual(taxonomy.collections,['products']);
+ assert.equal(taxonomy.hierarchical,true);assert.deepEqual(taxonomy.collections,['products','sizes']);
  assert.equal(taxonomy.terms.find(t=>t.slug==='banador').parent,'hombres');
 });
 test('bundles accept more than two ordinary products with different colors',()=>{

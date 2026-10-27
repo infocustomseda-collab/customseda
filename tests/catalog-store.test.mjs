@@ -16,7 +16,7 @@ test('reference-only writes are checked against merged existing fields',async t=
  const f=await fixture(t);
  const errors=await validateCatalogWrite(f.db,'products',f.bundle,{references:{components:[f.bottom,f.bottom]}});
  assert.ok(errors.some(e=>e.includes('components')));
- assert.ok((await validateCatalogWrite(f.db,'products',f.top,{references:{sizes:[f.lookups.XS]}})).length);
+ assert.ok((await validateCatalogWrite(f.db,'products',f.top,{references:{sizes:[f.lookups['braguita-xs']]}})).length);
 });
 test('native publish and schedule policies inspect staged references from non-REST writers',async t=>{
  const f=await fixture(t);
@@ -77,9 +77,10 @@ test('component validation with dependent bundles also stays within its D1 budge
 test('publication rejects changes to stable lookup codes even when staged outside REST',async t=>{
  const f=await fixture(t);
  const {RevisionRepository}=await import('emdash');
- const revision=await new RevisionRepository(f.db).create({collection:'sizes',entryId:f.lookups.S,data:{title:'S',code:'XL'}});
- await f.repo.setDraftRevision('sizes',f.lookups.S,revision.id);
- const published=await f.runtime.handleContentPublish('sizes',f.lookups.S);
+ // The fixture products use this collection.
+ const revision=await new RevisionRepository(f.db).create({collection:'collections',entryId:f.lookups.margarita,data:{title:'Margarita',code:'otra'}});
+ await f.repo.setDraftRevision('collections',f.lookups.margarita,revision.id);
+ const published=await f.runtime.handleContentPublish('collections',f.lookups.margarita);
  assert.equal(published.success,false,JSON.stringify(published));
 });
 test('publication reads pending prices and rejects unfinished media uploads',async t=>{
@@ -99,7 +100,7 @@ test('publication reads pending prices and rejects unfinished media uploads',asy
 test('EmDash persists availability as Yes when omitted on product creation',async t=>{
  const f=await fixture(t);
  const data={...f.data,title:'Default availability'};delete data.available;
- const references={collection:[f.lookups.margarita],color:[f.colorId],sizes:[f.lookups.S]};
+ const references={collection:[f.lookups.margarita],color:[f.colorId],sizes:[f.lookups['top-s']]};
  const created=await f.runtime.handleContentCreate('products',{slug:'default-availability',data,references});
  assert.equal(created.success,true,JSON.stringify(created));
  assert.equal((await readCatalogEntry(f.db,'products',created.data.item.id)).data.available,true);
@@ -150,4 +151,31 @@ test('native category assignment protects published products while allowing inco
  assert.equal((await assign(f.top,[f.lookups.top,f.lookups.braguita])).status,400);
  assert.equal((await assign(f.top,[f.lookups.top])).status,204);
  assert.equal((await assign(f.bundle,[])).status,204);
+});
+
+test('sizes keep their category while used; products only publish sizes of their own category',async t=>{
+ const f=await fixture(t);
+ const {catalogWriteMiddleware}=await import('../src/lib/cms/write-middleware.ts');
+ const assign=async(type,id,termIds)=>{
+  const url=new URL(`http://localhost:4321/_emdash/api/content/${type}/${id}/terms/category`);
+  return catalogWriteMiddleware({url,request:new Request(url,{method:'POST',body:JSON.stringify({termIds})}),locals:{user:{role:20},emdash:{db:f.db}}},async()=>new Response(null,{status:204}));
+ };
+ // top-test uses Top S and M; moving it to Braguita would leave it with Top sizes.
+ assert.equal((await assign('products',f.top,[f.lookups.braguita])).status,400);
+ const used=await assign('sizes',f.lookups['top-s'],[f.lookups.braguita]);
+ assert.equal(used.status,400);assert.match((await used.json()).error.message,/en uso/);
+ assert.equal((await assign('sizes',f.lookups['top-xl'],[f.lookups.braguita])).status,204);
+ assert.equal((await assign('sizes',f.lookups['top-s'],[f.lookups.top])).status,204);
+
+ const size=await f.runtime.handleContentCreate('sizes',{slug:'top-xs',data:{title:'XS · Top',label:'XS'}});
+ assert.equal(size.success,true,JSON.stringify(size));
+ const id=size.data.item.id;
+ assert.equal((await f.runtime.handleContentPublish('sizes',id)).success,false);
+ await f.taxonomy.setTermsForEntry('sizes',id,'category',[f.lookups.top]);
+ assert.equal((await f.runtime.handleContentPublish('sizes',id)).success,true);
+ assert.deepEqual(await validateCatalogWrite(f.db,'products',f.top,{references:{sizes:[id]}},{publish:true}),[]);
+ const mixed=await validateCatalogWrite(f.db,'products',f.top,{references:{sizes:[id,f.lookups['braguita-s']]}},{publish:true});
+ assert.ok(mixed.some(e=>e.includes('S · Braguita')),JSON.stringify(mixed));
+ const label=await f.runtime.handleContentCreate('sizes',{slug:'top-xxl',data:{title:'XXL · Top',label:'XXL'}});
+ assert.equal(label.success,false);
 });
