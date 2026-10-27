@@ -9,9 +9,11 @@ interface Props {
 	label: string;
 	transitionName?: string;
 	variant?: "product" | "slideshow";
+	/** Edición especial: a glint crosses every photo. */
+	sheen?: boolean;
 }
 
-const { images, label, transitionName, variant = "product" } = Astro.props;
+const { images, label, transitionName, variant = "product", sheen = false } = Astro.props;
 // A product photo leads its page; the homepage slideshow sits below the fold and must not compete with the hero.
 const eager = variant === "product";
 ---
@@ -20,7 +22,7 @@ const eager = variant === "product";
 	<slot />
 	<ul class="gallery__list" role="list" tabindex="0">
 		{images.map((image, index) => (
-			<li class="gallery__item" style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
+			<li class:list={["gallery__item", sheen && "sheen"]} style={image.placeholder ? `background-color: ${image.placeholder}` : undefined}>
 				<img
 					src={image.src}
 					srcset={image.srcset}

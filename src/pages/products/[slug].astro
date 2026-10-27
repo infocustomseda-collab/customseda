@@ -45,7 +45,7 @@ const names = item.card.transitionName ? transitionNames(item.card.transitionNam
 				</ol>
 			</nav>
 			<div class="split">
-				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={names?.image}>
+				<Gallery images={item.card.images} label={`Fotos de ${item.title}`} transitionName={names?.image} sheen={item.card.specialEdition}>
 					<ProductBadges class="gallery__badges" specialEdition={item.card.specialEdition} />
 				</Gallery>
 				<div class="product-details stack">
