@@ -36,7 +36,46 @@ export function validateTarget(config, environment) {
   if (!otherOrigin || url.origin === otherOrigin) {
     throw new Error('Staging and production require distinct public origins.');
   }
-  return { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin };
+  const preview = validatePreview(config, environment, selected, url.origin, database, bucket);
+  return { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin, preview };
+}
+
+/** The preview Worker shares its pair's database and bucket; only its role, name and origin differ. */
+function validatePreview(config, environment, selected, publicOrigin, database, bucket) {
+  const previewEnvironment = `${environment}-preview`;
+  const preview = config.env?.[previewEnvironment];
+  if (!preview) throw new Error(`The ${previewEnvironment} environment is missing from the Wrangler config.`);
+  const expectedName = `${selected.name.trim()}-preview`;
+  if (preview.name !== expectedName) throw new Error(`The ${previewEnvironment} Worker name must be ${expectedName}.`);
+  if (preview.d1_databases?.find(x => x.binding === 'DB')?.database_id !== database.database_id) {
+    throw new Error(`The ${previewEnvironment} environment must use the same database_id as ${environment}.`);
+  }
+  if (preview.r2_buckets?.find(x => x.binding === 'MEDIA')?.bucket_name !== bucket.bucket_name) {
+    throw new Error(`The ${previewEnvironment} environment must use the same media bucket as ${environment}.`);
+  }
+  if (selected.vars?.SITE_ROLE !== 'public') throw new Error(`Set SITE_ROLE to "public" in the ${environment} environment.`);
+  if (preview.vars?.SITE_ROLE !== 'preview') throw new Error(`Set SITE_ROLE to "preview" in the ${previewEnvironment} environment.`);
+  let previewUrl;
+  try { previewUrl = new URL(preview.vars?.EMDASH_SITE_URL); } catch { /* The check below reports the missing origin. */ }
+  if (!previewUrl || previewUrl.protocol !== 'https:' || previewUrl.username || previewUrl.password || previewUrl.pathname !== '/' || previewUrl.search || previewUrl.hash || ['localhost', '127.0.0.1'].includes(previewUrl.hostname)) {
+    throw new Error(`Set the ${previewEnvironment} EMDASH_SITE_URL to its public HTTPS origin.`);
+  }
+  for (const [name, other] of Object.entries(config.env ?? {})) {
+    if (name === previewEnvironment) continue;
+    let otherOrigin;
+    try { otherOrigin = new URL(other?.vars?.EMDASH_SITE_URL).origin; } catch { /* Not an origin to compare. */ }
+    if (otherOrigin === previewUrl.origin) throw new Error(`The ${previewEnvironment} preview origin must differ from the ${name} origin.`);
+  }
+  if (selected.vars?.PREVIEW_SITE_URL !== previewUrl.origin) {
+    throw new Error(`Set PREVIEW_SITE_URL in ${environment} to the ${previewEnvironment} origin.`);
+  }
+  if (preview.vars?.PUBLIC_SITE_URL !== publicOrigin) {
+    throw new Error(`Set PUBLIC_SITE_URL in ${previewEnvironment} to the ${environment} origin.`);
+  }
+  if (preview.vars?.FOUNDATION_LOCKED === 'true' && preview.assets?.run_worker_first !== true) {
+    throw new Error('Gated preview environments must run the Worker before static assets.');
+  }
+  return { environment: previewEnvironment, origin: previewUrl.origin };
 }
 
 /**

@@ -2,14 +2,20 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { validateTarget, deploymentCommands } from '../scripts/deploy/target.mjs';
 
+const origin = name => `https://customseda-${name}.example.workers.dev`;
 const config = () => ({
   account_id: 'a'.repeat(32),
-  env: Object.fromEntries(['staging', 'production'].map((name, index) => [name, {
+  env: Object.fromEntries(['staging', 'production'].flatMap((name, index) => [[name, {
     name: `customseda-${name}`,
-    vars: { EMDASH_SITE_URL: `https://customseda-${name}.example.workers.dev` },
+    vars: { EMDASH_SITE_URL: origin(name), SITE_ROLE: 'public', PREVIEW_SITE_URL: origin(`${name}-preview`) },
     d1_databases: [{ binding: 'DB', database_name: `customseda-${name}`, database_id: `${index + 1}2345678-1234-1234-1234-123456789abc` }],
     r2_buckets: [{ binding: 'MEDIA', bucket_name: `customseda-${name}-media` }],
-  }])),
+  }], [`${name}-preview`, {
+    name: `customseda-${name}-preview`,
+    vars: { EMDASH_SITE_URL: origin(`${name}-preview`), SITE_ROLE: 'preview', PUBLIC_SITE_URL: origin(name) },
+    d1_databases: [{ binding: 'DB', database_name: `customseda-${name}`, database_id: `${index + 1}2345678-1234-1234-1234-123456789abc` }],
+    r2_buckets: [{ binding: 'MEDIA', bucket_name: `customseda-${name}-media` }],
+  }]])),
 });
 
 test('requires an explicit remote environment', () => {
@@ -48,6 +54,7 @@ test('rejects missing or shared Worker names and normalized environment origins'
   }
   const c = config();
   c.env.production.vars.EMDASH_SITE_URL = c.env.staging.vars.EMDASH_SITE_URL + '/';
+  c.env['production-preview'].vars.PUBLIC_SITE_URL = c.env.production.vars.EMDASH_SITE_URL;
   assert.throws(() => validateTarget(c, 'production'), /distinct.*origin/);
 });
 
@@ -101,7 +108,10 @@ test('gated environments must route static assets through the Worker', () => {
 test('the checked-in Wrangler config gates assets in both remote environments', async () => {
   const { readFile } = await import('node:fs/promises');
   const wrangler = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
-  for (const name of ['staging', 'production']) assert.equal(validateTarget(wrangler, name).environment, name);
+  for (const name of ['staging', 'production']) {
+    assert.equal(validateTarget(wrangler, name).environment, name);
+    assert.equal(wrangler.env[`${name}-preview`].assets.run_worker_first, true);
+  }
 });
 
 test('deploy scripts run like fdag: plain node, authenticated by wrangler login or the CI secret', async () => {
@@ -128,4 +138,30 @@ test('the status command is the runner\'s own read-only first step', async () =>
   const target = validateTarget(config(), 'staging');
   assert.deepEqual(statusCommand(target), deploymentCommands(target)[0]);
   assert.ok(statusCommand(target).includes('--status') && !statusCommand(target).includes('--expected-target-fingerprint'));
+});
+
+test('validates the preview Worker paired with each environment', () => {
+  const target = validateTarget(config(), 'staging');
+  assert.deepEqual(target.preview, { environment: 'staging-preview', origin: origin('staging-preview') });
+  assert.equal(validateTarget(config(), 'production').preview.origin, origin('production-preview'));
+});
+
+test('rejects an unpaired or mismatched preview Worker', () => {
+  const mutate = (fn, pattern, environment = 'staging') => {
+    const c = config();
+    fn(c.env[`${environment}-preview`], c.env[environment], c);
+    assert.throws(() => validateTarget(c, environment), pattern);
+  };
+  mutate((p, _, c) => { delete c.env['staging-preview']; }, /staging-preview.*missing/);
+  mutate(p => { p.name = 'customseda-staging-other'; }, /name must be customseda-staging-preview/);
+  mutate((p, _, c) => { p.d1_databases[0].database_id = c.env.production.d1_databases[0].database_id; }, /same database_id/);
+  mutate(p => { p.r2_buckets[0].bucket_name = 'customseda-other-media'; }, /same media bucket/);
+  mutate((p, s) => { p.vars.EMDASH_SITE_URL = s.vars.EMDASH_SITE_URL; }, /preview origin must differ/);
+  mutate((p, _, c) => { p.vars.EMDASH_SITE_URL = c.env.production.vars.EMDASH_SITE_URL; }, /preview origin must differ/);
+  mutate(p => { p.vars.EMDASH_SITE_URL = 'http://localhost:4321'; }, /preview EMDASH_SITE_URL.*HTTPS/);
+  mutate(p => { delete p.vars.SITE_ROLE; }, /SITE_ROLE.*preview/);
+  mutate((p, s) => { s.vars.SITE_ROLE = 'preview'; }, /SITE_ROLE.*public/);
+  mutate(p => { p.vars.PUBLIC_SITE_URL = 'https://elsewhere.example.com'; }, /PUBLIC_SITE_URL/);
+  mutate((p, s) => { s.vars.PREVIEW_SITE_URL = 'https://elsewhere.example.com'; }, /PREVIEW_SITE_URL/);
+  mutate(p => { p.vars.FOUNDATION_LOCKED = 'true'; }, /Gated.*preview|preview.*before static assets/);
 });
