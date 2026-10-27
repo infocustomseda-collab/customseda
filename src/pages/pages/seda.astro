@@ -1,5 +1,5 @@
 ---
-// "Sobre Seda": the existing blog path, rendered from the "noticias" CMS page.
+// "Sobre Seda", from the editable "seda" page; its heading comes from the page content.
 import ContentPage from "../../components/ContentPage.astro";
 import Shop from "../../layouts/Shop.astro";
 import { loadShopPage } from "../../lib/shop/page";
@@ -8,7 +8,7 @@ import { pageHeading, plainText } from "../../lib/shop/site";
 export const prerender = true;
 
 const { shop, site } = await loadShopPage(Astro);
-const page = shop.pages.find((entry) => entry.slug === "noticias");
+const page = shop.pages.find((entry) => entry.slug === "seda");
 if (!page) return Astro.rewrite("/404");
 const heading = pageHeading(site, Astro.url.pathname, String(page.data.title ?? "Sobre Seda"));
 ---

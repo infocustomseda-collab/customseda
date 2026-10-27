@@ -84,8 +84,8 @@ test('plain text summaries come from paragraph blocks and are trimmed on a word 
 
 test('content pages take the menu label as heading and drop a leading paragraph that repeats it',async()=>{
  const {pageHeading,withoutLeadingTitle}=await import('../src/lib/shop/site.ts');
- const site={nav:[{label:'Sobre Seda',href:'/blogs/noticias'}],footerLinks:[{label:'Política de privacidad',href:'/policies/privacy-policy'}]};
- assert.equal(pageHeading(site,'/blogs/noticias','Noticias'),'Sobre Seda');
+ const site={nav:[{label:'Sobre Seda',href:'/pages/seda'}],footerLinks:[{label:'Política de privacidad',href:'/policies/privacy-policy'}]};
+ assert.equal(pageHeading(site,'/pages/seda','Noticias'),'Sobre Seda');
  assert.equal(pageHeading(site,'/policies/privacy-policy','Política de privacidad'),'Política de privacidad');
  assert.equal(pageHeading(site,'/pages/guia-de-tallas','Guía de tallas'),'Guía de tallas');
  const block=text=>({_type:'block',style:'normal',children:[{_type:'span',text}]});
