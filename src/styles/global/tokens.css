@@ -73,6 +73,7 @@
 		--border-width: 1px;
 		--radius-pill: 999px;
 		--radius-control: 2px;
+		--control-height-compact: 2.75rem;
 		--radius-media: 0;
 		--shadow-control: 2px 2px 5px rgb(96 62 42 / 0.1);
 		--shadow-overlay: 6px 6px 25px rgb(96 62 42 / 0.12);

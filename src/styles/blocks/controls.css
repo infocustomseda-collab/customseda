@@ -139,23 +139,50 @@
 		resize: vertical;
 	}
 
-	/* Quantity stepper: decrement, number input, increment in one bordered control. */
+	/* Shipping keeps its native select behavior inside the shop's pill outline. */
+	.field__select {
+		position: relative;
+	}
+
+	.field__select .field__control {
+		border-radius: var(--radius-pill);
+		padding-inline: var(--space-s) var(--control-height);
+		appearance: none;
+	}
+
+	.field__select > svg {
+		position: absolute;
+		inset-inline-end: var(--space-s);
+		inset-block-start: 50%;
+		translate: 0 -50%;
+		pointer-events: none;
+		color: var(--color-text-strong);
+	}
+
+	/* Two independent pill buttons frame the editable quantity. */
 	.quantity {
 		display: inline-grid;
 		justify-self: start;
-		grid-template-columns: minmax(2.75rem, var(--control-height)) minmax(2.5rem, 3.5rem) minmax(2.75rem, var(--control-height));
+		align-items: center;
+		grid-template-columns: var(--control-height) var(--control-height-compact) var(--control-height);
+		gap: var(--space-2xs);
 		max-inline-size: 100%;
-		border: var(--border-width) solid var(--color-border-control);
-		border-radius: var(--radius-control);
 	}
 
 	.quantity__button {
 		display: grid;
 		place-items: center;
-		border: 0;
-		background: none;
+		min-block-size: var(--control-height-compact);
+		border: var(--border-width) solid var(--color-border-control);
+		border-radius: var(--radius-pill);
+		background: var(--color-surface);
 		color: var(--color-text-strong);
 		cursor: pointer;
+		transition: border-color var(--duration-instant) var(--ease-out);
+	}
+
+	.quantity__button:hover:not(:disabled) {
+		border-color: var(--color-text-strong);
 	}
 
 	.quantity__button:disabled {
@@ -165,7 +192,10 @@
 
 	.quantity__input {
 		inline-size: 100%;
+		min-inline-size: 0;
+		min-block-size: var(--control-height-compact);
 		border: 0;
+		border-radius: var(--radius-pill);
 		background: none;
 		color: var(--color-text-strong);
 		text-align: center;

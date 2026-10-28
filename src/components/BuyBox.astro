@@ -6,6 +6,7 @@ import { checkoutMessage } from "../lib/commerce/messages";
 import type { ShippingRule } from "../lib/commerce/shipping";
 import { formatPrice } from "../lib/shop/view";
 import Button from "./Button.astro";
+import Icon from "./Icon.astro";
 import QuantityField from "./QuantityField.astro";
 import SizePicker from "./SizePicker.astro";
 
@@ -38,18 +39,27 @@ const shippingLabel = (rule: ShippingRule) =>
 			<input type="hidden" name="id" value={id} />
 			<input type="hidden" name="slug" value={slug} />
 			<input type="hidden" name="price" value={priceCents} />
-			{choices.map((choice) => <SizePicker name={choice.name} legend={choice.legend} sizes={choice.sizes} />)}
+			<div class="buy-box__sizing">
+				<slot name="size-guide" />
+				<div class="buy-box__sizes">
+					{choices.map((choice) => <SizePicker name={choice.name} legend={choice.legend} sizes={choice.sizes} />)}
+				</div>
+			</div>
 			<QuantityField id={`quantity-${id}`} />
 			<div class="field">
 				<label class="field__label" for={`shipping-${id}`}>Envío</label>
-				<select class="field__control" id={`shipping-${id}`} name="shipping" required aria-describedby={`shipping-hint-${id}`}>
-					<option value="">Elige el destino</option>
-					{shipping.map((rule) => <option value={rule.id}>{shippingLabel(rule)}</option>)}
-				</select>
+				<div class="field__select">
+					<select class="field__control" id={`shipping-${id}`} name="shipping" required aria-describedby={`shipping-hint-${id}`}>
+						<option value="">Elige el destino</option>
+						{shipping.map((rule) => <option value={rule.id}>{shippingLabel(rule)}</option>)}
+					</select>
+					<Icon name="chevron-down" size={18} />
+				</div>
 				<p class="field__hint" id={`shipping-hint-${id}`}>Elige el destino real del pedido: la dirección se confirma en el pago.</p>
 			</div>
 		</>
 	)}
+	{!canBuy && <slot name="size-guide" />}
 	{!available && (
 		<p class="buy-box__state"><span class="badge buy-box__badge">Agotado</span> Esta pieza está agotada ahora mismo.</p>
 	)}

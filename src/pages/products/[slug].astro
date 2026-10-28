@@ -28,7 +28,7 @@ if (!detail) return Astro.rewrite("/404");
 const { entry, item } = detail;
 const section = { href: `/collections/bikinis?category=${encodeURIComponent(item.category??'')}`, name: detail.categoryLabel??'Productos', label: detail.categoryLabel??'Producto' };
 const choices = detail.kind === 'bundle'
- ? detail.components.map(component=>({name:`size_${component.item.id}`,legend:`Talla de ${component.item.title}`,sizes:component.item.sizes}))
+ ? detail.components.map(component=>({name:`size_${component.item.id}`,legend:component.item.category === 'top' ? 'Talla del top' : 'Talla de la braguita',sizes:component.item.sizes}))
  : [{name:'talla',legend:'Talla',sizes:item.sizes}];
 const production = settings?.data.production_text;
 const names = item.card.transitionName ? transitionNames(item.card.transitionName) : null;
@@ -54,35 +54,31 @@ const names = item.card.transitionName ? transitionNames(item.card.transitionNam
 						<p class="product-details__meta" style={names ? `view-transition-name: ${names.metadata}` : undefined}>{section.label}{detail.colorLabel && ` · color ${detail.colorLabel}`}</p>
 					</div>
 					<Price cents={item.price} transitionName={names?.price} />
-					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available} />
-					<RichText value={entry.data.description} />
-					{detail.kind === "bundle" && (
-						<section class="stack" aria-labelledby="includes-title" style="--stack-space: var(--space-xs)">
-							<h2 class="product-details__subtitle" id="includes-title">Incluye</h2>
-							<ul class="includes" role="list">
-								{detail.components.map((piece) => (
-									<li>
-										<a class="includes__item" href={piece.item.card.href}>
-											{piece.item.card.images[0] && <img src={piece.item.card.images[0].src} srcset={piece.item.card.images[0].srcset} sizes="6rem" alt="" width={piece.item.card.images[0].width} height={piece.item.card.images[0].height} style={`object-position: ${piece.item.card.images[0].position}`} loading="lazy" decoding="async" />}
-											<span>{piece.item.title}</span>
-										</a>
-									</li>
+					<div class="product-details__description stack" style="--stack-space: var(--space-xs)">
+						<RichText value={entry.data.description} />
+						{detail.kind === "bundle" && (
+							<p class="product-details__includes">
+								Incluye: {detail.components.map((piece, index) => (
+									<>{index > 0 && " + "}<a href={piece.item.card.href}>{piece.item.title}</a></>
 								))}
-							</ul>
-						</section>
-					)}
-					<div>
-						{detail.sizeGuide && (
-							<Disclosure title={String(detail.sizeGuide.data.title ?? "Guía de tallas")} icon="ruler">
-								<RichText value={detail.sizeGuide.data.content} />
-							</Disclosure>
-						)}
-						{Array.isArray(production) && production.length > 0 && (
-							<Disclosure title="Producción y envío">
-								<RichText value={production} />
-							</Disclosure>
+							</p>
 						)}
 					</div>
+					<BuyBox id={item.id} slug={item.slug} priceCents={item.price} choices={choices} shipping={shippingRules(shop)} available={item.available}>
+						{detail.sizeGuide && (
+							<details class="size-guide" slot="size-guide">
+								<summary class="size-guide__summary">Guía de tallas</summary>
+								<div class="size-guide__body">
+									<RichText value={detail.sizeGuide.data.content} />
+								</div>
+							</details>
+						)}
+					</BuyBox>
+					{Array.isArray(production) && production.length > 0 && (
+						<Disclosure title="Producción y envío">
+							<RichText value={production} />
+						</Disclosure>
+					)}
 				</div>
 			</div>
 		</div>
