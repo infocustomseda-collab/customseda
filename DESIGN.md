@@ -236,7 +236,7 @@ The system is flat. Depth comes from tonal bands and hairline rules, not shadows
 
 ## Shapes
 
-Two forms define the system: pills for anything you press or choose (999px radius for buttons, size pills, category tabs, badges, icon buttons) and square edges for anything you look at (0 radius for photographs, cards, bands, popup and drawer). Text inputs and the quantity stepper are the exception, nearly square at 2px, with a 1px `ink-70` border. Borders are always 1px. Photographs use fixed ratios: 4:5 portrait for product cards and the mobile gallery, 1:1 for process cards and story photos, 3:2 for the mobile hero, 16:7 for the wide slideshow. The desktop gallery keeps each photo's original ratio.
+Two forms define the system: pills for anything you press or choose (999px radius for buttons, size pills, category tabs, badges, icon buttons) and square edges for anything you look at (0 radius for photographs, cards, bands, popup and drawer). Text inputs are the exception, nearly square at 2px, with a 1px `ink-70` border. Quantity uses separate pill buttons around a borderless number; shipping uses a pill-shaped native select. Borders are always 1px. Photographs use fixed ratios: 4:5 portrait for product cards and the mobile gallery, 1:1 for process cards and story photos, 3:2 for the mobile hero, 16:7 for the wide slideshow. The desktop gallery keeps each photo's original ratio.
 
 ## Components
 
@@ -253,6 +253,12 @@ Soft, rounded and quietly tactile.
 - **Style:** native radios behind pill labels, 2.5rem tall and at least 3.25rem wide, with a 1px `ink-70` border and Cormorant 700 ink text.
 - **State:** hover darkens the border to ink. Selected fills with ink and paper text. An unavailable size has a dashed border, subtle text and a line-through. The group's error state gives every pill a terracotta border.
 - Catalog categories use a separate row of text navigation with an underline for the current category. Attribute pills are reserved for color choices inside the filter disclosure.
+- Product purchase forms use a compact variant: step −1, body weight, tighter spacing between the two size rows and shorter functional labels. Touch areas retain their 2.5rem height and 3.25rem minimum width. Approved on 2026-10-28 following the MAREA critique.
+
+### Product details
+- Reading order: title/category/color, price, existing merchant description, included-piece links, sizing with its guide, quantity/destination and Comprar, then production details when configured.
+- Conjuntos identify their included pieces in one small linked text line. No separate thumbnail section.
+- The size guide uses a quiet native disclosure beside sizing. Measurements are editable native Portable Text alongside the original diagram; no measurement values live in the product template.
 
 ### Catalog navigation and refinements
 - Categories remain visible as text links, with a brown underline identifying the current selection. They refine the existing grid through `?category=todos|conjuntos|tops|braguitas`, without a page swap.
@@ -272,7 +278,8 @@ Soft, rounded and quietly tactile.
 - **Labels:** label style (Cormorant 700, step −1) in ink, above the control, with hints below in `ink-85`.
 - **Focus:** the global 2px rust outline. Hover darkens the border to ink.
 - **Error:** terracotta border plus a 1px inset ring, and a terracotta bold message.
-- **Quantity stepper:** minus, number, plus in one bordered 2px-radius control.
+- **Quantity stepper:** separate outlined pill buttons around a borderless editable number; buttons are 52px wide and 44px high, with disabled states at the limits. Approved on 2026-10-28.
+- **Shipping selector:** full-width, 52px-high pill outline with an inset chevron. Uses a native select; the chevron is decorative and does not intercept input. Approved on 2026-10-28.
 
 ### Navigation
 - **Announcement bar:** a full-width cacao band with sky Montserrat text, centered and balanced (it wraps to three lines on phones).
