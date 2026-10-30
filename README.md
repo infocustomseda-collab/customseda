@@ -18,6 +18,15 @@ pnpm dev
 
 Open `http://localhost:4321/_emdash/admin`. The development-only setup bypass is `http://localhost:4321/_emdash/api/setup/dev-bypass?redirect=/_emdash/admin`. It must never work on a deployed Worker.
 
+To run the app locally against remote data, stop the other dev server and choose explicitly:
+
+```sh
+pnpm dev:staging
+pnpm dev:production
+```
+
+These commands execute the app in local workerd at `http://localhost:4321`, with remote D1/R2 bindings selected from that environment in `wrangler.jsonc`. The startup banner prints the database and bucket. You need `wrangler login` and the selected Worker's `EMDASH_ENCRYPTION_KEY` in the ignored `.env.cloudflare-staging` or `.env.cloudflare-production`. Only that key is supplied to the local runtime; live payment and rebuild secrets are not loaded. Sessions are local and isolated per target, automatic migrations are check-only, and no deployment is performed. Existing remote-host passkeys do not work on localhost. The development auth bypass may create a developer administrator in the remote database if used; it is not invoked automatically. Editing, importing, deleting, or publishing through this local CMS changes the selected remote data. Export processing runs locally; D1/R2 operations still use Cloudflare. Open `/_emdash/admin/settings/transfer` to export the selected remote site. Remote dev does not prepare image derivatives; original media remains available from R2.
+
 With the dev server running, use a second terminal:
 
 ```sh

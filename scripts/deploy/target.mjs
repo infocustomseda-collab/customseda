@@ -40,6 +40,16 @@ export function validateTarget(config, environment) {
   const role = selected.vars?.SITE_ROLE;
   if (role === 'preview') return { ...target, rendering: 'live', preview: validateLive(config, environment, selected) };
   if (role !== 'public') throw new Error(`Set SITE_ROLE to "public" or "preview" in the ${environment} environment.`);
+  // Production hosts its own CMS. Staging is independently deployed SSR; do not
+  // build or upload a third Worker as a side effect of publishing production.
+  if (environment === 'production' && selected.vars.SSR_PREVIEW_URL) {
+    if (selected.vars.PREVIEW_SITE_URL) throw new Error('Remove PREVIEW_SITE_URL: the production Worker hosts its own CMS.');
+    if (config.env['production-preview']) throw new Error('Remove the legacy production-preview configuration; staging supplies SSR preview.');
+    if (config.env.staging.vars?.SITE_ROLE !== 'preview' || selected.vars.SSR_PREVIEW_URL !== otherOrigin) {
+      throw new Error('Set SSR_PREVIEW_URL to the staging SSR origin.');
+    }
+    return { ...target, rendering: 'static', previewOrigin: otherOrigin };
+  }
   return { ...target, rendering: 'static', preview: validatePreview(config, environment, selected, url.origin, database, bucket) };
 }
 
@@ -149,10 +159,10 @@ export function deploymentCommands(target, { fingerprint, allowEmpty = false } =
     ['astro', 'build'],
     ['check-static'],
     // Build the preview variant before any upload, so a failed build stops the deploy early.
-    ['astro-preview', target.preview.environment],
+    ...(target.preview ? [['astro-preview', target.preview.environment]] : []),
     // Each build writes a Wrangler config already flattened for its environment, so no --env.
     ['wrangler', 'deploy', '-c', 'dist/server/wrangler.json'],
-    ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json'],
+    ...(target.preview ? [['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json']] : []),
     [...migration, '--check'],
   ];
 }

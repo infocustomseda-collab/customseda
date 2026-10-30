@@ -163,6 +163,7 @@ All staging work is deferred to this phase. Complete the remote acceptance gate 
 
 - [ ] Complete separate staging and production Workers, D1 databases, R2 buckets, and session bindings; reuse existing resources and keep local, staging, and production data isolated.
 - [ ] Configure runtime secrets, environment-specific URLs, admin authentication, and media delivery; avoid production URL/passkey settings leaking into staging.
+- [ ] Configure EmDash magic-link email through the native `cloudflareEmail()` provider and a `send_email` binding restricted to verified administrator recipients (free sending on Workers Free). Deferred by the user on 2026-10-30: collect the email associated with the EmDash administrator, configure the sender domain with Cloudflare Email Routing after reviewing its existing DNS, verify the recipient in Cloudflare, and test actual magic-link delivery and login. Keep environment bindings separate; no DNS changes or deployments until this phase is authorized.
 - [ ] Register the merchant's staging administrator/passkey and verify fresh setup/login, content creation, image upload, relationship editing, and publication with the catalog model.
 - [ ] Verify restart/redeployment against existing remote data and confirm published content and media persist.
 - [ ] Measure complete authenticated create/save/publish requests, realistic gallery uploads, scheduled tasks, Worker CPU/errors, bundle/startup constraints, and account quotas; document whether the essential CMS workflows work on Workers Free.

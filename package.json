@@ -9,6 +9,8 @@
   },
   "scripts": {
     "dev": "pnpm images:local && astro dev --host 127.0.0.1",
+    "dev:staging": "node scripts/dev/remote.mjs staging",
+    "dev:production": "node scripts/dev/remote.mjs production",
     "images:local": "node scripts/build/snapshot.mjs --env local --drafts --allow-empty && node scripts/build/images.mjs --env local",
     "build:local-preview": "pnpm images:local && node scripts/build/prerender-db.mjs local && astro build && node scripts/build/check-static.mjs",
     "build": "node scripts/build/snapshot.mjs --env local --allow-empty && node scripts/build/images.mjs --env local && node scripts/build/prerender-db.mjs local && astro build && node scripts/build/check-static.mjs",
