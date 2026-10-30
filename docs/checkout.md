@@ -13,7 +13,7 @@ Phase 5 uses **buy-now checkout**: each product or Conjunto page buys one item d
    - Stripe is not configured (`config`) or did not answer (`stripe`).
 3. Otherwise it creates a Stripe Checkout Session with one line item. For example, "Conjunto Fuego" has the description "Top Fuego: M · Braguita Flow: S". The session uses the database price, a fixed shipping charge (free from the rule's threshold), Spanish locale and EUR. Stripe collects the address (countries from the rule), phone number and payment. Pickup sends no Stripe shipping option and collects no address. Items priced below Stripe's 0,50 € minimum count as unavailable.
 4. Stripe redirects to `/checkout/gracias`. That page asks Stripe for the session state and shows paid, "en proceso" (delayed methods), or unconfirmed. `/checkout/cancelado` links back to the piece.
-5. `/api/stripe/webhook` verifies the signature and records each Checkout Session event once in `customseda_payment_events`.
+5. `/api/stripe/webhook` verifies the signature and records each Checkout Session event once in `customseda_payment_events`. On staging (a `SITE_MODE=preview` build reading production's data) it verifies and flags addresses but never reads or writes that table.
 
 ## What the merchant sees in Stripe Dashboard
 
@@ -93,7 +93,7 @@ Test with Stripe's test cards. Checks: 4242 4242 4242 4242 (paid), 4000 0000 000
 
 ### Staging and production (phase 7)
 
-Upload `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` per environment with `wrangler secret put --env staging|production`. Staging uses test keys; only production gets live keys. Each environment gets its own webhook endpoint. `customseda.checkout.v1` is applied with the other model versions by the deployment script. While the staging foundation gate is locked, include its Basic credentials in the webhook URL (`https://seda:<token>@…/api/stripe/webhook`). Otherwise Stripe receives 401.
+Upload `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` per environment with `wrangler secret put --env staging|production`. Staging uses test keys; only production gets live keys. Each environment gets its own webhook endpoint. `customseda.checkout.v1` is applied with the other model versions by the deployment script. The staging gate exempts `/api/stripe/webhook` (Stripe's signature protects it), so the endpoint URL carries no credentials. Staging uses production's catalog with test keys; test payments land only in Stripe test mode, never in the database.
 
 ## Records and limits
 

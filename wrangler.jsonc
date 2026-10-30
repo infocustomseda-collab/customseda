@@ -34,37 +34,36 @@
   "env": {
     "staging": {
       "name": "customseda-staging",
-      "send_email": [
-        {
-          "name": "EMAIL",
-          "allowed_destination_addresses": [
-            "87c21@live.it"
-          ]
-        }
-      ],
       "workers_dev": true,
       "vars": {
         "EMDASH_SITE_URL": "https://customseda-staging.customseda.workers.dev",
-        "FOUNDATION_LOCKED": "false",
-        "SITE_ROLE": "preview",
-        "PRIVATE_SITE": "true"
+        "CMS_ORIGIN": "https://customseda.customseda.workers.dev",
+        "FOUNDATION_LOCKED": "true",
+        "SITE_ROLE": "preview"
       },
+      "assets": {
+        "run_worker_first": true
+      },
+      "kv_namespaces": [
+        {
+          "binding": "SESSION",
+          "id": "f182e3b1d1124efcaee5621f17efe31b"
+        }
+      ],
       "triggers": {
-        "crons": [
-          "0 * * * *"
-        ]
+        "crons": []
       },
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "customseda-staging",
-          "database_id": "8c279b51-3653-400f-a02c-408acb52569f"
+          "database_name": "customseda-production",
+          "database_id": "ef91b5bb-deb3-4984-93ee-83b2df4e5083"
         }
       ],
       "r2_buckets": [
         {
           "binding": "MEDIA",
-          "bucket_name": "customseda-staging-media"
+          "bucket_name": "customseda-production-media"
         }
       ]
     },
@@ -94,7 +93,9 @@
         }
       ],
       "triggers": {
-        "crons": []
+        "crons": [
+          "0 * * * *"
+        ]
       },
       "d1_databases": [
         {

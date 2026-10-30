@@ -329,7 +329,7 @@
 		display: none;
 	}
 
-	/* Preview Worker only: drafts are included in this page. */
+	/* Staging only: drafts are included in this page. */
 	.preview-banner {
 		--cluster-justify: center;
 		--cluster-space: var(--space-s);

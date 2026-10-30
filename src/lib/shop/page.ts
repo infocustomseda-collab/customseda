@@ -1,4 +1,4 @@
-// Shared data for public shop pages: content and site chrome. Development and the preview Worker read live content; builds and deployed live routes read the build-time snapshot, so no page queries D1.
+// Shared data for public shop pages: content and site chrome. Development and staging read live content; builds and deployed live routes read the build-time snapshot, so no page queries D1.
 import { getMenu } from "emdash";
 import { getDb } from "emdash/runtime";
 import type { SiteChrome } from "../../layouts/Shop.astro";

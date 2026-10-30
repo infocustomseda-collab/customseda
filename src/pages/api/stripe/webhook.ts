@@ -1,8 +1,11 @@
 // Stripe webhook: verifies the signature, then records Checkout Session payment events once.
+// Staging verifies events and flags addresses in Stripe but records nothing.
 import type { APIRoute } from "astro";
+import { env } from "cloudflare:workers";
 import { getDb } from "emdash/runtime";
 import { stripeSecrets } from "../../../lib/commerce/config";
-import { handleStripeEvent } from "../../../lib/commerce/payments";
+import { handleStripeEvent, recordsPayments } from "../../../lib/commerce/payments";
+import { siteMode } from "../../../lib/site-mode";
 import { stripeRequest, verifyWebhook } from "../../../lib/commerce/stripe";
 
 export const prerender = false;
@@ -18,7 +21,8 @@ export const POST: APIRoute = async ({ request }) => {
 	} catch {
 		return new Response("Invalid signature.", { status: 400 });
 	}
-	const result = await handleStripeEvent(await getDb(), event, {
+	const records = recordsPayments(siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE), (env as unknown as { CMS_ORIGIN?: string }).CMS_ORIGIN);
+	const result = await handleStripeEvent(records ? await getDb() : null, event, {
 		// Visible in the Dashboard payments list: the address does not match the chosen shipping zone.
 		async flagPaymentIntent(id, ruleId, postalCode) {
 			const intent = await stripeRequest<{ description?: string | null }>({ secretKey }, "GET", `/v1/payment_intents/${encodeURIComponent(id)}`);

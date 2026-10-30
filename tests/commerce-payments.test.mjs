@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Kysely,sql} from 'kysely';
 import {createDialect} from 'emdash/db/sqlite';
 import {runMigrations} from 'emdash/db';
-import {applyCheckoutModel,checkoutVersion,handleStripeEvent} from '../src/lib/commerce/payments.ts';
+import {applyCheckoutModel,checkoutVersion,handleStripeEvent,recordsPayments} from '../src/lib/commerce/payments.ts';
 
 async function database(t) {
  const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
@@ -66,4 +66,19 @@ test('sessions created elsewhere in the Stripe account are ignored without side 
  const foreign=session({metadata:{},collected_information:null});
  assert.equal(await handleStripeEvent(db,event('evt_1','checkout.session.completed',foreign),{flagPaymentIntent:async()=>assert.fail('no flag')}),'ignored');
  assert.deepEqual(await rows(db),[]);
+});
+
+test('without a database the event is verified and flagged in Stripe but nothing is recorded',async()=>{
+ const flags=[];
+ const mismatch=session({collected_information:{shipping_details:{address:{country:'ES',postal_code:'28001'}}}});
+ assert.equal(await handleStripeEvent(null,event('evt_9','checkout.session.completed',mismatch),{flagPaymentIntent:async(...a)=>{flags.push(a);}}),'processed');
+ assert.deepEqual(flags,[['pi_1','canarias','28001']]);
+ assert.equal(await handleStripeEvent(null,event('evt_10','charge.refunded',{id:'ch'}),{flagPaymentIntent:async()=>{}}),'ignored');
+});
+
+test('only non-preview builds without a CMS origin record payments',()=>{
+ assert.equal(recordsPayments('public',undefined),true);
+ assert.equal(recordsPayments('dev',undefined),true);
+ assert.equal(recordsPayments('preview',undefined),false);
+ assert.equal(recordsPayments('public','https://cms.example'),false);
 });

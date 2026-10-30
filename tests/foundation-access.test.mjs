@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { foundationAccess } from '../src/lib/foundation-access.ts';
+import { foundationAccess, hasFoundationCredentials } from '../src/lib/foundation-access.ts';
 
 const request = (password) => new Request('https://staging.example/_emdash/admin', {
   headers: password ? { Authorization: `Basic ${btoa(`seda:${password}`)}` } : {},
@@ -32,4 +32,13 @@ test('CLI clients send the credentials in X-Foundation-Access, keeping Authoriza
   });
   assert.equal(foundationAccess(cli(secret), env), null);
   assert.equal(foundationAccess(cli('wrong'), env).status, 401);
+});
+test('credential check accepts seda:<secret> in either header and nothing without a token', () => {
+  const basic = `Basic ${btoa(`seda:${secret}`)}`;
+  assert.equal(hasFoundationCredentials(request(secret), secret), true);
+  assert.equal(hasFoundationCredentials(new Request('https://staging.example', { headers: { 'X-Foundation-Access': basic } }), secret), true);
+  assert.equal(hasFoundationCredentials(request(secret), undefined), false);
+  assert.equal(hasFoundationCredentials(request('undefined'), undefined), false);
+  assert.equal(hasFoundationCredentials(request('wrong'), secret), false);
+  assert.equal(hasFoundationCredentials(request(), secret), false);
 });
