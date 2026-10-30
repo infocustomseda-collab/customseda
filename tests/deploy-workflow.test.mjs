@@ -12,31 +12,33 @@ test('the workflow deploys on pushes to master and on demand per environment',()
  assert.match(workflow,/environment:\n        description:[^\n]*\n        type: choice\n        options: \[staging, production\]/);
 });
 
-test('deploys queue per environment instead of cancelling a running one',()=>{
+test('both deploys queue on the shared production database instead of cancelling a running one',()=>{
  for(const name of ['staging','production']) {
   const block=job(name);
-  assert.match(block,new RegExp(`group: deploy-${name}\\n\\s+cancel-in-progress: false`),name);
+  assert.match(block,/group: deploy-production-db\n\s+cancel-in-progress: false/,name);
   assert.match(block,new RegExp(`environment: ${name}\\n`),name);
   assert.match(block,new RegExp(`run: pnpm deploy:${name}\\n`),name);
  }
 });
 
-test('production runs only when enabled, and after staging on pushes',()=>{
- const block=job('production');
- assert.match(block,/vars\.PRODUCTION_DEPLOY_ENABLED == 'true'/);
- assert.match(block,/needs: \[verify, staging\]/);
- assert.match(block,/needs\.staging\.result == 'success'/);
- // A staging job replaced by a newer queued run (which deploys the same master) must not drop production.
- assert.match(block,/needs\.staging\.result == 'cancelled'/);
- // A cancelled run stops; always() would keep production running.
+test('staging runs after a successful production deploy on pushes',()=>{
+ const production=job('production');
+ assert.match(production,/vars\.PRODUCTION_DEPLOY_ENABLED == 'true'/);
+ assert.match(production,/needs: \[verify\]\n/);
+ const staging=job('staging');
+ assert.match(staging,/needs: \[verify, production\]/);
+ assert.match(staging,/needs\.production\.result == 'success'/);
+ // Staging reads production's database: it never deploys code that production has not migrated for.
+ assert.doesNotMatch(staging,/needs\.production\.result == 'cancelled'/);
+ // A cancelled run stops; always() would keep staging running.
  assert.doesNotMatch(workflow,/always\(\)/);
- assert.match(block,/!cancelled\(\)/);
+ assert.match(staging,/!cancelled\(\)/);
 });
 
 test('CMS dispatches coalesce before any job starts and skip the push-only verification',()=>{
  assert.match(workflow,/\nconcurrency:\n  group: \$\{\{ github\.event_name == 'workflow_dispatch' && format\('dispatch-\{0\}', inputs\.environment\) \|\| format\('push-\{0\}', github\.run_id\) \}\}\n  cancel-in-progress: false/);
  assert.match(job('verify'),/if: github\.event_name == 'push'/);
- assert.match(job('staging'),/needs\.verify\.result == 'skipped'/);
+ assert.match(job('production'),/needs\.verify\.result == 'skipped'/);
 });
 
 test('deploy jobs deploy the current master, never an older run commit',()=>{
