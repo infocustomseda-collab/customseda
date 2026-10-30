@@ -221,7 +221,7 @@
 	@media (min-width: 48rem) {
 		.site-footer__top {
 			grid-template-columns: auto 1fr auto;
-			align-items: start;
+			align-items: center;
 		}
 	}
 
