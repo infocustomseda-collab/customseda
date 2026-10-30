@@ -273,7 +273,7 @@ Not for a subagent. The session that runs it asks the user before each step, sho
 - [ ] **Step 3: Set the secrets** after confirmation:
   - Staging: `EMDASH_ENCRYPTION_KEY` (production's value, from `.env.cloudflare-production`) and `FOUNDATION_ACCESS_TOKEN` (the reviewer token, user's choice to rotate). Use `wrangler secret put … --env staging` for each. Confirm the staging Stripe keys are `sk_test_…`.
   - Production: `GITHUB_REBUILD_TOKEN` (`--env production`).
-- [ ] **Step 4: GitHub settings (user):** set the `staging` environment's `EMDASH_TARGET_FINGERPRINT` to production's value.
+- [ ] **Step 4: GitHub settings:** none yet. As of 2026-10-30 no deploy is configured in GitHub, so merges to `master` only run tests. See the deferred to-do below.
 - [ ] **Step 5: Deploy, after confirmation:** `pnpm deploy:production`, then `pnpm deploy:staging`.
 - [ ] **Step 6: Verify:**
   - Staging:
@@ -287,4 +287,10 @@ Not for a subagent. The session that runs it asks the user before each step, sho
     - anonymous `/` → 200 static;
     - `/_emdash/admin/` → login;
     - the cron is listed on the `customseda` Worker.
+- [ ] **Deferred to-do: GitHub deploys** (not configured on 2026-10-30; do this only once the manual rollout above is verified):
+  - [ ] Environment `production`: secret `CLOUDFLARE_API_TOKEN`, variable `EMDASH_TARGET_FINGERPRINT` (from `pnpm migrate:status production`, reviewed).
+  - [ ] Environment `staging`: secret `CLOUDFLARE_API_TOKEN`, variable `EMDASH_TARGET_FINGERPRINT` set to **production's** value (staging checks production's database).
+  - [ ] Production Worker secret `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only); record owner and expiry in `docs/deployment.md`.
+  - [ ] Repository variables `PRODUCTION_DEPLOY_ENABLED=true`, then `STAGING_DEPLOY_ENABLED=true`.
+  - [ ] Check a push to `master`: production deploys first, then staging; a CMS publish dispatches production only.
 - [ ] **Step 7: Retire staging's own data** after confirmation. Export a backup with `wrangler d1 export customseda-staging --remote --output backups/customseda-staging-2026-10-30.sql` and list `customseda-staging-media` objects into `backups/`. Then `wrangler d1 delete customseda-staging` and `wrangler r2 bucket delete customseda-staging-media`; the bucket has to be emptied first, with the user's confirmation of the object count.
