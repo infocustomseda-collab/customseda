@@ -43,7 +43,11 @@ Everyone else gets `401` with a Basic challenge and a link to production's CMS l
 - `/preview/access` → 200;
 - `/api/stripe/webhook` → 503, because no Stripe keys are set on staging yet.
 
-Draft visibility is not verified yet: production had no drafts. Production is not yet redeployed with the hourly cron. The duplicate Worker `customseda-staging-staging`, the old staging D1 and the old bucket still exist.
+Later the same day the user redeployed production; its Worker now runs the hourly cron and staging has none. The user also deleted the duplicate Worker `customseda-staging-staging` and the old D1 `customseda-staging`. Cloudflare now holds two Workers (`customseda`, `customseda-staging`) and one D1 (`customseda-production`).
+
+Still open:
+- draft visibility on staging is unverified, because production had no drafts;
+- the bucket `customseda-staging-media` still exists.
 
 Staging checkout uses Stripe **test** keys. Its webhook verifies events and flags address mismatches in Stripe, but never reads or writes `customseda_payment_events` (see [checkout](checkout.md)).
 
