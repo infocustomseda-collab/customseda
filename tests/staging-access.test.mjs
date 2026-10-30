@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { stagingAccess } from '../src/lib/staging-access.ts';
+import { stagingAccess, stagingCmsOrigin } from '../src/lib/staging-access.ts';
 
 const env = { FOUNDATION_ACCESS_TOKEN: 'a'.repeat(64), CMS_ORIGIN: 'https://cms.example' };
 const req = (path, auth) => new Request(`https://staging.example${path}`, { headers: auth ? { Authorization: auth } : {} });
@@ -23,3 +23,7 @@ test('handoff, webhook, build assets and media are exempt, without drafts', () =
   for (const p of ['/preview/accessx', '/api/stripe/webhookx', '/_emdash/api/media/files']) assert.equal(stagingAccess(req(p), env, false).status, 401, p);
 });
 test('missing token never grants access', () => assert.equal(stagingAccess(req('/', basic('seda', 'undefined')), { CMS_ORIGIN: env.CMS_ORIGIN }, false).status, 401));
+test('only a non-empty CMS origin turns a Worker into the gated staging reader', () => {
+  assert.equal(stagingCmsOrigin({ CMS_ORIGIN: 'https://cms.example' }), 'https://cms.example');
+  for (const value of ['', '   ', undefined, 1]) assert.equal(stagingCmsOrigin({ CMS_ORIGIN: value }), null, String(value));
+});

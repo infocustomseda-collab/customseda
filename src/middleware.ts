@@ -4,7 +4,7 @@ import { getRequestContext } from 'emdash';
 import { catalogWriteMiddleware } from './lib/cms/write-middleware.ts';
 import { runWithDrafts } from './lib/draft-scope.ts';
 import { previewRedirect } from './lib/preview-routing.ts';
-import { stagingAccess } from './lib/staging-access.ts';
+import { stagingAccess, stagingCmsOrigin } from './lib/staging-access.ts';
 import { canPreviewDrafts, draftsVisible, siteMode } from './lib/site-mode.ts';
 
 const previewMiddleware = defineMiddleware(async (context, next) => {
@@ -13,8 +13,9 @@ const previewMiddleware = defineMiddleware(async (context, next) => {
   const vars = env as unknown as { PUBLIC_SITE_URL?: string; CMS_ORIGIN?: string; FOUNDATION_ACCESS_TOKEN?: string };
   const editor = canPreviewDrafts(context.locals.user?.role);
   // Staging: production editors (via "View site") and the shared reviewer credential see drafts.
-  if (mode === 'preview' && vars.CMS_ORIGIN) {
-    const access = stagingAccess(context.request, { CMS_ORIGIN: vars.CMS_ORIGIN, FOUNDATION_ACCESS_TOKEN: vars.FOUNDATION_ACCESS_TOKEN }, editor);
+  const cmsOrigin = stagingCmsOrigin(vars);
+  if (mode === 'preview' && cmsOrigin) {
+    const access = stagingAccess(context.request, { CMS_ORIGIN: cmsOrigin, FOUNDATION_ACCESS_TOKEN: vars.FOUNDATION_ACCESS_TOKEN }, editor);
     if (access instanceof Response) return access;
     const response = await runWithDrafts(access.drafts, next);
     response.headers.set('Cache-Control', 'private, no-store');

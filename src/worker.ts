@@ -1,5 +1,6 @@
 import handler, { createScheduledHandler, PluginBridge } from "@emdash-cms/cloudflare/worker";
 import { foundationAccess } from "./lib/foundation-access";
+import { stagingCmsOrigin } from "./lib/staging-access";
 import { rebuildConfig, requestRebuild, scheduledRebuildReasons } from "./lib/publish/rebuild";
 
 export { PluginBridge };
@@ -11,7 +12,7 @@ export default {
 	async fetch(request, env, ctx) {
 		const vars = env as unknown as Record<string, unknown>;
 		// Staging applies its own gate in the middleware, where the editor session is known.
-		const denied = typeof vars.CMS_ORIGIN === 'string' ? null : foundationAccess(request, env);
+		const denied = stagingCmsOrigin(vars) ? null : foundationAccess(request, env);
 		if (denied) return denied;
     const url = new URL(request.url);
     // Staging serves storefront previews only; all CMS/auth traffic belongs to production.

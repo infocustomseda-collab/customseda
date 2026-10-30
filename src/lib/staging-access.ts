@@ -5,6 +5,11 @@ interface StagingEnvironment {
   CMS_ORIGIN: string;
 }
 
+/** Staging's production CMS origin, or null. Worker and middleware share it, so neither gate is skipped alone. */
+export function stagingCmsOrigin(vars: { CMS_ORIGIN?: unknown }): string | null {
+  return typeof vars.CMS_ORIGIN === 'string' && vars.CMS_ORIGIN.trim() ? vars.CMS_ORIGIN : null;
+}
+
 // Reached without credentials: the CMS handoff, Stripe's signed webhook, build assets and media.
 const EXEMPT = ['/preview/access', '/api/stripe/webhook'];
 const EXEMPT_PREFIXES = ['/_astro/', '/_emdash/api/media/file/'];
