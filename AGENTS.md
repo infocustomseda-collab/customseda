@@ -3,6 +3,7 @@
 ## Administrator workflow (current operating mode)
 
 - The administrator is not technical. Speak Spanish in plain language and handle Git, dependencies and deployment details yourself. See `docs/administrator-workflow.md`.
+- The administrator has granted permission for all Git commands. Do not request separate permission for routine Git operations; preserve the agreed review/publication workflow and never discard unrelated work.
 - Start the site only with `pnpm dev:production`. Do not use local D1/R2, `pnpm dev`, local snapshots or local CMS setup/authentication bypasses for the administrator. The remote database and media are real production data; never use them for disposable write tests.
 - Before a new activity, inspect the working tree, fetch `origin master`, and reconcile the checkout with current `origin/master` without discarding work. If another change is unfinished, explain it and recommend finishing it before starting an unrelated change.
 - Classify code work as a new feature (`feature/…`), a correction (`fix/…`), or code-owned text/photos (`content/…`). Start a separate branch from current `origin/master`, implement, run appropriate checks, commit and create a PR. Never commit directly to `master` or force-push it.

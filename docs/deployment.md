@@ -133,7 +133,7 @@ The build writes `.emdash/migrations.json`; use it with the same installed depen
 
 ## Continuous deployment (GitHub Actions)
 
-**Administrator workstation setup — 2026-10-30:** the GitHub environments `production` and `staging` now hold `CLOUDFLARE_API_TOKEN` and the reviewed production target fingerprint. Both repository deployment flags are enabled. The read-only status check found no pending or unknown core migrations and executed none. Local validation passes after supplying the missing export-upload helper. The existing production Worker has no `GITHUB_REBUILD_TOKEN`; CMS-triggered rebuilding remains pending. The copied remote encryption keys are hexadecimal and rejected by EmDash 1.3.1 locally; confirm their provenance before changing local or deployed keys. See [administrator workflow](administrator-workflow.md).
+**Administrator workstation setup — 2026-10-30:** the GitHub environments `production` and `staging` now hold `CLOUDFLARE_API_TOKEN` and the reviewed production target fingerprint. Both repository deployment flags are enabled. The read-only status check found no pending or unknown core migrations and executed none. Local validation passes after supplying the missing export-upload helper. With the user's explicit authorization, production now holds `GITHUB_REBUILD_TOKEN`, validated against the GitHub workflow API. The user confirmed that the copied hexadecimal encryption keys are current; both local files and remote Workers now use EmDash 1.3.1's canonical `emdash_enc_v1_` format, preserving the same 32 decoded bytes. Private local backups were retained, and the installed EmDash parser accepts both local files and confirms they share the same key. The restarted remote-connected dev server serves the homepage with HTTP 200 without the previous key-format error. CMS publish-to-rebuild acceptance and successful GitHub deployments still need verification; the PR's check was queued during setup. See [administrator workflow](administrator-workflow.md).
 
 `.github/workflows/deploy.yml` runs on every push to `master`:
 
@@ -172,7 +172,7 @@ pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env production
 
 | Token | Owner | Expires | Renewal |
 | --- | --- | --- | --- |
-| `GITHUB_REBUILD_TOKEN` (production CMS Worker) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
+| `GITHUB_REBUILD_TOKEN` (production CMS Worker) | `infocustomseda-collab` | 2027-01-28 00:00 UTC (reported by GitHub) | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
 
 When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
 
