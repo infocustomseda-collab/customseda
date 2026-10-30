@@ -73,7 +73,8 @@
         {
           "name": "EMAIL",
           "allowed_destination_addresses": [
-            "87c21@live.it"
+            "87c21@live.it",
+            "info.customseda@gmail.com"
           ]
         }
       ],

@@ -10,8 +10,8 @@ test('sender is selected only from the explicit environment',()=>{
  assert.deepEqual(cmsEmailSettings(config,'staging'),{from:{email:'cms@example.com',name:'Custom Seda CMS'}});
  assert.equal(cmsEmailSettings(config,'production'),null);assert.equal(cmsEmailSettings(config,undefined),null);
 });
-test('real sending is limited to the confirmed owner, including during local development',()=>{
+test('real sending is limited to the developer and the confirmed administrator, including during local development',()=>{
  const binding=cmsEmailBinding('cms@example.com',true);
- assert.deepEqual(binding,{name:'EMAIL',allowed_destination_addresses:['87c21@live.it'],allowed_sender_addresses:['cms@example.com'],remote:true});
+ assert.deepEqual(binding,{name:'EMAIL',allowed_destination_addresses:['87c21@live.it','info.customseda@gmail.com'],allowed_sender_addresses:['cms@example.com'],remote:true});
  assert.equal('destination_address' in binding,false);
 });
