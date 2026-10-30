@@ -8,7 +8,7 @@ export const prerender = true;
 // Computed per request: workerd (which prerenders) reports time 0 at module scope.
 const worker = (version: string) => `const CACHE = "seda-${version}";
 const OFFLINE = "/offline";
-${strategy.replace(/^export /m, "")}
+${strategy.replace(/^export /gm, "")}
 
 self.addEventListener("install", (event) => {
 	event.waitUntil((async () => {
@@ -58,7 +58,7 @@ async function respond(rule, request) {
 	// network-first: pages stay fresh online; visited pages and the offline page serve offline.
 	try {
 		const response = await fetch(request);
-		return request.mode === "navigate" ? remember(response) : response;
+		return keepsForOffline(request.mode, response.headers.get("Content-Type")) ? remember(response) : response;
 	} catch {
 		return (await cache.match(request, { ignoreSearch: true })) ?? (request.mode === "navigate" ? await cache.match(OFFLINE) : undefined) ?? Response.error();
 	}
