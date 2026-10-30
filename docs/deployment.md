@@ -18,13 +18,14 @@ An environment's `SITE_ROLE` selects its shape; `validateTarget` checks it befor
 | Environment | Worker(s) | Rendering |
 | --- | --- | --- |
 | Staging | `customseda-staging`, <https://customseda-staging.customseda.workers.dev> | Live: one Worker, every page on request |
-| Production | `customseda-production`, <https://customseda-production.customseda.workers.dev>, and `customseda-production-preview`, <https://customseda-production-preview.customseda.workers.dev> | Static public site plus a preview Worker, sharing one D1 database and R2 bucket |
+| Production | `customseda`, <https://customseda.customseda.workers.dev> | SSG storefront and server-side CMS on the same Worker |
 
-- **Live** (`SITE_ROLE=preview`, no `<env>-preview` partner, no `PUBLIC_SITE_URL`; built with `SITE_MODE=preview` to `dist-preview/`): the admin, all of `/_emdash`, and every page rendered on request. Visitors see published content; signed-in editors (Contributor and above) and `?_preview=` links see drafts. The hourly cron runs here. Content changes appear immediately, so there is no rebuild trigger.
-- **Static public** (`SITE_ROLE=public`, built to `dist/`): prerendered pages from the snapshot. Per request it runs only `/api/*`, `/checkout/*` and `/_emdash/api/media/file/*`; the rest of `/_emdash` redirects (307) to its preview Worker.
-- **Preview partner** (`<env>-preview`, `SITE_ROLE=preview`, `PUBLIC_SITE_URL` set): like live, but logged-out visitors are redirected to the public origin. The hourly cron and the rebuild trigger run here.
+- **Live** (`SITE_ROLE=preview`, no `<env>-preview` partner, no `PUBLIC_SITE_URL`; built with `SITE_MODE=preview` to `dist-preview/`): the admin, all of `/_emdash`, and every page rendered on request. Staging sets `PRIVATE_SITE=true`, requiring a signed-in editor (Contributor and above) for storefront pages, including preview links. Without that flag, visitors see published content and editors or valid preview links see drafts. The hourly cron runs here. Content changes appear immediately, so there is no rebuild trigger.
+- **Static public** (`SITE_ROLE=public`, built to `dist/`): prerendered pages from the snapshot; CMS, API, checkout and original-media routes run server-side. `SSR_PREVIEW_URL` names staging for the authenticated preview handoff. Production hosts its own CMS and deploys only `dist/server/wrangler.json`.
 
-Admin passkeys are bound to the hostname that serves the admin. Staging keeps its admin on its own hostname. When production's admin moves to a preview hostname, register passkeys there (EmDash's sign-in handover, `POST /_emdash/api/auth/handover`, moves an existing session).
+The legacy `production-preview` environment is removed from configuration and deployment orchestration. Its remote Worker has not been deleted. Staging still has its original D1/R2 while the authorized transfer is unfinished; it must not be treated as a preview of production edits until shared bindings and session handoff are verified. Do not repoint it as a side effect of fixing deployment validation.
+
+Admin passkeys are bound to the hostname that serves the admin. Production's administrator registers at `https://customseda.customseda.workers.dev/_emdash/admin/`.
 
 ## Credentials
 
@@ -47,7 +48,6 @@ For the first deployment of an environment, upload its secrets through Wrangler,
 
 ```sh
 pnpm exec wrangler secret bulk .env.cloudflare-production --env production
-pnpm exec wrangler secret bulk .env.cloudflare-production --env production-preview
 pnpm exec wrangler secret put STRIPE_SECRET_KEY --env production
 pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env production
 ```
@@ -60,7 +60,11 @@ Public pages are prerendered static assets. Cloudflare serves those without runn
 
 **Launch switch (phase 7):** set `FOUNDATION_LOCKED` to `"false"` and remove `run_worker_first` together. Pages are then served directly from static assets.
 
-**Staging is open** (`FOUNDATION_LOCKED: "false"`, no `run_worker_first`). Its admin already has an owner and editors sign in with their passkey. `production-preview` stays gated until its first administrator is registered: an open, unclaimed setup wizard would let the first visitor become admin.
+**Production access — 2026-10-30:** the production CMS setup was confirmed complete (`needsSetup: false`). At the user's request, production now has `FOUNDATION_LOCKED=false` and no `assets.run_worker_first`, so its storefront is public and its CMS uses normal EmDash authentication. The old foundation token secret may remain stored but is inactive.
+
+Verified deployment `9e57af64-3fa6-4aab-adb4-243fe2b287c2`: anonymous `/` returns 200, `/_emdash/admin/` redirects to EmDash login, and the login page returns 200; none issues a Basic challenge. The production snapshot contains 16 products, 7 pages and 4 shipping rules. Deployment tests (19) and typecheck passed; no core migrations were pending.
+
+**Staging storefront pages require an EmDash editor session** (`PRIVATE_SITE: "true"`). Anonymous visitors, including holders of preview links, are redirected to `/_emdash/admin/login`. Editors sign in with their passkey and “View site” uses the same session. Private page responses and redirects use `Cache-Control: private, no-store` and `X-Robots-Tag: noindex, nofollow`. The old Basic gate remains off (`FOUNDATION_LOCKED: "false"`); EmDash retains its own admin/API authorization, and static assets and media are not confidential storage. Local development and the production preview partner retain their previous behavior. This staging-only privacy deployment was authorized on 2026-10-30; other remote work remains deferred. `production-preview` stays gated until its first administrator is registered.
 
 ## Build, migrate, deploy, check
 
@@ -72,7 +76,7 @@ pnpm deploy:production
 
 A live environment (staging) runs steps 1–3, builds with `SITE_MODE=preview` for its own environment into `dist-preview/`, deploys `dist-preview/server/wrangler.json`, and runs step 12. It needs no snapshot, derivatives or prerendering.
 
-For a static environment, the runner validates account, database and origin separation, then runs these steps with the selected `CLOUDFLARE_ENV` (the preview build in step 9 uses `<env>-preview` instead):
+For production, the runner validates account, database and origins, then runs these steps with `CLOUDFLARE_ENV=production`. Steps 9 and 11 are legacy preview-pair steps and are skipped for the current two-Worker configuration:
 
 1. Show the migration target and status (manifest built from the Astro config with `--from-config`, since no build exists yet).
 2. Run core migration. It is interactive, unless `EMDASH_EXPECTED_TARGET_FINGERPRINT` holds the reviewed fingerprint, as in CI.
@@ -133,14 +137,14 @@ Bursts coalesce before any job starts: waiting dispatch runs for an environment 
 The workflow is dispatched with a **fine-grained personal access token**, scoped to the `infocustomseda-collab/customseda` repository with "Actions: read and write" permission and nothing else. Store it as a secret of each `<env>-preview` Worker (the rebuild trigger runs there):
 
 ```sh
-pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env production-preview
+pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env production
 ```
 
 `DEPLOY_ENVIRONMENT` and `GITHUB_REPOSITORY` are set as Worker vars in `wrangler.jsonc`. Local development has neither, so it never dispatches.
 
 | Token | Owner | Expires | Renewal |
 | --- | --- | --- | --- |
-| `GITHUB_REBUILD_TOKEN` (`production-preview` Worker) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
+| `GITHUB_REBUILD_TOKEN` (production CMS Worker) | *to record at creation* | *to record* | Create a new token with the same scope, run `wrangler secret put` again, then delete the old token |
 
 When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
 

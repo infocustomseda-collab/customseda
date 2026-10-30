@@ -124,7 +124,7 @@ test('gated environments must route static assets through the Worker', () => {
   assert.equal(validateTarget(c, 'production').environment, 'production');
 });
 
-test('the checked-in Wrangler config: staging live and open, production static with a gated preview', async () => {
+test('the checked-in config deploys production CMS and static pages without a third Worker', async () => {
   const { readFile } = await import('node:fs/promises');
   const wrangler = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
   const staging = validateTarget(wrangler, 'staging');
@@ -136,9 +136,29 @@ test('the checked-in Wrangler config: staging live and open, production static w
   assert.deepEqual(wrangler.env.staging.triggers.crons, ['0 * * * *']);
   const production = validateTarget(wrangler, 'production');
   assert.equal(production.rendering, 'static');
-  // Production's preview keeps the gate until its first administrator exists.
-  assert.equal(wrangler.env['production-preview'].vars.FOUNDATION_LOCKED, 'true');
-  assert.equal(wrangler.env['production-preview'].assets.run_worker_first, true);
+  assert.equal(production.preview, undefined);
+  assert.equal(production.previewOrigin, staging.origin);
+  assert.equal(wrangler.env.production.name, 'customseda');
+  assert.equal(wrangler.env.production.vars.FOUNDATION_LOCKED, 'false');
+  assert.notEqual(wrangler.env.production.assets?.run_worker_first, true);
+  assert.equal(wrangler.env['production-preview'], undefined);
+  const commands=deploymentCommands(production);
+  assert.equal(commands.some(c=>c[0]==='astro-preview'),false);
+  assert.deepEqual(commands.filter(c=>c[0]==='wrangler'),[['wrangler','deploy','-c','dist/server/wrangler.json']]);
+});
+
+test('CMS-hosted production requires the SSR preview URL to match staging and no legacy admin redirect',()=>{
+ const c=liveStaging();delete c.env['production-preview'];
+ delete c.env.production.vars.PREVIEW_SITE_URL;
+ c.env.production.vars.SSR_PREVIEW_URL=origin('staging');
+ const target=validateTarget(c,'production');
+ assert.equal(target.rendering,'static');assert.equal(target.previewOrigin,origin('staging'));
+ assert.equal(deploymentCommands(target).some(c=>c.includes('production-preview')),false);
+ c.env.production.vars.SSR_PREVIEW_URL='https://wrong.example';
+ assert.throws(()=>validateTarget(c,'production'),/SSR_PREVIEW_URL/);
+ c.env.production.vars.SSR_PREVIEW_URL=origin('staging');
+ c.env.production.vars.PREVIEW_SITE_URL=origin('production-preview');
+ assert.throws(()=>validateTarget(c,'production'),/PREVIEW_SITE_URL/);
 });
 
 /** Staging as one live Worker: every page rendered on request, no public partner. */

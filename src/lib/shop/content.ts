@@ -47,11 +47,18 @@ async function items(repo: ContentRepository, type: ShopType, drafts: boolean) {
 }
 
 /** `only` limits the read to some types; references into types left out resolve to nothing. */
-export async function loadShop(db: Kysely<Database>, { drafts, only }: { drafts: boolean; only?: ShopType[] }): Promise<ShopContent> {
+export async function loadShop(db: Kysely<Database>, { drafts, only, allowMissing = false }: { drafts: boolean; only?: ShopType[]; allowMissing?: boolean }): Promise<ShopContent> {
+	let types = only ?? (Object.keys(shopTypes) as ShopType[]);
+	// A newly initialized CMS may not have received the shop import yet. Check
+	// native schema metadata; registered collections with broken tables still fail.
+	if (allowMissing) {
+		const registered = new Set((await db.selectFrom('_emdash_collections').select('slug').execute()).map(row => row.slug));
+		types = types.filter(type => registered.has(type));
+	}
 	const repo = new ContentRepository(db);
 	const revisions = new RevisionRepository(db);
 	const loaded: Loaded[] = [];
-	for (const type of only ?? (Object.keys(shopTypes) as ShopType[])) {
+	for (const type of types) {
 		for (const item of await items(repo, type, drafts)) {
 			let data = { ...item.data };
 			let staged: Record<string, unknown> | undefined;

@@ -3,6 +3,21 @@ import assert from 'node:assert/strict';
 import {fixture} from './helpers/catalog.mjs';
 import {applyStorefrontModel} from '../src/lib/cms/model-migration.ts';
 import {loadShop} from '../src/lib/shop/content.ts';
+import {Kysely,sql} from 'kysely';
+import {createDialect} from 'emdash/db/sqlite';
+import {runMigrations} from 'emdash/db';
+
+test('development can read a newly initialized CMS before the shop is imported',async t=>{
+ const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());await runMigrations(db);
+ const shop=await loadShop(db,{drafts:true,allowMissing:true});
+ assert.deepEqual(shop.products,[]);assert.deepEqual(shop.categories,[]);
+ assert.equal((await db.selectFrom('_emdash_collections').select('slug').execute()).length,0);
+ await assert.rejects(()=>loadShop(db,{drafts:false}),/no such table.*ec_products/);
+});
+test('missing tables for registered collections still report schema errors',async t=>{
+ const f=await fixture(t);await sql`DROP TABLE ec_products`.execute(f.db);
+ await assert.rejects(()=>loadShop(f.db,{drafts:true,allowMissing:true}),/no such table.*ec_products/);
+});
 
 test('production reads published entries with live values and resolved references only',async t=>{
  const f=await fixture(t);

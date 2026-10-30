@@ -27,7 +27,7 @@ export async function loadShopContent(): Promise<ShopContent> {
 	const mode = currentMode();
 	const source = shopSource(mode);
 	if (!source.live) return snapshot().shop;
-	const live = await loadShop(await getDb(), { drafts: source.drafts });
+	const live = await loadShop(await getDb(), { drafts: source.drafts, allowMissing: mode === "dev" });
 	if (mode !== "dev") return live;
 	const prepared = Object.values(snapshots)[0];
 	// Never borrow derivatives from another environment. CMS edits remain live; newly
