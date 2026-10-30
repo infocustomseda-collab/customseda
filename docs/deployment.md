@@ -35,6 +35,16 @@ Staging shows drafts to two kinds of visitors:
 
 Everyone else gets `401` with a Basic challenge and a link to production's CMS login. `?_preview=` links alone do not open staging. Exempt from the gate: `/preview/access` (handoff), `/api/stripe/webhook` (signed by Stripe), `/_astro/*` and `/_emdash/api/media/file/*` (build assets and media are not confidential). All staging responses use `Cache-Control: private, no-store` and `X-Robots-Tag: noindex, nofollow`. `FOUNDATION_LOCKED` is `"true"` with `assets.run_worker_first`, and the gate itself runs in the Astro middleware (`src/lib/staging-access.ts`), where the editor session is known.
 
+**Rollout — 2026-10-30:** staging now holds production's `EMDASH_ENCRYPTION_KEY` and is deployed as the shared reader (version `e5eb7893-9426-4614-9337-24d331294d82`, D1 `ef91b5bb…`, catalog model and core migrations current). Verified:
+- anonymous `/` and `/?_preview=x` → 401 Basic, with `private, no-store` and `noindex`;
+- a wrong token → 401;
+- `seda` + token → 200;
+- `/_emdash/admin` → 307 to production;
+- `/preview/access` → 200;
+- `/api/stripe/webhook` → 503, because no Stripe keys are set on staging yet.
+
+Draft visibility is not verified yet: production had no drafts. Production is not yet redeployed with the hourly cron. The duplicate Worker `customseda-staging-staging`, the old staging D1 and the old bucket still exist.
+
 Staging checkout uses Stripe **test** keys. Its webhook verifies events and flags address mismatches in Stripe, but never reads or writes `customseda_payment_events` (see [checkout](checkout.md)).
 
 ## Credentials
