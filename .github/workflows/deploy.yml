@@ -7,6 +7,8 @@ name: Deploy
 on:
   push:
     branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
     inputs:
       environment:
@@ -29,8 +31,8 @@ concurrency:
 
 jobs:
   verify:
-    # Dispatches deploy master, which its push already verified.
-    if: github.event_name == 'push'
+    # PRs and pushes verify; dispatches deploy master, which its push already verified.
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

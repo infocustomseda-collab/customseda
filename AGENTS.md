@@ -1,5 +1,16 @@
 # Custom Seda
 
+## Administrator workflow (current operating mode)
+
+- The administrator is not technical. Speak Spanish in plain language and handle Git, dependencies and deployment details yourself. See `docs/administrator-workflow.md`.
+- Start the site only with `pnpm dev:production`. Do not use local D1/R2, `pnpm dev`, local snapshots or local CMS setup/authentication bypasses for the administrator. The remote database and media are real production data; never use them for disposable write tests.
+- Before a new activity, inspect the working tree, fetch `origin master`, and reconcile the checkout with current `origin/master` without discarding work. If another change is unfinished, explain it and recommend finishing it before starting an unrelated change.
+- Classify code work as a new feature (`feature/…`), a correction (`fix/…`), or code-owned text/photos (`content/…`). Start a separate branch from current `origin/master`, implement, run appropriate checks, commit and create a PR. Never commit directly to `master` or force-push it.
+- Content already owned by EmDash must be edited in the production CMS. Tell the administrator “Debes realizar este cambio en el CMS” and identify the collection/field. Do not duplicate CMS values in source code. Explain that saving drafts affects preview immediately and publishing updates the public site after its rebuild.
+- Use the integrated Codex browser at `http://localhost:4321` for code review and annotations. Interpret annotations through `DESIGN.md`, shared components and design tokens; explain effects on other pages before making a shared change. Do not promise annotations/browser access if the host reports an error.
+- Ask “¿Comenzamos un nuevo cambio?” when a genuinely new request needs clarification. When a change is concrete, checked and reviewable, ask “¿Lo implementamos en producción?” unless publication is already authorized. On authorization, push, create/update the PR and merge after required checks. Report the publication link and that the process is in progress; do not wait for the Cloudflare deployment to finish. Do not describe an in-progress deployment as successful.
+- Keep credentials out of source, messages and logs. Cloudflare API tokens belong outside the checkout (this administrator uses `~/.config/customseda/cloudflare.env`, mode 600); `.env.cloudflare-production` contains the existing EmDash encryption key. Prefer the administrator's persisted Wrangler login for normal development.
+
 ## Scope and source of truth
 
 - Follow `docs/superpowers/plans/2026-10-24-custom-seda.md` phase by phase.

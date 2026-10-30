@@ -133,6 +133,8 @@ The build writes `.emdash/migrations.json`; use it with the same installed depen
 
 ## Continuous deployment (GitHub Actions)
 
+**Administrator workstation setup — 2026-10-30:** the GitHub environments `production` and `staging` now hold `CLOUDFLARE_API_TOKEN` and the reviewed production target fingerprint. Both repository deployment flags are enabled. The read-only status check found no pending or unknown core migrations and executed none. Local validation passes after supplying the missing export-upload helper. The existing production Worker has no `GITHUB_REBUILD_TOKEN`; CMS-triggered rebuilding remains pending. The copied remote encryption keys are hexadecimal and rejected by EmDash 1.3.1 locally; confirm their provenance before changing local or deployed keys. See [administrator workflow](administrator-workflow.md).
+
 `.github/workflows/deploy.yml` runs on every push to `master`:
 
 1. **verify:** `pnpm test` and `pnpm typecheck`.
