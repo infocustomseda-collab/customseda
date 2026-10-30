@@ -53,15 +53,6 @@ test('rejects missing provisioning and unsafe authentication origins', () => {
   }
 });
 
-test('rejects shared staging and production databases or buckets', () => {
-  const c = config();
-  c.env.staging.d1_databases[0].database_id = c.env.production.d1_databases[0].database_id;
-  assert.throws(() => validateTarget(c, 'staging'), /distinct/);
-  c.env.staging.d1_databases[0].database_id = config().env.staging.d1_databases[0].database_id;
-  c.env.staging.r2_buckets[0].bucket_name = c.env.production.r2_buckets[0].bucket_name;
-  assert.throws(() => validateTarget(c, 'staging'), /distinct/);
-});
-
 test('rejects missing or shared Worker names and normalized environment origins', () => {
   for (const name of ['', 'customseda-staging']) {
     const c = config();
@@ -130,10 +121,14 @@ test('the checked-in config deploys production CMS and static pages without a th
   const staging = validateTarget(wrangler, 'staging');
   assert.equal(staging.rendering, 'live');
   assert.equal(staging.preview, undefined);
+  assert.equal(staging.shared, true);
   assert.equal(wrangler.env['staging-preview'], undefined);
-  assert.equal(wrangler.env.staging.vars.FOUNDATION_LOCKED, 'false');
-  // The live staging Worker runs the hourly maintenance (scheduled publishing).
-  assert.deepEqual(wrangler.env.staging.triggers.crons, ['0 * * * *']);
+  assert.equal(wrangler.env.staging.vars.FOUNDATION_LOCKED, 'true');
+  assert.equal(wrangler.env.staging.assets?.run_worker_first, true);
+  assert.equal(wrangler.env.staging.vars.PRIVATE_SITE, undefined);
+  assert.equal(wrangler.env.staging.send_email, undefined);
+  // Production hosts the CMS, so it runs the hourly maintenance (scheduled publishing).
+  assert.deepEqual(wrangler.env.production.triggers.crons, ['0 * * * *']);
   const production = validateTarget(wrangler, 'production');
   assert.equal(production.rendering, 'static');
   assert.equal(production.preview, undefined);
@@ -161,13 +156,49 @@ test('CMS-hosted production requires the SSR preview URL to match staging and no
  assert.throws(()=>validateTarget(c,'production'),/PREVIEW_SITE_URL/);
 });
 
-/** Staging as one live Worker: every page rendered on request, no public partner. */
+/** Staging as one live Worker reading production's database, bucket and session store. */
 const liveStaging = () => {
   const c = config();
   delete c.env['staging-preview'];
-  c.env.staging.vars = { EMDASH_SITE_URL: origin('staging'), SITE_ROLE: 'preview' };
+  const kv = [{ binding: 'SESSION', id: 'f'.repeat(32) }];
+  c.env.production.kv_namespaces = kv;
+  c.env.staging = {
+    ...c.env.staging,
+    vars: { EMDASH_SITE_URL: origin('staging'), SITE_ROLE: 'preview', CMS_ORIGIN: origin('production'), FOUNDATION_LOCKED: 'true' },
+    assets: { run_worker_first: true },
+    d1_databases: structuredClone(c.env.production.d1_databases),
+    r2_buckets: structuredClone(c.env.production.r2_buckets),
+    kv_namespaces: structuredClone(kv),
+    triggers: { crons: [] },
+  };
   return c;
 };
+
+test('staging must share production database, bucket and session store, and point CMS_ORIGIN at production', () => {
+  assert.equal(validateTarget(liveStaging(), 'staging').shared, true);
+  for (const mutate of [
+    c => { c.env.staging.d1_databases[0].database_id = '92345678-1234-1234-1234-123456789abc'; },
+    c => { c.env.staging.r2_buckets[0].bucket_name = 'other'; },
+    c => { c.env.staging.kv_namespaces[0].id = 'other'; },
+    c => { delete c.env.staging.kv_namespaces; },
+    c => { c.env.staging.vars.CMS_ORIGIN = 'https://wrong.example'; },
+    c => { c.env.staging.vars.FOUNDATION_LOCKED = 'false'; },
+    c => { c.env.staging.triggers = { crons: ['0 * * * *'] }; },
+  ]) {
+    const c = liveStaging(); mutate(c);
+    assert.throws(() => validateTarget(c, 'staging'), undefined, mutate.toString());
+  }
+});
+
+test('staging deploy is read-only on the shared database and checks before uploading', () => {
+  const commands = deploymentCommands(validateTarget(liveStaging(), 'staging'), { fingerprint: 'fp' });
+  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'catalog-model-check', 'astro-preview', 'emdash', 'wrangler']);
+  assert.ok(commands[0].includes('--status') && commands[3].includes('--check'));
+  assert.deepEqual(commands[2], ['astro-preview', 'staging']);
+  assert.deepEqual(commands[4], ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json']);
+  assert.equal(commands.some(c => c[0] === 'catalog-model' || c.includes('fp')), false);
+  for (const args of commands.filter(x => x[0] === 'emdash')) assert.equal(args[args.indexOf('--wrangler-env') + 1], 'staging');
+});
 
 test('a live environment is one Worker without a static partner', () => {
   const target = validateTarget(liveStaging(), 'staging');
@@ -181,16 +212,6 @@ test('a live environment redirects nobody elsewhere', () => {
   const c = liveStaging();
   c.env.staging.vars.PUBLIC_SITE_URL = origin('production');
   assert.throws(() => validateTarget(c, 'staging'), /live staging environment.*PUBLIC_SITE_URL/);
-});
-
-test('a live environment builds and uploads only the server-rendered variant', () => {
-  const target = validateTarget(liveStaging(), 'staging');
-  const commands = deploymentCommands(target, { fingerprint: 'fp' });
-  assert.deepEqual(commands.map(x => x[0]), ['emdash', 'emdash', 'catalog-model', 'astro-preview', 'wrangler', 'emdash']);
-  assert.deepEqual(commands[3], ['astro-preview', 'staging']);
-  assert.deepEqual(commands[4], ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json']);
-  assert.ok(commands[1].includes('fp') && commands[5].includes('--check'));
-  for (const args of commands.filter(x => x[0] === 'emdash')) assert.equal(args[args.indexOf('--wrangler-env') + 1], 'staging');
 });
 
 test('deploy scripts run like fdag: plain node, authenticated by wrangler login or the CI secret', async () => {

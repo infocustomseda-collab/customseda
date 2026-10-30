@@ -18,9 +18,7 @@ export function validateTarget(config, environment) {
   if (typeof selected?.name !== 'string' || !selected.name.trim() || typeof other?.name !== 'string' || !other.name.trim() || selected.name.trim() === other.name.trim()) {
     throw new Error('Staging and production require distinct, nonempty Worker names.');
   }
-  if (!bucket?.bucket_name || database.database_id === other?.d1_databases?.find(x => x.binding === 'DB')?.database_id || bucket.bucket_name === other?.r2_buckets?.find(x => x.binding === 'MEDIA')?.bucket_name) {
-    throw new Error('Staging and production require distinct databases and media buckets.');
-  }
+  if (!bucket?.bucket_name) throw new Error(`Set the ${environment} media bucket.`);
   // The gate lives in the Worker; static assets bypass it unless the Worker runs first (launch switch).
   if (selected?.vars?.FOUNDATION_LOCKED === 'true' && selected?.assets?.run_worker_first !== true) {
     throw new Error('Gated environments must run the Worker before static assets.');
@@ -38,7 +36,10 @@ export function validateTarget(config, environment) {
   }
   const target = { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin };
   const role = selected.vars?.SITE_ROLE;
-  if (role === 'preview') return { ...target, rendering: 'live', preview: validateLive(config, environment, selected) };
+  if (role === 'preview') {
+    validateLive(config, environment, selected);
+    return { ...target, rendering: 'live', shared: validateShared(environment, selected, other, otherOrigin) };
+  }
   if (role !== 'public') throw new Error(`Set SITE_ROLE to "public" or "preview" in the ${environment} environment.`);
   // Production hosts its own CMS. Staging is independently deployed SSR; do not
   // build or upload a third Worker as a side effect of publishing production.
@@ -51,6 +52,25 @@ export function validateTarget(config, environment) {
     return { ...target, rendering: 'static', previewOrigin: otherOrigin };
   }
   return { ...target, rendering: 'static', preview: validatePreview(config, environment, selected, url.origin, database, bucket) };
+}
+
+/**
+ * Staging is a private SSR reader of production: same database, bucket and session store (so the
+ * CMS "View site" handoff loads production sessions), production as its CMS, gated, and no cron.
+ */
+function validateShared(environment, selected, production, productionOrigin) {
+  if (environment !== 'staging') throw new Error(`Only staging may be a live reader of production; set SITE_ROLE to "public" in ${environment}.`);
+  const same = (key, binding, field) => {
+    const value = selected[key]?.find(x => x.binding === binding)?.[field];
+    return !!value && value === production?.[key]?.find(x => x.binding === binding)?.[field];
+  };
+  if (!same('d1_databases', 'DB', 'database_id') || !same('r2_buckets', 'MEDIA', 'bucket_name') || !same('kv_namespaces', 'SESSION', 'id')) {
+    throw new Error('Staging must use the production database, media bucket and SESSION namespace.');
+  }
+  if (selected.vars?.CMS_ORIGIN !== productionOrigin) throw new Error('Set staging CMS_ORIGIN to the production origin.');
+  if (selected.vars?.FOUNDATION_LOCKED !== 'true') throw new Error('Staging must keep FOUNDATION_LOCKED "true": it shows drafts.');
+  if (selected.triggers?.crons?.length) throw new Error('Staging must not run crons: production owns maintenance.');
+  return true;
 }
 
 /** A live environment is one Worker rendering every page on request: no static partner to send visitors to. */
@@ -144,12 +164,14 @@ export function deploymentCommands(target, { fingerprint, allowEmpty = false } =
     [...migration, '--from-config', ...(fingerprint ? ['--expected-target-fingerprint', fingerprint] : [])],
     ['catalog-model'],
   ];
-  // A live environment renders every page on request: no snapshot, derivatives or prerendering.
+  // Staging renders every page on request from production's database, which only production
+  // migrates: it checks, read-only, that the shared schema is current before uploading.
   if (target.rendering === 'live') return [
-    ...migrate,
+    statusCommand(target),
+    ['catalog-model-check'],
     ['astro-preview', target.environment],
-    ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json'],
     [...migration, '--check'],
+    ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json'],
   ];
   return [
     ...migrate,

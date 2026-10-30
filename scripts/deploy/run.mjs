@@ -44,6 +44,11 @@ try {
         await buildImages({ environment: args[0] });
         continue;
       }
+      if (tool === 'catalog-model-check') {
+        await remoteCatalogModel(target, { check: true });
+        console.log('Catalog model: all versions present.');
+        continue;
+      }
       if (tool === 'catalog-model') {
         const model = await remoteCatalogModel(target);
         console.log(`${model.version}: ${model.applied ? 'applied' : 'present'}.`);
