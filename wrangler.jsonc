@@ -72,14 +72,17 @@
       "send_email": [
         {
           "name": "EMAIL",
+          "allowed_sender_addresses": ["noreply@customseda.com"],
           "allowed_destination_addresses": [
-            "87c21@live.it"
+            "87c21@live.it",
+            "info.customseda@gmail.com"
           ]
         }
       ],
       "workers_dev": true,
       "vars": {
         "EMDASH_SITE_URL": "https://customseda.customseda.workers.dev",
+        "CMS_EMAIL_FROM": "noreply@customseda.com",
         "FOUNDATION_LOCKED": "false",
         "SITE_ROLE": "public",
         "SSR_PREVIEW_URL": "https://customseda-staging.customseda.workers.dev",
