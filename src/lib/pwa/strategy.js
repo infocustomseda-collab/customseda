@@ -8,3 +8,9 @@ export function routeStrategy(url, method) {
 	if (["/media/", "/icons/", "/brand/"].some((prefix) => path.startsWith(prefix))) return "stale-while-revalidate";
 	return "network-first";
 }
+
+// A network-first response kept for offline: full page loads, and pages the ClientRouter fetches
+// (mode "cors"), which are identified by their HTML content type.
+export function keepsForOffline(mode, contentType) {
+	return mode === "navigate" || /^text\/html\b/.test(contentType ?? "");
+}
