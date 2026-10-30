@@ -3,6 +3,7 @@
 import { openBindings } from '../build/bindings.mjs';
 import { readFile } from 'node:fs/promises';
 import { registerHooks } from 'node:module';
+import { knownLengthUpload } from './local-export-upload.mjs';
 
 // The adapter's factory imports Worker env. Only its R2Storage class is used here,
 // with an explicit remote binding; fail if any code tries to use the factory env.
@@ -25,6 +26,8 @@ try {
   const operation = await bindings.db.selectFrom('_emdash_transfer_operations').select(['id', 'kind', 'created_by']).where('id', '=', operationId).executeTakeFirstOrThrow();
   if (operation.kind !== 'export' || operation.created_by !== user.id) throw new Error('Expected an existing export created by this source administrator.');
   const storage = new R2Storage(bindings.media);
+  const upload = storage.upload.bind(storage);
+  storage.upload = async options => upload(await knownLengthUpload(options));
   if (mode === '--probe') {
     const key=`_emdash_transfer/local-probe/${crypto.randomUUID()}`;
     try {

@@ -6,6 +6,8 @@ The public Posts/Pages starter remains a deployment test. The local CMS now has 
 
 ## Local development
 
+**Administrator workstation:** follow [the administrator workflow](docs/administrator-workflow.md). This machine uses `pnpm dev:production` exclusively, connected to production D1/R2. The local-only examples below describe developer infrastructure and are not the administrator's workflow.
+
 The project pins Node 24.21.0 and pnpm 11.25.0 in `.tool-versions`, matching the package manager declared in `package.json`.
 
 ```sh
