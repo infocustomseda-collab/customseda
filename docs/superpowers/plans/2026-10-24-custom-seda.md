@@ -4,7 +4,7 @@
 
 > **Execution order updated by the user on 2026-10-25:** Work locally for now. All remaining staging provisioning, deployment, remote authentication/acceptance, CPU measurement, and recovery work moves to phase 7, after local phases 3–6 and before production launch. Existing remote resources remain in place. Cloudflare Free feasibility is still a launch requirement, but is not a gate for local development. The next local step is phase 3's Shopify inventory and source-data audit.
 
-> **Status — 2026-10-30:** production and staging are deployed at the user's request; see the environment note in phase 7. Phase 7 is current. Open phase 5 work waits on the merchant's Stripe account.
+> **Status — 2026-10-30:** production and staging are deployed at the user's request; see the environment note below. Remaining work is organized into phases 7–13; phase 7 covers GitHub deployment and rebuilds. Open phase 5 work waits on the merchant's Stripe account.
 
 **Goal:** Replace the Shopify site with an Astro + EmDash shop on Cloudflare Free, retaining the approved identity and using Stripe Checkout.
 
@@ -56,9 +56,9 @@
 - [x] Establish explicit remote core migrations: build, inspect database target, migrate through the CLI, deploy the same artifact, and check status.
 - [x] Use production runtime migration checking and development automatic migrations; serialize remote migration jobs.
 
-**Progress:** Local runtime and infrastructure tooling are implemented. Earlier remote work provisioned a staging Worker and isolated staging/production D1 + R2; both databases have 90 core migrations applied. All remaining remote acceptance and recovery tasks are deferred to phase 7. See [verification evidence](../../phase-1-verification.md).
+**Progress:** Local runtime and infrastructure tooling are implemented. Earlier remote work provisioned a staging Worker and isolated staging/production D1 + R2; both databases have 90 core migrations applied. Remaining remote acceptance and recovery tasks are tracked in phases 8–9. See [verification evidence](../../phase-1-verification.md).
 
-**Local exit condition:** The CMS works locally with the Cloudflare runtime, local D1/R2, and persistence after restart. Remote Workers Free feasibility and persistence across deployment are phase 7 launch gates.
+**Local exit condition:** The CMS works locally with the Cloudflare runtime, local D1/R2, and persistence after restart. Remote Workers Free feasibility and persistence across deployment are phase 9 launch gates.
 
 ## 2. Define the content model
 
@@ -93,7 +93,7 @@
 
 **Local import result:** 11 Products, 5 Conjuntos, 7 Pages, 1 Size Guide, 6 color lookups, and 1 homepage/settings record. The 106 source image URLs deduplicate into 95 local media files (210,164,752 bytes), all verified by SHA-256. All catalog and supporting content remains draft except the color lookup labels. A retry retained all 31 content records without duplicates. The importer and source metadata were retired on 2026-10-27; see [content maintenance](../../content-maintenance.md) for current originals and cleanup behavior. Source gaps are preserved for later publication/checkout work; no staging operation occurred.
 
-**Exit condition:** A verified local catalog and content set can be recreated or updated through a repeatable import. Plan the approved catalog transfer to staging in phase 7 using the current EmDash content and originals; do not restore the retired source importer or copy the whole local database.
+**Exit condition:** A verified local catalog and content set can be recreated or updated through a repeatable import. Production now holds the catalog and staging reads it; rehearse any final content transfer in phases 8 and 12 using the current EmDash content and originals; do not restore the retired source importer or copy the whole local database.
 
 ## 4. Build the reusable visual system and public pages
 
@@ -114,11 +114,11 @@
 
 ## 5. Implement buy-now Stripe Checkout
 
-> **Scope split by the user on 2026-10-25:** keep checkout simple for now. Each product or Conjunto page buys one item directly; the multi-item cart moves to phase 8, after launch. A Conjunto is one Stripe line item carrying both component sizes. A Stripe account does not exist yet: build and test locally against mocked Stripe responses, then complete the test-mode checks once the account exists.
+> **Scope split by the user on 2026-10-25:** keep checkout simple for now. Each product or Conjunto page buys one item directly; the multi-item cart moves to phase 13, after launch. A Conjunto is one Stripe line item carrying both component sizes. A Stripe account does not exist yet: build and test locally against mocked Stripe responses, then complete the test-mode checks once the account exists.
 
-**Progress — 2026-10-25:** Buy-now checkout is implemented locally against mocked Stripe responses; see [checkout and Stripe operations](../../checkout.md). Product pages post to `/api/checkout`, which revalidates against D1 and creates a one-line Stripe Checkout Session with a metadata snapshot. Shipping comes from enabled Shipping Rules (local drafts from the source page; the EU rule stays disabled until rates are confirmed). `/api/stripe/webhook` verifies signatures and records deduplicated events in `customseda_payment_events` (model version `customseda.checkout.v1`), and flags postal codes outside the chosen zone. The header cart link is hidden until phase 8. Still open: the Stripe account, merchant tax/rate/copy confirmation, the Stripe test-mode run, and the receipt approach.
+**Progress — 2026-10-25:** Buy-now checkout is implemented locally against mocked Stripe responses; see [checkout and Stripe operations](../../checkout.md). Product pages post to `/api/checkout`, which revalidates against D1 and creates a one-line Stripe Checkout Session with a metadata snapshot. Shipping comes from enabled Shipping Rules (local drafts from the source page; the EU rule stays disabled until rates are confirmed). `/api/stripe/webhook` verifies signatures and records deduplicated events in `customseda_payment_events` (model version `customseda.checkout.v1`), and flags postal codes outside the chosen zone. The header cart link is hidden until phase 13. Still open: the Stripe account, merchant tax/rate/copy confirmation, the Stripe test-mode run, and the receipt approach.
 
-- [ ] **Merchant:** create the Stripe account (business details, payout bank account, branding, Spanish locale, EUR); share test-mode secret and webhook signing keys for local `.env`; live keys only in phase 7.
+- [ ] **Merchant:** create the Stripe account (business details, payout bank account, branding, Spanish locale, EUR); share test-mode secret and webhook signing keys for local `.env`; live keys only during phases 11–12.
 - [x] Replace the disabled add button with a buy-now form posting the item ID, selected size(s), quantity, shipping destination, and the displayed price; it works without JavaScript.
 - [x] Create a small checkout endpoint that loads authoritative database values, validates published/available items (a Conjunto and both components) and supported sizes, and calculates prices server-side.
 - [x] Return to the product page with an explicit message for unavailable items, unsupported sizes, or a displayed price that no longer matches, before any payment.
@@ -142,7 +142,7 @@
 - **Rebuilds:** CMS publishes, scheduled publishes and an admin route dispatch rebuilds.
 - **Transitions and PWA:** Astro `ClientRouter` navigation (chosen by the user over native cross-document transitions, which Firefox does not support), with the product photo and title animating from list to detail. The PWA is installable with an offline fallback.
 
-The user chose to stay local on 2026-10-25, so all remote work moves to phase 7: the GitHub, Cloudflare and rebuild-token setup, the first staging deploy (`pnpm deploy:staging --allow-empty`, using the wrangler login), the staging catalog import (blocked on a staging administrator), remote verification of publish → rebuild, and the browser checks (transitions, popup back/forward, offline, update banner, mobile performance), which move to phase 7's browser pass.
+The user chose to stay local on 2026-10-25, so all remote work moves to phase 7: the GitHub, Cloudflare and rebuild-token setup, the first staging deploy (`pnpm deploy:staging --allow-empty`, using the wrangler login), the staging catalog import (blocked on a staging administrator), remote verification of publish → rebuild, and the browser checks (transitions, popup back/forward, offline, update banner, mobile performance), which move to phase 10's browser pass.
 
 - [x] Implement a build-time published-content snapshot/query pipeline against local content without exposing CMS credentials to browsers; verify remote environment selection in phase 7.
 - [x] Connect relevant publish/update/delete/settings changes to an authenticated rebuild trigger; coalesce bursts and retain the last successful site if a build fails.
@@ -153,60 +153,91 @@ The user chose to stay local on 2026-10-25, so all remote work moves to phase 7:
 - [x] Verify popup lifecycle behavior across Astro navigation and browser back/forward. Verified 2026-10-30 in Chrome (mobile viewport) on a production-mode build with a fixture popup, because production has no enabled popup: it opens once after its delay with focus inside; Escape, the close button, the backdrop and its button dismiss it; once dismissed it stays closed after ClientRouter navigation, back, forward, reload and a back/forward-cache restore; navigating before the delay opens a single popup on the new page.
 - [x] Add PWA manifest, icons, service worker, offline fallback, and update behavior.
 - [x] Keep admin, checkout, webhooks, private responses, and authoritative price/availability outside service-worker caches; keep checkout online-only.
-- [x] Verify offline messaging, fresh deployment activation, image loading, navigation, and performance on mobile. Verified 2026-10-30 in Chrome. Offline: visited pages serve from cache, unvisited pages show “Sin conexión”, and checkout requests fail instead of being served from cache. This found that pages reached through ClientRouter links were not kept for offline; fixed by keeping network-first HTML responses (`keepsForOffline`). Update: a changed `sw.js` shows “Nueva versión disponible”; “Actualizar” reloads into the new cache and deletes the old one (local build; confirm on production after the next deploy in phase 7's browser pass). Mobile on production, Lighthouse profile (412×823, DPR 1.75, Slow 4G, 4× CPU): LCP 1.1 s home, 1.1 s collection, 1.9 s product; CLS 0; the LCP photo is eager with high priority, other photos lazy, all WebP with dimensions. A DPR 3 phone on the same throttling loads the 1440 px photos (product LCP 4.1 s).
+- [x] Verify offline messaging, fresh deployment activation, image loading, navigation, and performance on mobile. Verified 2026-10-30 in Chrome. Offline: visited pages serve from cache, unvisited pages show “Sin conexión”, and checkout requests fail instead of being served from cache. This found that pages reached through ClientRouter links were not kept for offline; fixed by keeping network-first HTML responses (`keepsForOffline`). Update: a changed `sw.js` shows “Nueva versión disponible”; “Actualizar” reloads into the new cache and deletes the old one (local build; confirm on production after the next deploy in phase 10's browser pass). Mobile on production, Lighthouse profile (412×823, DPR 1.75, Slow 4G, 4× CPU): LCP 1.1 s home, 1.1 s collection, 1.9 s product; CLS 0; the LCP photo is eager with high priority, other photos lazy, all WebP with dimensions. A DPR 3 phone on the same throttling loads the 1440 px photos (product LCP 4.1 s).
 
 **Exit condition:** Publishing reliably refreshes prerendered pages, media loads efficiently, transitions remain accessible, and offline behavior cannot authorize stale purchases.
 
-## 7. Validate staging, rehearse launch, and cut over
+## Remaining-phase organization
 
-Complete the remote acceptance gate before launch on the real domain; local results do not establish Workers Free feasibility.
+The former phase 7 is split into phases 7–12 below; the former phase 8 cart is now phase 13. Earlier documents referring to the broad “phase 7” mean these pre-launch workstreams. This is a regrouping of existing scope, not authorization for remote actions.
 
 > **Environment model changed on 2026-10-30** ([shared-staging plan](2026-10-30-shared-production-staging.md), [deployment](../../deployment.md)): production is deployed and is the only CMS and the only data (D1 `customseda-production`, its R2 bucket and SESSION KV). Staging is a private server-rendered draft view that reads production's bindings, with Stripe test keys and no CMS, migrations, cron or payment records. Its own D1 is deleted. Remote work below targets production unless it says otherwise; anything that writes or restores data needs a target other than staging, which shares production's data.
 
-### Remote environments and acceptance
+Complete backups before production write-based acceptance checks. Phase 11 depends on the merchant’s Stripe account and the remaining phase 5 work; its live purchase/refund check follows the domain switch in phase 12. Complete all other acceptance gates before switching the domain.
+
+## 7. GitHub deployment and CMS rebuilds
+
+- [ ] Create `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only), set it on the production Worker and record owner and expiry in `docs/deployment.md`. **Until this exists, a CMS publish does not reach the public pages.**
+- [ ] GitHub deploys, after confirmation: GitHub environments `production` and `staging` with `CLOUDFLARE_API_TOKEN` and `EMDASH_TARGET_FINGERPRINT` (both production's reviewed value), then `PRODUCTION_DEPLOY_ENABLED=true` and `STAGING_DEPLOY_ENABLED=true`. Check that a push to `master` deploys production first, then staging, and that a CMS publish dispatches production only.
+- [ ] Verify publish → rebuild on production: a publication and a media change reach the public pages, and drafts stay off them while staging shows them.
+
+**Exit condition:** GitHub deploys production before staging, and CMS publication rebuilds public pages without exposing drafts.
+
+## 8. Backups and recovery
+
+- [ ] Set up production backups: a scheduled D1 export (or a documented D1 Time Travel restore) plus an R2 media copy, kept outside Cloudflare. On 2026-10-30 the old staging data was deleted without backup and production became the only copy.
+- [ ] Document backup/restore and failed-migration recovery; verify a restore of database, media, keys, and authentication into an agreed recovery target that is neither production nor staging (staging reads production's data).
+- [ ] Rehearse final import, migration, deployment, restore, and rollback on a disposable target (a temporary D1/R2 pair), not on staging, which shares production's data.
+
+**Exit condition:** Database, media, keys and authentication can be restored on a separate target, and deployment rollback has been rehearsed.
+
+## 9. CMS access, staging and Cloudflare Free acceptance
+
+Completed environment setup:
 
 - [x] Production and staging Workers with their bindings: production owns D1, R2 and SESSION KV; staging reads them (2026-10-30). Supersedes the earlier “separate staging data” item.
 - [x] Production setup: administrator, `EMDASH_ENCRYPTION_KEY`, reviewed fingerprint, catalog model and core migrations (`needsSetup: false`, 2026-10-30).
 - [x] Staging secrets: production's `EMDASH_ENCRYPTION_KEY` and `FOUNDATION_ACCESS_TOKEN`. Staging gate verified (401 Basic, `noindex`, admin → production) on 2026-10-30.
 - [x] Catalog in production: the 2026-10-30 production snapshot holds 16 products, 7 pages and 4 shipping rules.
+
+Remaining acceptance work:
+
 - [ ] Verify draft visibility on staging: an editor arriving through “View site” and a Basic reviewer both see a known draft. Unverified on 2026-10-30, because production had no drafts. This also closes the open check in the [private staging plan](2026-10-30-private-staging.md).
 - [ ] Delete the leftover bucket `customseda-staging-media`, after confirmation.
-- [ ] Create `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only), set it on the production Worker and record owner and expiry in `docs/deployment.md`. **Until this exists, a CMS publish does not reach the public pages.**
-- [ ] GitHub deploys, after confirmation: GitHub environments `production` and `staging` with `CLOUDFLARE_API_TOKEN` and `EMDASH_TARGET_FINGERPRINT` (both production's reviewed value), then `PRODUCTION_DEPLOY_ENABLED=true` and `STAGING_DEPLOY_ENABLED=true`. Check that a push to `master` deploys production first, then staging, and that a CMS publish dispatches production only.
-- [ ] Verify publish → rebuild on production: a publication and a media change reach the public pages, and drafts stay off them while staging shows them.
-- [ ] Decide what production's public workers.dev site is before cutover: currently public (`FOUNDATION_LOCKED=false`) and indexable. Choose between keeping it public with `noindex` until the domain switch and restoring the gate; also decide which Stripe keys it uses before launch.
 - [ ] Configure EmDash magic-link email through the native `cloudflareEmail()` provider and a `send_email` binding restricted to verified administrator recipients (free sending on Workers Free). Deferred by the user on 2026-10-30: collect the email associated with the EmDash administrator, configure the sender domain with Cloudflare Email Routing after reviewing its existing DNS, verify the recipient in Cloudflare, and test actual magic-link delivery and login. No DNS changes until authorized.
 - [ ] Register the merchant's administrator/passkey on production and verify login, content creation, image upload, relationship editing, and publication with the catalog model.
 - [ ] Test a real admin photo upload (~3 MB) through the deployed production Worker. On 2026-10-27, media uploads through the deployed staging Worker exceeded the Workers Free CPU limit, and the import had to run through a local Worker on remote bindings.
 - [ ] Verify restart/redeployment against existing remote data and confirm published content and media persist.
 - [ ] Measure complete authenticated create/save/publish requests, realistic gallery uploads, the hourly cron, Worker CPU/errors, bundle/startup constraints, and account quotas; document whether the essential CMS workflows work on Workers Free.
-- [ ] Set up production backups: a scheduled D1 export (or a documented D1 Time Travel restore) plus an R2 media copy, kept outside Cloudflare. On 2026-10-30 the old staging data was deleted without backup and production became the only copy.
-- [ ] Document backup/restore and failed-migration recovery; verify a restore of database, media, keys, and authentication into an agreed recovery target that is neither production nor staging (staging reads production's data).
-- [ ] Stripe webhooks per environment, once the Stripe account exists: staging endpoint with test keys (`sk_test_…`) and its signing secret; production endpoint with live keys at launch. Staging's webhook currently returns 503 because no keys are set.
+- [ ] Review Cloudflare request/CPU/database/media/build usage and configure available usage/error notifications.
 
-**Remote acceptance gate:** Essential CMS operations must work on Workers Free and existing content must survive redeployment. If this fails, identify the exact blocker and agree on an architecture change before launch.
+**Exit condition:** Essential CMS workflows work on Workers Free, staging shows authorized drafts, and content and media survive redeployment.
 
-- [ ] Browser pass (Chrome DevTools MCP, isolated profile): product transitions and reduced motion; the update banner against a real production deploy. Popup back/forward, PWA install/offline and mobile image LCP were verified in phase 6 on 2026-10-30.
+If essential CMS workflows exceed Workers Free limits, identify the exact blocker and agree on an architecture change before launch.
+
+## 10. Storefront, SEO and browser validation
+
 - [x] Launch switch on production: `FOUNDATION_LOCKED=false` without `assets.run_worker_first` (2026-10-30, at the user's request). Staging stays locked permanently.
 
-### Launch rehearsal and cutover
-
+- [ ] Decide what production's public workers.dev site is before cutover: currently public (`FOUNDATION_LOCKED=false`) and indexable. Choose between keeping it public with `noindex` until the domain switch and restoring the gate; also decide which Stripe keys it uses before launch.
+- [ ] Browser pass (Chrome DevTools MCP, isolated profile): product transitions and reduced motion; the update banner against a real production deploy. Popup back/forward, PWA install/offline and mobile image LCP were verified in phase 6 on 2026-10-30.
 - [ ] Add canonical URLs, sitemap, robots rules, social metadata, and accurate Product/offer structured data. Staging already sends `X-Robots-Tag: noindex, nofollow`.
 - [ ] Verify redirects and internal links for products, collections, the old About/blog route, and policy pages.
-- [ ] Rehearse final import, migration, deployment, restore, and rollback on a disposable target (a temporary D1/R2 pair), not on staging, which shares production's data.
 - [ ] Verify build/type checks, focused model/checkout tests, mobile browsing, keyboard flows, and Stripe payment/webhook tests.
-- [ ] Review Cloudflare request/CPU/database/media/build usage and configure available usage/error notifications.
+
+**Exit condition:** Search metadata, redirects, browser behavior and release checks are verified before domain cutover.
+
+## 11. Stripe and merchant readiness
+
+The buy-now checkout implementation and its remaining account, tax, test-mode and merchant-operation tasks remain in phase 5. This phase covers deployed payment readiness.
+
+- [ ] Stripe webhooks per environment, once the Stripe account exists: staging endpoint with test keys (`sk_test_…`) and its signing secret; production endpoint with live keys at launch. Staging's webhook currently returns 503 because no keys are set.
 - [ ] Confirm live Stripe configuration, shipping rules, production lead times, contact handling, and policy text.
+- [ ] Arrange a merchant-authorized live purchase/refund check and verify production details in Stripe Dashboard.
+
+**Exit condition:** Phase 5 test-mode work is complete, live payment settings and merchant operations are confirmed, and an authorized live purchase/refund is verified before Shopify retirement.
+
+## 12. Domain cutover and operational handover
+
 - [ ] Schedule a content freeze or final delta import so Shopify changes/orders are not missed during cutover.
 - [ ] Back up the source and target; retain Shopify records needed for historical orders/refunds.
 - [ ] After explicit launch authorization, switch the domain and verify HTTPS, canonical host, admin authentication, images, checkout, and live webhook delivery.
-- [ ] Arrange a merchant-authorized live purchase/refund check and verify production details in Stripe Dashboard.
 - [ ] Retire Shopify only after the live site and historical-record access are confirmed.
 - [ ] Deliver an operations guide covering CMS publication/rebuilds, image uploads, Stripe orders, backups, migrations, and recovery.
 
-**Exit condition:** The live domain serves the verified replacement, checkout works, operations are documented, and rollback remains available during the transition.
+**Exit condition:** The real domain serves the verified replacement, historical Shopify records remain accessible, and the merchant has an operations guide.
 
-## 8. Add the multi-item cart
+## 13. Add the multi-item cart (after launch)
 
 Moved from phase 5 by the user on 2026-10-25; buy-now checkout covers launch.
 
