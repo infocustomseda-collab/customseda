@@ -9,9 +9,10 @@ const maintenance = createScheduledHandler({ generalCron: "0 * * * *" });
 export default {
 	...handler,
 	async fetch(request, env, ctx) {
-		const denied = foundationAccess(request, env);
-		if (denied) return denied;
 		const vars = env as unknown as Record<string, unknown>;
+		// Staging applies its own gate in the middleware, where the editor session is known.
+		const denied = typeof vars.CMS_ORIGIN === 'string' ? null : foundationAccess(request, env);
+		if (denied) return denied;
     const url = new URL(request.url);
     // Staging serves storefront previews only; all CMS/auth traffic belongs to production.
     if (typeof vars.CMS_ORIGIN === 'string' && (url.pathname === '/_emdash' || url.pathname.startsWith('/_emdash/')) && !url.pathname.startsWith('/_emdash/api/media/file/')) {

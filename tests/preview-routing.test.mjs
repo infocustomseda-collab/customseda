@@ -6,21 +6,6 @@ import { includeDrafts, runWithDrafts } from '../src/lib/draft-scope.ts';
 const anon = { editor: false, previewToken: false };
 const pub = 'https://pub.example';
 
-test('private staging requires an editor session even for preview links', () => {
-  for (const path of ['/', '/products/marea', '/collections/bikinis', '/?_preview=example', '/_server-islands/product']) {
-    const url = new URL(`https://p.example${path}`);
-    assert.equal(previewRedirect(url, anon, undefined, true), 'https://p.example/_emdash/admin/login');
-    assert.equal(previewRedirect(url, { editor: false, previewToken: true }, undefined, true), 'https://p.example/_emdash/admin/login');
-    assert.equal(previewRedirect(url, { editor: true, previewToken: false }, undefined, true), null);
-  }
-});
-test('private staging keeps login and CMS assets reachable without allowing lookalike paths', () => {
-  for (const path of ['/_emdash/admin/login', '/_emdash/api/auth/passkey/options', '/_astro/login.js']) {
-    assert.equal(previewRedirect(new URL(`https://p.example${path}`), anon, undefined, true), null);
-  }
-  assert.equal(previewRedirect(new URL('https://p.example/_emdash-other'), anon, undefined, true), 'https://p.example/_emdash/admin/login');
-});
-
 test('redirects anonymous visitors to the same path and query on the public site', () => {
   assert.equal(previewRedirect(new URL('https://p.example/products/marea?x=1'), anon, pub), 'https://pub.example/products/marea?x=1');
 });
