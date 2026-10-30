@@ -47,3 +47,20 @@ Publicar desde el CMS necesita además `GITHUB_REBUILD_TOKEN` en el Worker de pr
 - La utilidad de mantenimiento `advance-local-export.mjs` adapta los streams a cuerpos con longitud conocida para R2 y limita cada subida a 256 MiB. No se ejecuta durante el trabajo normal ni forma parte del Worker desplegado.
 
 No ejecutar varias instancias de desarrollo a la vez ni publicar manualmente mientras GitHub esté desplegando. No probar escrituras, importaciones o restauraciones sobre producción para comprobar que el entorno funciona.
+
+## Punto de continuación: correo del administrador (30 de octubre de 2026)
+
+El cambio está preparado en la [solicitud 34](https://github.com/infocustomseda-collab/customseda/pull/34), todavía sin integrar ni desplegar. Añade `info.customseda@gmail.com` a los destinatarios permitidos del CMS; la dirección ya está verificada en Cloudflare.
+
+Con autorización expresa del administrador, se ha añadido `customseda.com` a Cloudflare con el plan gratuito y se han guardado en Shopify los servidores `elmo.ns.cloudflare.com` y `romina.ns.cloudflare.com`. Se han copiado los siete registros originales; los registros web siguen apuntando directamente a Shopify, con el proxy desactivado. No se ha trasladado la tienda pública al Worker de Astro.
+
+Email Routing se ha activado y ha añadido tres registros MX, SPF y DKIM. La última comprobación mostraba el servicio sincronizándose y el dominio pendiente de propagación. Cloudflare ya respondía directamente con el registro A de Shopify, el CNAME de `www` y los tres MX; el resolutor habitual aún mostraba los servidores antiguos. Comprobar de nuevo el estado real antes de continuar.
+
+Pendiente:
+
+1. Confirmar la activación del dominio y de Email Routing. Mantener el plan gratuito y el envío limitado a destinatarios verificados.
+2. Configurar y verificar el remitente del CMS mediante `CMS_EMAIL_FROM`, completar la solicitud 34 y publicar con la autorización correspondiente. El remitente aún no está configurado.
+3. Acceder con un administrador existente de EmDash y enviar la invitación nativa a `info.customseda@gmail.com` con el rol de administrador. La invitación aún no se ha enviado; el cliente completará su registro personalmente. No crear usuarios directamente en la base de datos.
+4. Retomar la comprobación pendiente de publicación desde el CMS y reconstrucción automática: volver a publicar una página ya publicada, sin cambios pendientes y con control de revisión para evitar publicar borradores ajenos. No modificar contenido como prueba desechable.
+
+La copia original de DNS está en `.emdash/dns-backup-shopify-2026-10-30.json`, ignorada por Git. Las credenciales y los archivos `.env` permanecen fuera del historial de GitHub.
