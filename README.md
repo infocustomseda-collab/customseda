@@ -18,14 +18,13 @@ pnpm dev
 
 Open `http://localhost:4321/_emdash/admin`. The development-only setup bypass is `http://localhost:4321/_emdash/api/setup/dev-bypass?redirect=/_emdash/admin`. It must never work on a deployed Worker.
 
-To run the app locally against remote data, stop the other dev server and choose explicitly:
+To run the app locally against production's data, stop the other dev server first:
 
 ```sh
-pnpm dev:staging
 pnpm dev:production
 ```
 
-These commands execute the app in local workerd at `http://localhost:4321`, with remote D1/R2 bindings selected from that environment in `wrangler.jsonc`. The startup banner prints the database and bucket. You need `wrangler login` and the selected Worker's `EMDASH_ENCRYPTION_KEY` in the ignored `.env.cloudflare-staging` or `.env.cloudflare-production`. Only that key is supplied to the local runtime; live payment and rebuild secrets are not loaded. Sessions are local and isolated per target, automatic migrations are check-only, and no deployment is performed. Existing remote-host passkeys do not work on localhost. The development auth bypass may create a developer administrator in the remote database if used; it is not invoked automatically. Editing, importing, deleting, or publishing through this local CMS changes the selected remote data. Export processing runs locally; D1/R2 operations still use Cloudflare. Open `/_emdash/admin/settings/transfer` to export the selected remote site. Remote dev does not prepare image derivatives; original media remains available from R2.
+This command executes the app in local workerd at `http://localhost:4321`, with production's remote D1/R2 bindings from `wrangler.jsonc`. Staging has no data of its own, so there is no `dev:staging`. The startup banner prints the database and bucket. You need `wrangler login` and production's `EMDASH_ENCRYPTION_KEY` in the ignored `.env.cloudflare-production`. Only that key is supplied to the local runtime; live payment and rebuild secrets are not loaded. Sessions are local and isolated per target, automatic migrations are check-only, and no deployment is performed. Existing remote-host passkeys do not work on localhost. The development auth bypass may create a developer administrator in the remote database if used; it is not invoked automatically. Editing, importing, deleting, or publishing through this local CMS changes the selected remote data. Export processing runs locally; D1/R2 operations still use Cloudflare. Open `/_emdash/admin/settings/transfer` to export the selected remote site. Remote dev does not prepare image derivatives; original media remains available from R2.
 
 With the dev server running, use a second terminal:
 
@@ -61,17 +60,19 @@ pnpm build
 
 ## Remote environments
 
-| Environment | Worker | Preview Worker | Database | Media bucket |
-| --- | --- | --- | --- | --- |
-| Local | `customseda-local` | none | Local D1 only | Local R2 only |
-| Staging | `customseda-staging` (live, renders on request) | none | `customseda-staging` | `customseda-staging-media` |
-| Production | `customseda-production` | `customseda-production-preview` | `customseda-production` | `customseda-production-media` |
+| Environment | Worker | Database | Media bucket |
+| --- | --- | --- | --- |
+| Local | `customseda-local` | Local D1 only | Local R2 only |
+| Production | `customseda` (static storefront and the CMS) | `customseda-production` | `customseda-production-media` |
+| Staging | `customseda-staging` (private, renders on request) | production's | production's |
 
-Staging is one live Worker: every page renders on request, with drafts for signed-in editors and `?_preview=` links. Site: <https://customseda-staging.customseda.workers.dev/>, admin: <https://customseda-staging.customseda.workers.dev/_emdash/admin/>. Production will be static, with its admin and drafts on a `-preview` Worker sharing its database and bucket. See [deployment](docs/deployment.md#workers-per-environment).
+Production: <https://customseda.customseda.workers.dev/> is the public static storefront, and <https://customseda.customseda.workers.dev/_emdash/admin/> is the only CMS (passkey login).
 
-The temporary HTTP Basic gate uses username `seda` and the `FOUNDATION_ACCESS_TOKEN` value in the ignored `.env.cloudflare-staging` file. It covers the production Workers; staging is open, behind EmDash's passkey login only. This gate protects the initial setup wizard and is additional to EmDash's passkey login. CLI clients that need `Authorization` for an EmDash API token (for example `emdash site import`) send the same Basic credentials in an `X-Foundation-Access` header instead. Do not send the token in a URL or commit it. The merchant must register their own passkey. Production has resources but is not published, and `customseda.com` still points to Shopify.
+Staging: <https://customseda-staging.customseda.workers.dev/> renders production's content on request, drafts included, for review before publishing. It has no admin and no data of its own. Two ways in: “View site” in the production CMS, or HTTP Basic with username `seda` and the `FOUNDATION_ACCESS_TOKEN` value from the ignored `.env.cloudflare-staging` file. Staging checkout uses Stripe test mode and records nothing. See [deployment](docs/deployment.md#workers-per-environment).
 
-The deployment runner migrates EmDash core and then the versioned catalog model from the CLI before uploading the Worker. See [catalog migration boundaries](docs/catalog-model.md#deployment-boundary). `pnpm test:d1` rehearses the catalog migration against isolated local D1; actual remote catalog acceptance remains pending.
+CLI clients that need `Authorization` for an EmDash API token send the Basic credentials in an `X-Foundation-Access` header instead. Do not send the token in a URL or commit it. `customseda.com` still points to Shopify.
+
+The production deployment runner migrates EmDash core and then the versioned catalog model from the CLI before uploading the Worker. Staging deploys never migrate: they check that production's database is current. See [catalog migration boundaries](docs/catalog-model.md#deployment-boundary). `pnpm test:d1` rehearses the catalog migration against isolated local D1; actual remote catalog acceptance remains pending.
 
 See [deployment and recovery](docs/deployment.md) and [verification evidence](docs/phase-1-verification.md) before deploying. A successful deployment is not certification that all CMS workloads fit Workers Free.
 

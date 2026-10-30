@@ -24,3 +24,7 @@ test('parent environment cannot select a deployed env or leak live secrets into 
  assert.equal(env.CLOUDFLARE_ENV,undefined);assert.equal(env.STRIPE_SECRET_KEY,undefined);assert.equal(env.GITHUB_REBUILD_TOKEN,undefined);
  assert.equal(env.EMDASH_ENCRYPTION_KEY,'key');assert.equal(env.CUSTOMSEDA_REMOTE_DEV,'staging');
 });
+test('staging reads production data, so remote dev refuses it and points to production',()=>{
+ const c=structuredClone(config);c.env.staging.vars.CMS_ORIGIN='https://cms.example';
+ assert.throws(()=>remoteDevConfig(c,'staging','/project'),/dev:production/);
+});

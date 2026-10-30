@@ -3,7 +3,7 @@
 ## Scope and source of truth
 
 - Follow `docs/superpowers/plans/2026-10-24-custom-seda.md` phase by phase.
-- Work locally (confirmed by the user again on 2026-10-25, after phase 6). No staging or production deploys until phase 7. The deploy tooling exists but stays off: GitHub Actions only runs tests until `STAGING_DEPLOY_ENABLED` / `PRODUCTION_DEPLOY_ENABLED` are set, publish-triggered rebuilds need `GITHUB_REBUILD_TOKEN`, and manual `pnpm deploy:<env>` (wrangler login) is for phase 7. The staging catalog import, remote acceptance/performance checks, recovery rehearsals and cutover are phase 7.
+- Production and staging are deployed (2026-10-30, at the user's request). Every remote action (deploy, secret, deletion) still needs the user's confirmation. GitHub Actions only runs tests until `STAGING_DEPLOY_ENABLED` / `PRODUCTION_DEPLOY_ENABLED` are set; publish-triggered rebuilds need `GITHUB_REBUILD_TOKEN` on the production Worker. Remote acceptance/performance checks, recovery rehearsals and cutover remain phase 7.
 - Phase 1 is infrastructure and feasibility only. The starter's posts/pages are temporary CMS smoke-test types, not the approved shop model or visual design.
 - Products use native hierarchical category taxonomy terms. Conjuntos are products with a bundle flag and multiple product components. Every product has one Material, which supplies its color and available sizes; a conjunto's components must use the conjunto's material, checked only when the conjunto is published. Made to order; no stock tracking. Stripe Dashboard manages orders.
 - No Tailwind. Preserve the approved identity in later design work.
@@ -14,8 +14,8 @@
 - Use pnpm, Astro, EmDash, local D1 and R2 through the Cloudflare runtime.
 - Remote core migrations run from the CLI before deployment; `migrations.runtime` stays `check`.
 - Never enable sandboxed plugins or Worker Loader bindings for the Free-tier deployment.
-- Top-level Wrangler bindings are local only. Staging and production must have distinct databases, buckets, origins, and secrets.
-- EmDash live queries and admin routes run server-side. Staging is one live Worker (`SITE_ROLE=preview`, built with `SITE_MODE=preview`): it serves the admin and renders every page on request, published content for visitors and drafts for signed-in editors and `?_preview=` links. Production (at launch) is static: on its public Worker pages prerender from the build-time snapshot (`pnpm snapshot --env <env>`, `src/lib/shop/snapshot.ts`) and only `/api/*`, `/checkout/*` and `/_emdash/api/media/file/*` run per request, and its `production-preview` Worker serves the admin and live drafts. Do not prerender live database queries outside the snapshot step.
+- Top-level Wrangler bindings are local only. Production owns the only data and CMS. Staging is a private SSR draft view that shares production's D1, R2 and SESSION KV, with its own origin, Stripe test keys only, and no CMS, migrations, cron or payment records.
+- EmDash live queries and admin routes run server-side. Production is one Worker: pages prerender from the build-time snapshot (`pnpm snapshot --env <env>`, `src/lib/shop/snapshot.ts`), only `/api/*`, `/checkout/*` and `/_emdash/*` (admin, API, media) run per request, and it runs the hourly cron. Staging (`SITE_ROLE=preview`, built with `SITE_MODE=preview`, `CMS_ORIGIN` = production) renders every page on request with drafts, for production editors arriving through “View site” or holders of the shared Basic credential; its `/_emdash/*` redirects to production except media. Do not prerender live database queries outside the snapshot step.
 - Never copy an entire local database over production as a normal deployment.
 
 ## Commands
