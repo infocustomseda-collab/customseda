@@ -36,30 +36,19 @@ export function validateTarget(config, environment) {
   }
   const target = { environment, accountId: config.account_id, databaseId: database.database_id, origin: url.origin };
   const role = selected.vars?.SITE_ROLE;
-  if (role === 'preview') {
-    validateLive(config, environment, selected);
-    return { ...target, rendering: 'live', shared: validateShared(environment, selected, other, otherOrigin) };
-  }
-  if (role !== 'public') throw new Error(`Set SITE_ROLE to "public" or "preview" in the ${environment} environment.`);
-  // Production hosts its own CMS. Staging is independently deployed SSR; do not
-  // build or upload a third Worker as a side effect of publishing production.
-  if (environment === 'production' && selected.vars.SSR_PREVIEW_URL) {
-    if (selected.vars.PREVIEW_SITE_URL) throw new Error('Remove PREVIEW_SITE_URL: the production Worker hosts its own CMS.');
-    if (config.env['production-preview']) throw new Error('Remove the legacy production-preview configuration; staging supplies SSR preview.');
-    if (config.env.staging.vars?.SITE_ROLE !== 'preview' || selected.vars.SSR_PREVIEW_URL !== otherOrigin) {
-      throw new Error('Set SSR_PREVIEW_URL to the staging SSR origin.');
-    }
-    return { ...target, rendering: 'static', previewOrigin: otherOrigin };
-  }
-  return { ...target, rendering: 'static', preview: validatePreview(config, environment, selected, url.origin, database, bucket) };
+  // Staging renders every page on request from production's data; production is static and hosts the CMS.
+  const expected = environment === 'staging' ? 'preview' : 'public';
+  if (role !== expected) throw new Error(`Set SITE_ROLE to "${expected}" in the ${environment} environment.`);
+  if (environment === 'staging') return { ...target, rendering: 'live', shared: validateShared(selected, other, otherOrigin) };
+  if (selected.vars.SSR_PREVIEW_URL !== otherOrigin) throw new Error('Set SSR_PREVIEW_URL to the staging SSR origin.');
+  return { ...target, rendering: 'static', previewOrigin: otherOrigin };
 }
 
 /**
  * Staging is a private SSR reader of production: same database, bucket and session store (so the
  * CMS "View site" handoff loads production sessions), production as its CMS, gated, and no cron.
  */
-function validateShared(environment, selected, production, productionOrigin) {
-  if (environment !== 'staging') throw new Error(`Only staging may be a live reader of production; set SITE_ROLE to "public" in ${environment}.`);
+function validateShared(selected, production, productionOrigin) {
   const same = (key, binding, field) => {
     const value = selected[key]?.find(x => x.binding === binding)?.[field];
     return !!value && value === production?.[key]?.find(x => x.binding === binding)?.[field];
@@ -73,59 +62,10 @@ function validateShared(environment, selected, production, productionOrigin) {
   return true;
 }
 
-/** A live environment is one Worker rendering every page on request: no static partner to send visitors to. */
-function validateLive(config, environment, selected) {
-  if (config.env?.[`${environment}-preview`]) {
-    throw new Error(`A live ${environment} environment has no ${environment}-preview partner; remove it or set SITE_ROLE to "public".`);
-  }
-  if (selected.vars?.PUBLIC_SITE_URL || selected.vars?.PREVIEW_SITE_URL) {
-    throw new Error(`A live ${environment} environment serves everyone itself; remove PUBLIC_SITE_URL and PREVIEW_SITE_URL.`);
-  }
-  return undefined;
-}
-
-/** The preview Worker shares its pair's database and bucket; only its role, name and origin differ. */
-function validatePreview(config, environment, selected, publicOrigin, database, bucket) {
-  const previewEnvironment = `${environment}-preview`;
-  const preview = config.env?.[previewEnvironment];
-  if (!preview) throw new Error(`The ${previewEnvironment} environment is missing from the Wrangler config.`);
-  const expectedName = `${selected.name.trim()}-preview`;
-  if (preview.name !== expectedName) throw new Error(`The ${previewEnvironment} Worker name must be ${expectedName}.`);
-  if (preview.d1_databases?.find(x => x.binding === 'DB')?.database_id !== database.database_id) {
-    throw new Error(`The ${previewEnvironment} environment must use the same database_id as ${environment}.`);
-  }
-  if (preview.r2_buckets?.find(x => x.binding === 'MEDIA')?.bucket_name !== bucket.bucket_name) {
-    throw new Error(`The ${previewEnvironment} environment must use the same media bucket as ${environment}.`);
-  }
-  if (preview.vars?.SITE_ROLE !== 'preview') throw new Error(`Set SITE_ROLE to "preview" in the ${previewEnvironment} environment.`);
-  let previewUrl;
-  try { previewUrl = new URL(preview.vars?.EMDASH_SITE_URL); } catch { /* The check below reports the missing origin. */ }
-  if (!previewUrl || previewUrl.protocol !== 'https:' || previewUrl.username || previewUrl.password || previewUrl.pathname !== '/' || previewUrl.search || previewUrl.hash || ['localhost', '127.0.0.1'].includes(previewUrl.hostname)) {
-    throw new Error(`Set the ${previewEnvironment} EMDASH_SITE_URL to its public HTTPS origin.`);
-  }
-  for (const [name, other] of Object.entries(config.env ?? {})) {
-    if (name === previewEnvironment) continue;
-    let otherOrigin;
-    try { otherOrigin = new URL(other?.vars?.EMDASH_SITE_URL).origin; } catch { /* Not an origin to compare. */ }
-    if (otherOrigin === previewUrl.origin) throw new Error(`The ${previewEnvironment} preview origin must differ from the ${name} origin.`);
-  }
-  if (selected.vars?.PREVIEW_SITE_URL !== previewUrl.origin) {
-    throw new Error(`Set PREVIEW_SITE_URL in ${environment} to the ${previewEnvironment} origin.`);
-  }
-  if (preview.vars?.PUBLIC_SITE_URL !== publicOrigin) {
-    throw new Error(`Set PUBLIC_SITE_URL in ${previewEnvironment} to the ${environment} origin.`);
-  }
-  if (preview.vars?.FOUNDATION_LOCKED === 'true' && preview.assets?.run_worker_first !== true) {
-    throw new Error('Gated preview environments must run the Worker before static assets.');
-  }
-  return { environment: previewEnvironment, origin: previewUrl.origin };
-}
-
 /**
  * Migrations first (from the Astro config, since no build exists yet), so the snapshot reads the
  * migrated schema; then snapshot, image derivatives, a migrated local database for prerendering, build,
- * a check that no page is an error response, upload, then the server-rendered preview build and its
- * upload, and a check against the build's manifest (both builds share one commit and config).
+ * a check that no page is an error response, upload, and a check against the build's manifest.
  */
 const migrationCommand = target => ['emdash', 'migrate', '--account-id', target.accountId, '--d1', target.databaseId, '--wrangler-config', 'wrangler.jsonc', '--wrangler-env', target.environment];
 
@@ -180,11 +120,8 @@ export function deploymentCommands(target, { fingerprint, allowEmpty = false } =
     ['prerender-db', target.environment],
     ['astro', 'build'],
     ['check-static'],
-    // Build the preview variant before any upload, so a failed build stops the deploy early.
-    ...(target.preview ? [['astro-preview', target.preview.environment]] : []),
-    // Each build writes a Wrangler config already flattened for its environment, so no --env.
+    // The build writes a Wrangler config already flattened for its environment, so no --env.
     ['wrangler', 'deploy', '-c', 'dist/server/wrangler.json'],
-    ...(target.preview ? [['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json']] : []),
     [...migration, '--check'],
   ];
 }

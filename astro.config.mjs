@@ -16,7 +16,7 @@ const fontsource = (family, weight, style) => ({
 	src: [`./node_modules/@fontsource/${family}/files/${family}-latin-${weight}-${style}.woff2`],
 });
 
-// SITE_MODE=preview builds the server-rendered preview Worker; anything else is the static public build.
+// SITE_MODE=preview builds the server-rendered staging Worker; anything else is the static public build.
 const isPreview = process.env.SITE_MODE === "preview";
 const remoteDev = !!process.env.CUSTOMSEDA_REMOTE_DEV;
 const emailSettings = cmsEmailSettings(JSON.parse(readFileSync(new URL('./wrangler.jsonc',import.meta.url),'utf8')),

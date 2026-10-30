@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {remoteModelConfig} from '../scripts/cms/remote-model.mjs';
 import {deploymentCommands} from '../scripts/deploy/target.mjs';
-const target={environment:'staging',accountId:'a'.repeat(32),databaseId:'12345678-1234-1234-1234-123456789abc',origin:'https://staging.example.com',preview:{environment:'staging-preview',origin:'https://preview.example.com'}};
+const target={environment:'staging',accountId:'a'.repeat(32),databaseId:'12345678-1234-1234-1234-123456789abc',origin:'https://staging.example.com'};
 test('catalog remote proxy has one explicit remote D1 binding and no application bindings',()=>{
  const config=remoteModelConfig(target);
  assert.equal(config.d1_databases.length,1);

@@ -90,7 +90,7 @@ Staging deploys read-only against production's database, and only production mig
 
 It needs no snapshot, derivatives or prerendering. Deploy production first whenever the change includes migrations, so staging's checks pass.
 
-For production, the runner validates account, database and origins, then runs these steps with `CLOUDFLARE_ENV=production`. Steps 9 and 11 are legacy preview-pair steps and are skipped for the current configuration:
+For production, the runner validates account, database and origins, then runs these steps with `CLOUDFLARE_ENV=production`:
 
 1. Show the migration target and status (manifest built from the Astro config with `--from-config`, since no build exists yet).
 2. Run core migration. It is interactive, unless `EMDASH_EXPECTED_TARGET_FINGERPRINT` holds the reviewed fingerprint, as in CI.
@@ -98,12 +98,10 @@ For production, the runner validates account, database and origins, then runs th
 4. Write the published-content snapshot of that environment. The step refuses an empty catalog unless `--allow-empty` is passed, for a first deploy.
 5. Generate WebP image derivatives from that environment's R2 (see [Images and build budget](#images-and-build-budget)).
 6. Migrate a **local** stand-in of that environment's database. Prerendering runs EmDash in a local Worker, and EmDash refuses unmigrated databases; the remote database is not involved.
-7. Build. The build refuses a snapshot from another environment than `CLOUDFLARE_ENV` (`local` when unset).
+7. Build with `SITE_MODE=public` (pinned, whatever the shell exports). The build refuses a snapshot from another environment than `CLOUDFLARE_ENV` (`local` when unset).
 8. Check the static output: every page must be an HTML document, never an EmDash error response.
-9. Build the preview Worker with `SITE_MODE=preview` and `CLOUDFLARE_ENV=<env>-preview` into `dist-preview/`. It runs before any upload, so a failed preview build stops the deploy early. The public steps always run with `SITE_MODE=public`, whatever the shell exports.
-10. Deploy the public Worker: `wrangler deploy -c dist/server/wrangler.json`. The generated config is already flattened for the environment, so no `--env`.
-11. Deploy the preview Worker: `wrangler deploy -c dist-preview/server/wrangler.json`.
-12. Check core migration status against the build's manifest (both builds come from the same commit and config).
+9. Deploy the Worker: `wrangler deploy -c dist/server/wrangler.json`. The generated config is already flattened for the environment, so no `--env`.
+10. Check core migration status against the build's manifest.
 
 A failed command stops the sequence. No generic `deploy` command targets an implicit environment. The `emdash migrate` steps need `CLOUDFLARE_API_TOKEN` in the environment (see [Credentials](#credentials)); a Wrangler OAuth login is not enough.
 
