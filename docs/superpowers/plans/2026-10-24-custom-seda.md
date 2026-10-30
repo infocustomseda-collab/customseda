@@ -4,6 +4,8 @@
 
 > **Execution order updated by the user on 2026-10-25:** Work locally for now. All remaining staging provisioning, deployment, remote authentication/acceptance, CPU measurement, and recovery work moves to phase 7, after local phases 3–6 and before production launch. Existing remote resources remain in place. Cloudflare Free feasibility is still a launch requirement, but is not a gate for local development. The next local step is phase 3's Shopify inventory and source-data audit.
 
+> **Status — 2026-10-30:** production and staging are deployed at the user's request; see the environment note in phase 7. Phase 7 is current. Open phase 5 work waits on the merchant's Stripe account.
+
 **Goal:** Replace the Shopify site with an Astro + EmDash shop on Cloudflare Free, retaining the approved identity and using Stripe Checkout.
 
 **Architecture:** Prerender public pages and rebuild after CMS publication. Run EmDash and checkout/webhook endpoints on Workers, store content in D1 and media in R2. Use Stripe Dashboard for order/payment/refund management and manual production/shipping.
@@ -157,31 +159,41 @@ The user chose to stay local on 2026-10-25, so all remote work moves to phase 7:
 
 ## 7. Validate staging, rehearse launch, and cut over
 
-All staging work is deferred to this phase. Complete the remote acceptance gate before production launch; local results do not establish Workers Free feasibility.
+Complete the remote acceptance gate before launch on the real domain; local results do not establish Workers Free feasibility.
 
-### Deferred staging and remote acceptance
+> **Environment model changed on 2026-10-30** ([shared-staging plan](2026-10-30-shared-production-staging.md), [deployment](../../deployment.md)): production is deployed and is the only CMS and the only data (D1 `customseda-production`, its R2 bucket and SESSION KV). Staging is a private server-rendered draft view that reads production's bindings, with Stripe test keys and no CMS, migrations, cron or payment records. Its own D1 is deleted. Remote work below targets production unless it says otherwise; anything that writes or restores data needs a target other than staging, which shares production's data.
 
-- [ ] Complete separate staging and production Workers, D1 databases, R2 buckets, and session bindings; reuse existing resources and keep local, staging, and production data isolated.
-- [ ] Configure runtime secrets, environment-specific URLs, admin authentication, and media delivery; avoid production URL/passkey settings leaking into staging.
-- [ ] Configure EmDash magic-link email through the native `cloudflareEmail()` provider and a `send_email` binding restricted to verified administrator recipients (free sending on Workers Free). Deferred by the user on 2026-10-30: collect the email associated with the EmDash administrator, configure the sender domain with Cloudflare Email Routing after reviewing its existing DNS, verify the recipient in Cloudflare, and test actual magic-link delivery and login. Keep environment bindings separate; no DNS changes or deployments until this phase is authorized.
-- [ ] Register the merchant's staging administrator/passkey and verify fresh setup/login, content creation, image upload, relationship editing, and publication with the catalog model.
+### Remote environments and acceptance
+
+- [x] Production and staging Workers with their bindings: production owns D1, R2 and SESSION KV; staging reads them (2026-10-30). Supersedes the earlier “separate staging data” item.
+- [x] Production setup: administrator, `EMDASH_ENCRYPTION_KEY`, reviewed fingerprint, catalog model and core migrations (`needsSetup: false`, 2026-10-30).
+- [x] Staging secrets: production's `EMDASH_ENCRYPTION_KEY` and `FOUNDATION_ACCESS_TOKEN`. Staging gate verified (401 Basic, `noindex`, admin → production) on 2026-10-30.
+- [x] Catalog in production: the 2026-10-30 production snapshot holds 16 products, 7 pages and 4 shipping rules.
+- [ ] Verify draft visibility on staging: an editor arriving through “View site” and a Basic reviewer both see a known draft. Unverified on 2026-10-30, because production had no drafts. This also closes the open check in the [private staging plan](2026-10-30-private-staging.md).
+- [ ] Delete the leftover bucket `customseda-staging-media`, after confirmation.
+- [ ] Create `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only), set it on the production Worker and record owner and expiry in `docs/deployment.md`. **Until this exists, a CMS publish does not reach the public pages.**
+- [ ] GitHub deploys, after confirmation: GitHub environments `production` and `staging` with `CLOUDFLARE_API_TOKEN` and `EMDASH_TARGET_FINGERPRINT` (both production's reviewed value), then `PRODUCTION_DEPLOY_ENABLED=true` and `STAGING_DEPLOY_ENABLED=true`. Check that a push to `master` deploys production first, then staging, and that a CMS publish dispatches production only.
+- [ ] Verify publish → rebuild on production: a publication and a media change reach the public pages, and drafts stay off them while staging shows them.
+- [ ] Decide what production's public workers.dev site is before cutover: currently public (`FOUNDATION_LOCKED=false`) and indexable. Choose between keeping it public with `noindex` until the domain switch and restoring the gate; also decide which Stripe keys it uses before launch.
+- [ ] Configure EmDash magic-link email through the native `cloudflareEmail()` provider and a `send_email` binding restricted to verified administrator recipients (free sending on Workers Free). Deferred by the user on 2026-10-30: collect the email associated with the EmDash administrator, configure the sender domain with Cloudflare Email Routing after reviewing its existing DNS, verify the recipient in Cloudflare, and test actual magic-link delivery and login. No DNS changes until authorized.
+- [ ] Register the merchant's administrator/passkey on production and verify login, content creation, image upload, relationship editing, and publication with the catalog model.
+- [ ] Test a real admin photo upload (~3 MB) through the deployed production Worker. On 2026-10-27, media uploads through the deployed staging Worker exceeded the Workers Free CPU limit, and the import had to run through a local Worker on remote bindings.
 - [ ] Verify restart/redeployment against existing remote data and confirm published content and media persist.
-- [ ] Measure complete authenticated create/save/publish requests, realistic gallery uploads, scheduled tasks, Worker CPU/errors, bundle/startup constraints, and account quotas; document whether the essential CMS workflows work on Workers Free.
-- [ ] Document backup/restore and failed-migration recovery; verify a staging restore including database, media, keys, and authentication using an agreed safe recovery target.
-- [ ] Verify remote environment selection for the public snapshot, authenticated rebuild triggers, and publication/media propagation on staging.
+- [ ] Measure complete authenticated create/save/publish requests, realistic gallery uploads, the hourly cron, Worker CPU/errors, bundle/startup constraints, and account quotas; document whether the essential CMS workflows work on Workers Free.
+- [ ] Set up production backups: a scheduled D1 export (or a documented D1 Time Travel restore) plus an R2 media copy, kept outside Cloudflare. On 2026-10-30 the old staging data was deleted without backup and production became the only copy.
+- [ ] Document backup/restore and failed-migration recovery; verify a restore of database, media, keys, and authentication into an agreed recovery target that is neither production nor staging (staging reads production's data).
+- [ ] Stripe webhooks per environment, once the Stripe account exists: staging endpoint with test keys (`sk_test_…`) and its signing secret; production endpoint with live keys at launch. Staging's webhook currently returns 503 because no keys are set.
 
 **Remote acceptance gate:** Essential CMS operations must work on Workers Free and existing content must survive redeployment. If this fails, identify the exact blocker and agree on an architecture change before launch.
 
-- [ ] Import the Shopify catalog into staging once a staging administrator and EmDash API token exist; verify a publication and media change reaches staging pages through the rebuild trigger.
 - [ ] Browser pass (Chrome DevTools MCP, isolated profile): product transitions and reduced motion, popup back/forward, PWA install/offline/update banner, image LCP on mobile.
-- [ ] Supervised first production setup (secrets, administrator, reviewed fingerprint, Stripe keys), then set `PRODUCTION_DEPLOY_ENABLED=true`.
-- [ ] At launch, set `FOUNDATION_LOCKED=false` and remove `assets.run_worker_first` together.
+- [x] Launch switch on production: `FOUNDATION_LOCKED=false` without `assets.run_worker_first` (2026-10-30, at the user's request). Staging stays locked permanently.
 
 ### Launch rehearsal and cutover
 
-- [ ] Add canonical URLs, sitemap, robots rules, social metadata, and accurate Product/offer structured data; block staging indexing.
+- [ ] Add canonical URLs, sitemap, robots rules, social metadata, and accurate Product/offer structured data. Staging already sends `X-Robots-Tag: noindex, nofollow`.
 - [ ] Verify redirects and internal links for products, collections, the old About/blog route, and policy pages.
-- [ ] Rehearse final import, production migration, deployment, restore, and rollback on staging.
+- [ ] Rehearse final import, migration, deployment, restore, and rollback on a disposable target (a temporary D1/R2 pair), not on staging, which shares production's data.
 - [ ] Verify build/type checks, focused model/checkout tests, mobile browsing, keyboard flows, and Stripe payment/webhook tests.
 - [ ] Review Cloudflare request/CPU/database/media/build usage and configure available usage/error notifications.
 - [ ] Confirm live Stripe configuration, shipping rules, production lead times, contact handling, and policy text.

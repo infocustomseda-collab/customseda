@@ -53,7 +53,7 @@ Decisions:
   - the private cache and robots headers are set on every response.
 - `previewRedirect` is not used on this path.
 
-- [ ] **Step 1: Write the failing tests** in `tests/staging-access.test.mjs`:
+- [x] **Step 1: Write the failing tests** in `tests/staging-access.test.mjs`:
 
 ```js
 const env = { FOUNDATION_ACCESS_TOKEN: 'a'.repeat(64), CMS_ORIGIN: 'https://cms.example' };
@@ -81,19 +81,19 @@ test('missing token never grants access', () => assert.equal(stagingAccess(req('
 
 In `tests/foundation-access.test.mjs`, add: `hasFoundationCredentials` is true for `seda:<secret>` (both headers) and false for no token, a wrong token, and `undefined` as the token. The existing `foundationAccess` tests must keep passing unchanged.
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
 Run: `node --test tests/staging-access.test.mjs tests/foundation-access.test.mjs`
 Expected: FAIL. `stagingAccess` / `hasFoundationCredentials` are not exported.
 
-- [ ] **Step 3: Implement** `hasFoundationCredentials` and `stagingAccess`, then update `src/middleware.ts`, `src/worker.ts` and `src/lib/preview-routing.ts` as decided above. Exemptions match exact paths or a `prefix/` prefix, never a bare string prefix. The 401 body is a short HTML page with a link to `${CMS_ORIGIN}/_emdash/admin/login`, labeled for editors. Its exact wording is the implementer's choice.
+- [x] **Step 3: Implement** `hasFoundationCredentials` and `stagingAccess`, then update `src/middleware.ts`, `src/worker.ts` and `src/lib/preview-routing.ts` as decided above. Exemptions match exact paths or a `prefix/` prefix, never a bare string prefix. The 401 body is a short HTML page with a link to `${CMS_ORIGIN}/_emdash/admin/login`, labeled for editors. Its exact wording is the implementer's choice.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `pnpm test && pnpm typecheck`
 Expected: PASS, with no reference to `PRIVATE_SITE` or `privateSite` left in `src/` or `tests/` (`grep -rn "PRIVATE_SITE\|privateSite" src tests` prints nothing).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/foundation-access.ts src/lib/staging-access.ts src/middleware.ts src/worker.ts src/lib/preview-routing.ts tests/staging-access.test.mjs tests/foundation-access.test.mjs tests/preview-routing.test.mjs
@@ -112,7 +112,7 @@ git commit -m "feat: gate staging by editor session or shared Basic credential"
 - Changes: `handleStripeEvent(db: Kysely<Database> | null, event, { flagPaymentIntent })`. With `db === null` it runs the same filtering and the address flag, issues no SQL, and returns `"processed"` for a handled event (`"ignored"` stays the same).
 - The webhook passes `recordsPayments(siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE), env.CMS_ORIGIN) ? await getDb() : null`. In that case it never calls `getDb()`.
 
-- [ ] **Step 1: Write the failing tests** in `tests/commerce-payments.test.mjs`:
+- [x] **Step 1: Write the failing tests** in `tests/commerce-payments.test.mjs`:
 
 ```js
 test('without a database the event is verified and flagged in Stripe but nothing is recorded', async () => {
@@ -130,19 +130,19 @@ test('only non-preview builds without a CMS origin record payments', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
 Run: `node --test tests/commerce-payments.test.mjs`
 Expected: FAIL (`recordsPayments` is not exported; `null` db throws).
 
-- [ ] **Step 3: Implement** the two changes and the webhook wiring. Update the header comment in `webhook.ts`: staging verifies events and flags addresses but records nothing.
+- [x] **Step 3: Implement** the two changes and the webhook wiring. Update the header comment in `webhook.ts`: staging verifies events and flags addresses but records nothing.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `pnpm test && pnpm typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/commerce/payments.ts src/pages/api/stripe/webhook.ts tests/commerce-payments.test.mjs
@@ -170,7 +170,7 @@ git commit -m "feat: staging webhook never touches payment events"
   `[statusCommand(target), ['catalog-model-check'], ['astro-preview', 'staging'], [...migration, '--check'], ['wrangler', 'deploy', '-c', 'dist-preview/server/wrangler.json']]`. There is no migrate and no `catalog-model` step, and `--check` runs before the upload.
 - `run.mjs`: `catalog-model-check` calls `remoteCatalogModel(target, { check: true })` and logs `Catalog model: all versions present.`. Its existing throw stops the deploy.
 
-- [ ] **Step 1: Write the failing tests** in `tests/deployment.test.mjs`. Replace `rejects shared staging and production databases or buckets`, `a live environment builds and uploads only the server-rendered variant`, and the staging assertions of `the checked-in config …`. Make `liveStaging()` produce a shared-binding staging. New assertions:
+- [x] **Step 1: Write the failing tests** in `tests/deployment.test.mjs`. Replace `rejects shared staging and production databases or buckets`, `a live environment builds and uploads only the server-rendered variant`, and the staging assertions of `the checked-in config …`. Make `liveStaging()` produce a shared-binding staging. New assertions:
 
 ```js
 test('staging must share production database, bucket and session store, and point CMS_ORIGIN at production', () => {
@@ -191,19 +191,19 @@ In `the checked-in config …`:
 - staging: `rendering === 'live'`, `shared === true`, `vars.FOUNDATION_LOCKED === 'true'`, `assets.run_worker_first === true`, `vars.PRIVATE_SITE === undefined`, `send_email === undefined`;
 - production: `triggers.crons` deep-equals `['0 * * * *']`.
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
 Run: `node --test tests/deployment.test.mjs`
 Expected: FAIL on the new tests.
 
-- [ ] **Step 3: Implement** the config, validation, command list and runner step. Update the doc comments in `target.mjs` that describe the old live flow.
+- [x] **Step 3: Implement** the config, validation, command list and runner step. Update the doc comments in `target.mjs` that describe the old live flow.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `pnpm test && pnpm typecheck && pnpm build`
 Expected: all pass. `pnpm build` is the local public build. Also run `SITE_MODE=preview CLOUDFLARE_ENV=staging pnpm exec astro build` and check that it succeeds and that `dist-preview/server/wrangler.json` shows production's D1 ID, the SESSION KV and no crons.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add wrangler.jsonc scripts/deploy/target.mjs scripts/deploy/run.mjs tests/deployment.test.mjs
@@ -223,17 +223,17 @@ Decisions:
 - Drop the staging media cache step, since staging no longer builds derivatives.
 - Update the file's header comment.
 
-- [ ] **Step 1: Update the tests:**
+- [x] **Step 1: Update the tests:**
   - `production runs only when enabled, and after staging on pushes` becomes `staging runs after a successful production deploy on pushes`. It asserts that `job('staging')` matches `/needs: \[verify, production\]/` and `/needs\.production\.result == 'success'/`, that it does not match `needs.production.result == 'cancelled'`, and that `job('production')` matches `/needs: \[verify\]/`.
   - `deploys queue per environment …`: assert that both jobs match `/group: deploy-production-db/`.
 
-- [ ] **Step 2: Run** `node --test tests/deploy-workflow.test.mjs`. Expected: FAIL.
+- [x] **Step 2: Run** `node --test tests/deploy-workflow.test.mjs`. Expected: FAIL.
 
-- [ ] **Step 3: Edit the workflow** as decided.
+- [x] **Step 3: Edit the workflow** as decided.
 
-- [ ] **Step 4: Run** `pnpm test`. Expected: PASS.
+- [x] **Step 4: Run** `pnpm test`. Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/deploy.yml tests/deploy-workflow.test.mjs
@@ -244,20 +244,20 @@ git commit -m "ci: deploy production before the shared-data staging reader"
 
 **Files:** `AGENTS.md`, `docs/deployment.md`, `docs/checkout.md`, `README.md`
 
-- [ ] **Step 1: `AGENTS.md` (Runtime section):**
+- [x] **Step 1: `AGENTS.md` (Runtime section):**
   - Replace “Staging and production must have distinct databases, buckets, origins, and secrets” with: staging is a private SSR draft view sharing production's D1, R2 and SESSION KV; distinct origin; Stripe test keys only; no CMS, migrations, cron or payment records.
   - Replace the `production-preview` sentence: production's single Worker serves the admin.
   - Update the Scope bullet that says no deploys until phase 7. Production and staging deploys are now authorized by the user, though each remote action still needs confirmation.
-- [ ] **Step 2: `docs/deployment.md`:**
+- [x] **Step 2: `docs/deployment.md`:**
   - Rewrite the Workers table and the staging access paragraph: two ways in, exempt paths, 401.
   - Secrets per Worker: staging gets production's `EMDASH_ENCRYPTION_KEY`, `FOUNDATION_ACCESS_TOKEN` and Stripe test keys; `GITHUB_REBUILD_TOKEN` goes on the production Worker.
   - Cron ownership: production.
   - The staging deploy steps (read-only checks), CI order and shared concurrency group.
   - The `staging` GitHub environment fingerprint now equals production's.
   - Delete the stale paragraphs about staging's own D1/R2, `PRIVATE_SITE` and `production-preview`.
-- [ ] **Step 3: `docs/checkout.md`:** step 5 and the setup notes. The staging webhook records nothing; the Basic gate no longer needs credentials in the webhook URL (path exempt).
-- [ ] **Step 4: `README.md`:** the environment description, if present.
-- [ ] **Step 5: Run and commit.** Run `grep -rn "PRIVATE_SITE\|production-preview\|distinct databases" AGENTS.md README.md docs/deployment.md docs/checkout.md` and confirm it prints nothing. Then commit:
+- [x] **Step 3: `docs/checkout.md`:** step 5 and the setup notes. The staging webhook records nothing; the Basic gate no longer needs credentials in the webhook URL (path exempt).
+- [x] **Step 4: `README.md`:** the environment description, if present.
+- [x] **Step 5: Run and commit.** Run `grep -rn "PRIVATE_SITE\|production-preview\|distinct databases" AGENTS.md README.md docs/deployment.md docs/checkout.md` and confirm it prints nothing. Then commit:
 
 ```bash
 git add AGENTS.md docs/deployment.md docs/checkout.md README.md
@@ -270,12 +270,12 @@ Not for a subagent. The session that runs it asks the user before each step, sho
 
 - [x] **Step 1: Inspect the old preview Worker (read-only).** Done 2026-10-30: no `production-preview` Worker exists. The account had `customseda`, `customseda-staging` and the accidental `customseda-staging-staging`. Run `pnpm exec wrangler deployments list --name customseda-preview`, then list its cron triggers with `curl -s -H "Authorization: Bearer $(pnpm -s exec wrangler auth token)" https://api.cloudflare.com/client/v4/accounts/9e52d6bc1e5b9be5cd11be4c1030485a/workers/scripts/customseda-preview/schedules`. Report its bindings and crons. If the name differs, list Workers with `wrangler` and identify it with the user.
 - [x] **Step 2: Delete it.** Not needed: the Worker no longer existed. The accidental `customseda-staging-staging` is deleted instead; the user runs that command.
-- [ ] **Step 3: Set the secrets** after confirmation:
+- [x] **Step 3: Set the secrets** after confirmation. Done 2026-10-30 for staging; `GITHUB_REBUILD_TOKEN` is still open (tracked in the main plan, phase 7):
   - Staging: `EMDASH_ENCRYPTION_KEY` (production's value, from `.env.cloudflare-production`) and `FOUNDATION_ACCESS_TOKEN` (the reviewer token, user's choice to rotate). Use `wrangler secret put … --env staging` for each. Confirm the staging Stripe keys are `sk_test_…`.
   - Production: `GITHUB_REBUILD_TOKEN` (`--env production`).
 - [ ] **Step 4: GitHub settings:** none yet. As of 2026-10-30 no deploy is configured in GitHub, so merges to `master` only run tests. See the deferred to-do below.
-- [ ] **Step 5: Deploy, after confirmation:** `pnpm deploy:production`, then `pnpm deploy:staging`.
-- [ ] **Step 6: Verify:**
+- [x] **Step 5: Deploy, after confirmation:** done 2026-10-30. `pnpm deploy:production`, then `pnpm deploy:staging`.
+- [ ] **Step 6: Verify.** Gate, admin redirect and production checks done 2026-10-30 (see `docs/deployment.md`). Still open: a known draft on staging (production had none) and the test-mode checkout (no Stripe account yet).
   - Staging:
     - anonymous `/` → 401 with Basic;
     - Basic `/` → 200 and shows a known draft;
@@ -287,10 +287,10 @@ Not for a subagent. The session that runs it asks the user before each step, sho
     - anonymous `/` → 200 static;
     - `/_emdash/admin/` → login;
     - the cron is listed on the `customseda` Worker.
-- [ ] **Deferred to-do: GitHub deploys** (not configured on 2026-10-30; do this only once the manual rollout above is verified):
+- [ ] **Deferred to-do: GitHub deploys** (not configured on 2026-10-30; tracked in the main plan, phase 7; do this only once the manual rollout above is verified):
   - [ ] Environment `production`: secret `CLOUDFLARE_API_TOKEN`, variable `EMDASH_TARGET_FINGERPRINT` (from `pnpm migrate:status production`, reviewed).
   - [ ] Environment `staging`: secret `CLOUDFLARE_API_TOKEN`, variable `EMDASH_TARGET_FINGERPRINT` set to **production's** value (staging checks production's database).
   - [ ] Production Worker secret `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only); record owner and expiry in `docs/deployment.md`.
   - [ ] Repository variables `PRODUCTION_DEPLOY_ENABLED=true`, then `STAGING_DEPLOY_ENABLED=true`.
   - [ ] Check a push to `master`: production deploys first, then staging; a CMS publish dispatches production only.
-- [ ] **Step 7: Retire staging's own data** after confirmation, with no backup: the user decided on 2026-10-30 that production's database is the backup. Run `wrangler d1 delete customseda-staging`, then empty and delete `customseda-staging-media`. The duplicate Worker `customseda-staging-staging` (created by accident on 2026-10-27) is deleted too. No `production-preview` Worker exists any more.
+- [ ] **Step 7: Retire staging's own data** after confirmation. D1 `customseda-staging` and Worker `customseda-staging-staging` deleted 2026-10-30; the bucket `customseda-staging-media` remains. Original step, with no backup: the user decided on 2026-10-30 that production's database is the backup. Run `wrangler d1 delete customseda-staging`, then empty and delete `customseda-staging-media`. The duplicate Worker `customseda-staging-staging` (created by accident on 2026-10-27) is deleted too. No `production-preview` Worker exists any more.

@@ -1,5 +1,7 @@
 # Private staging implementation plan
 
+> **Superseded on 2026-10-30** by the [shared-production staging plan](2026-10-30-shared-production-staging.md): staging is now a private server-rendered view of production, and no `-preview` Workers exist. Unchecked items here are not open work; remaining checks are tracked in the [main plan](2026-10-24-custom-seda.md), phase 7.
+
 **Approved behavior:** Staging storefront pages require an authenticated EmDash editor. “View site” uses that same session. Anonymous visitors go to the admin login; preview tokens alone do not grant access. The user authorized this staging deployment on 2026-10-30; production and other deferred work remain untouched.
 
 **Implementation:** Add an explicit staging-only `PRIVATE_SITE` runtime flag to the existing preview routing policy. Preserve production partner redirects and local development. Disable caching of private page responses. Login/admin and their assets remain available under existing EmDash authorization; this is storefront access control, not private media storage.

@@ -1,5 +1,7 @@
 # Preview Workers Implementation Plan
 
+> **Superseded on 2026-10-30** by the [shared-production staging plan](2026-10-30-shared-production-staging.md): staging is now a private server-rendered view of production, and no `-preview` Workers exist. Unchecked items here are not open work; remaining checks are tracked in the [main plan](2026-10-24-custom-seda.md), phase 7.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give each remote environment a server-rendered preview Worker (`-preview` suffix, admin plus a live site with drafts) next to the unchanged static public Worker (clean name), so CMS previews work on staging and production.
