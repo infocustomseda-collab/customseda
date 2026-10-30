@@ -9,8 +9,6 @@ export function remoteDevConfig(config,environment,root) {
  if(!['staging','production'].includes(environment))throw new Error('Choose staging or production explicitly.');
  if(!/^[a-f0-9]{32}$/i.test(config.account_id??''))throw new Error('Missing Cloudflare account.');
  const target=config.env?.[environment];
- // Staging has no data of its own: a local CMS for it would edit production.
- if(target?.vars?.CMS_ORIGIN)throw new Error(`${environment} reads production's data and has no CMS; use pnpm dev:production.`);
  const database=target?.d1_databases?.find(b=>b.binding==='DB');
  const bucket=target?.r2_buckets?.find(b=>b.binding==='MEDIA');
  if(!/^(?!00000000-0000-0000-0000-000000000000$)[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(database?.database_id??''))throw new Error(`Missing ${environment} database UUID.`);
@@ -37,7 +35,7 @@ export function remoteDevEnv(parent,environment,configPath,secrets) {
 
 async function main() {
  const [environment,...extra]=process.argv.slice(2);
- if(extra.length)throw new Error('Usage: pnpm dev:production (stop the other dev server first).');
+ if(extra.length)throw new Error('Usage: pnpm dev:staging or pnpm dev:production (stop the other dev server first).');
  const root=process.cwd();
  const source=JSON.parse(await readFile(resolve(root,'wrangler.jsonc'),'utf8'));
  const config=remoteDevConfig(source,environment,root);
