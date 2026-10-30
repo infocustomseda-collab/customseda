@@ -45,7 +45,7 @@ All secret files are ignored by git, have owner-only permissions (`chmod 600`), 
 | --- | --- | --- |
 | `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | `pnpm dev`. Wrangler reads `.env` as the local Worker's secrets; copy `.env.example`. |
 | `.env.cloudflare-production` | Production's `EMDASH_ENCRYPTION_KEY` | Production, and the same key on staging (it reads production's encrypted settings and sessions). Not loaded automatically. |
-| `.env.cloudflare-staging` | `FOUNDATION_ACCESS_TOKEN` (the shared reviewer credential) | Staging only. |
+| `.env.cloudflare-staging` | Production's `EMDASH_ENCRYPTION_KEY` (staging and `pnpm dev:staging` read production's data) and `FOUNDATION_ACCESS_TOKEN` (the shared reviewer credential) | Staging Worker and `pnpm dev:staging`. |
 
 Never put a Cloudflare API token in `.env` or the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
 

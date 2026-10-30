@@ -268,8 +268,8 @@ git commit -m "docs: staging as private SSR view of production"
 
 Not for a subagent. The session that runs it asks the user before each step, shows the exact command, and records outcomes in `docs/deployment.md`.
 
-- [ ] **Step 1: Inspect the old preview Worker (read-only).** Run `pnpm exec wrangler deployments list --name customseda-preview`, then list its cron triggers with `curl -s -H "Authorization: Bearer $(pnpm -s exec wrangler auth token)" https://api.cloudflare.com/client/v4/accounts/9e52d6bc1e5b9be5cd11be4c1030485a/workers/scripts/customseda-preview/schedules`. Report its bindings and crons. If the name differs, list Workers with `wrangler` and identify it with the user.
-- [ ] **Step 2: Delete it** after confirmation: `pnpm exec wrangler delete --name customseda-preview`.
+- [x] **Step 1: Inspect the old preview Worker (read-only).** Done 2026-10-30: no `production-preview` Worker exists. The account had `customseda`, `customseda-staging` and the accidental `customseda-staging-staging`. Run `pnpm exec wrangler deployments list --name customseda-preview`, then list its cron triggers with `curl -s -H "Authorization: Bearer $(pnpm -s exec wrangler auth token)" https://api.cloudflare.com/client/v4/accounts/9e52d6bc1e5b9be5cd11be4c1030485a/workers/scripts/customseda-preview/schedules`. Report its bindings and crons. If the name differs, list Workers with `wrangler` and identify it with the user.
+- [x] **Step 2: Delete it.** Not needed: the Worker no longer existed. The accidental `customseda-staging-staging` is deleted instead; the user runs that command.
 - [ ] **Step 3: Set the secrets** after confirmation:
   - Staging: `EMDASH_ENCRYPTION_KEY` (production's value, from `.env.cloudflare-production`) and `FOUNDATION_ACCESS_TOKEN` (the reviewer token, user's choice to rotate). Use `wrangler secret put … --env staging` for each. Confirm the staging Stripe keys are `sk_test_…`.
   - Production: `GITHUB_REBUILD_TOKEN` (`--env production`).
@@ -293,4 +293,4 @@ Not for a subagent. The session that runs it asks the user before each step, sho
   - [ ] Production Worker secret `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only); record owner and expiry in `docs/deployment.md`.
   - [ ] Repository variables `PRODUCTION_DEPLOY_ENABLED=true`, then `STAGING_DEPLOY_ENABLED=true`.
   - [ ] Check a push to `master`: production deploys first, then staging; a CMS publish dispatches production only.
-- [ ] **Step 7: Retire staging's own data** after confirmation. Export a backup with `wrangler d1 export customseda-staging --remote --output backups/customseda-staging-2026-10-30.sql` and list `customseda-staging-media` objects into `backups/`. Then `wrangler d1 delete customseda-staging` and `wrangler r2 bucket delete customseda-staging-media`; the bucket has to be emptied first, with the user's confirmation of the object count.
+- [ ] **Step 7: Retire staging's own data** after confirmation, with no backup: the user decided on 2026-10-30 that production's database is the backup. Run `wrangler d1 delete customseda-staging`, then empty and delete `customseda-staging-media`. The duplicate Worker `customseda-staging-staging` (created by accident on 2026-10-27) is deleted too. No `production-preview` Worker exists any more.
