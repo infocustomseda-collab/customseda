@@ -54,12 +54,12 @@ El cambio está preparado en la [solicitud 34](https://github.com/infocustomseda
 
 Con autorización expresa del administrador, se ha añadido `customseda.com` a Cloudflare con el plan gratuito y se han guardado en Shopify los servidores `elmo.ns.cloudflare.com` y `romina.ns.cloudflare.com`. Se han copiado los siete registros originales; los registros web siguen apuntando directamente a Shopify, con el proxy desactivado. No se ha trasladado la tienda pública al Worker de Astro.
 
-Email Routing se ha activado y ha añadido tres registros MX, SPF y DKIM. La última comprobación mostraba el servicio sincronizándose y el dominio pendiente de propagación. Cloudflare ya respondía directamente con el registro A de Shopify, el CNAME de `www` y los tres MX; el resolutor habitual aún mostraba los servidores antiguos. Comprobar de nuevo el estado real antes de continuar.
+La comprobación posterior confirma el dominio activo y Email Routing habilitado, sincronizado y listo. Google y Cloudflare resuelven los nuevos servidores; los registros web siguen apuntando a Shopify. Con autorización del usuario, la solicitud configura `CMS_EMAIL_FROM=noreply@customseda.com` y restringe el remitente del binding a esa dirección. No necesita un buzón independiente. La entrega real de la invitación sigue pendiente de comprobar después del despliegue.
 
 Pendiente:
 
-1. Confirmar la activación del dominio y de Email Routing. Mantener el plan gratuito y el envío limitado a destinatarios verificados.
-2. Configurar y verificar el remitente del CMS mediante `CMS_EMAIL_FROM`, completar la solicitud 34 y publicar con la autorización correspondiente. El remitente aún no está configurado.
+1. Mantener el plan gratuito y el envío limitado a destinatarios verificados.
+2. Integrar la solicitud 34 y publicar (autorizado por el usuario); comprobar el resultado del despliegue antes de enviar la invitación.
 3. Acceder con un administrador existente de EmDash y enviar la invitación nativa a `info.customseda@gmail.com` con el rol de administrador. La invitación aún no se ha enviado; el cliente completará su registro personalmente. No crear usuarios directamente en la base de datos.
 4. Retomar la comprobación pendiente de publicación desde el CMS y reconstrucción automática: volver a publicar una página ya publicada, sin cambios pendientes y con control de revisión para evitar publicar borradores ajenos. No modificar contenido como prueba desechable.
 
