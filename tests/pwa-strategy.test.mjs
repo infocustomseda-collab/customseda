@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {routeStrategy} from '../src/lib/pwa/strategy.js';
+import {keepsForOffline,routeStrategy} from '../src/lib/pwa/strategy.js';
 
 const s=(path,method='GET')=>routeStrategy(new URL(path,'https://seda.example'),method);
 
@@ -25,4 +25,12 @@ test('hashed build assets are cache-first; media and icons revalidate',()=>{
  assert.equal(s('/media/a-960.webp'),'stale-while-revalidate');
  assert.equal(s('/icons/icon-192.png'),'stale-while-revalidate');
  assert.equal(s('/brand/seda-wordmark.png'),'stale-while-revalidate');
+});
+
+test('network-first keeps every visited page for offline, including client-router fetches',()=>{
+ assert.equal(keepsForOffline('navigate','text/html; charset=utf-8'),true);
+ assert.equal(keepsForOffline('cors','text/html; charset=utf-8'),true);
+ assert.equal(keepsForOffline('same-origin','text/html'),true);
+ assert.equal(keepsForOffline('cors','application/manifest+json'),false);
+ assert.equal(keepsForOffline('navigate',null),true);
 });

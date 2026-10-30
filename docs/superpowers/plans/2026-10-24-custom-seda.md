@@ -146,14 +146,14 @@ The user chose to stay local on 2026-10-25, so all remote work moves to phase 7:
 
 - [x] Implement a build-time published-content snapshot/query pipeline against local content without exposing CMS credentials to browsers; verify remote environment selection in phase 7.
 - [x] Connect relevant publish/update/delete/settings changes to an authenticated rebuild trigger; coalesce bursts and retain the last successful site if a build fails.
-- [ ] Verify a publication and media change reaches public pages after a successful rebuild; verify drafts remain private.
+- [ ] Verify a publication and media change reaches public pages after a successful rebuild; verify drafts remain private. Tracked in phase 7 (“Verify publish → rebuild on production”): it needs a real CMS publication, and no publish-triggered rebuild had run by 2026-10-30.
 - [x] Generate bounded responsive image derivatives during build/import, with modern formats, dimensions, correct sizes, and lazy loading below the fold.
 - [x] Measure media size and build duration against free quotas; document limits and the fallback for new uploads/failed processing.
 - [x] Add Astro view transitions for matching product photos/titles with stable unique names, browser fallback, and reduced-motion support.
-- [ ] Verify popup lifecycle behavior across Astro navigation and browser back/forward.
+- [x] Verify popup lifecycle behavior across Astro navigation and browser back/forward. Verified 2026-10-30 in Chrome (mobile viewport) on a production-mode build with a fixture popup, because production has no enabled popup: it opens once after its delay with focus inside; Escape, the close button, the backdrop and its button dismiss it; once dismissed it stays closed after ClientRouter navigation, back, forward, reload and a back/forward-cache restore; navigating before the delay opens a single popup on the new page.
 - [x] Add PWA manifest, icons, service worker, offline fallback, and update behavior.
 - [x] Keep admin, checkout, webhooks, private responses, and authoritative price/availability outside service-worker caches; keep checkout online-only.
-- [ ] Verify offline messaging, fresh deployment activation, image loading, navigation, and performance on mobile.
+- [x] Verify offline messaging, fresh deployment activation, image loading, navigation, and performance on mobile. Verified 2026-10-30 in Chrome. Offline: visited pages serve from cache, unvisited pages show “Sin conexión”, and checkout requests fail instead of being served from cache. This found that pages reached through ClientRouter links were not kept for offline; fixed by keeping network-first HTML responses (`keepsForOffline`). Update: a changed `sw.js` shows “Nueva versión disponible”; “Actualizar” reloads into the new cache and deletes the old one (local build; confirm on production after the next deploy in phase 7's browser pass). Mobile on production, Lighthouse profile (412×823, DPR 1.75, Slow 4G, 4× CPU): LCP 1.1 s home, 1.1 s collection, 1.9 s product; CLS 0; the LCP photo is eager with high priority, other photos lazy, all WebP with dimensions. A DPR 3 phone on the same throttling loads the 1440 px photos (product LCP 4.1 s).
 
 **Exit condition:** Publishing reliably refreshes prerendered pages, media loads efficiently, transitions remain accessible, and offline behavior cannot authorize stale purchases.
 
@@ -186,7 +186,7 @@ Complete the remote acceptance gate before launch on the real domain; local resu
 
 **Remote acceptance gate:** Essential CMS operations must work on Workers Free and existing content must survive redeployment. If this fails, identify the exact blocker and agree on an architecture change before launch.
 
-- [ ] Browser pass (Chrome DevTools MCP, isolated profile): product transitions and reduced motion, popup back/forward, PWA install/offline/update banner, image LCP on mobile.
+- [ ] Browser pass (Chrome DevTools MCP, isolated profile): product transitions and reduced motion; the update banner against a real production deploy. Popup back/forward, PWA install/offline and mobile image LCP were verified in phase 6 on 2026-10-30.
 - [x] Launch switch on production: `FOUNDATION_LOCKED=false` without `assets.run_worker_first` (2026-10-30, at the user's request). Staging stays locked permanently.
 
 ### Launch rehearsal and cutover
