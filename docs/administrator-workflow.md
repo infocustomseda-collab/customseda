@@ -48,19 +48,18 @@ Publicar desde el CMS necesita además `GITHUB_REBUILD_TOKEN` en el Worker de pr
 
 No ejecutar varias instancias de desarrollo a la vez ni publicar manualmente mientras GitHub esté desplegando. No probar escrituras, importaciones o restauraciones sobre producción para comprobar que el entorno funciona.
 
-## Punto de continuación: correo del administrador (30 de octubre de 2026)
+## Correo del administrador (actualizado el 31 de octubre de 2026)
 
-El cambio está preparado en la [solicitud 34](https://github.com/infocustomseda-collab/customseda/pull/34), todavía sin integrar ni desplegar. Añade `info.customseda@gmail.com` a los destinatarios permitidos del CMS; la dirección ya está verificada en Cloudflare.
+El cambio se integró mediante la [solicitud 34](https://github.com/infocustomseda-collab/customseda/pull/34) el 30 de octubre. El usuario confirmó el 31 de octubre que funciona. Añade `info.customseda@gmail.com` a los destinatarios permitidos del CMS; la dirección ya está verificada en Cloudflare.
 
 Con autorización expresa del administrador, se ha añadido `customseda.com` a Cloudflare con el plan gratuito y se han guardado en Shopify los servidores `elmo.ns.cloudflare.com` y `romina.ns.cloudflare.com`. Se han copiado los siete registros originales; los registros web siguen apuntando directamente a Shopify, con el proxy desactivado. No se ha trasladado la tienda pública al Worker de Astro.
 
-La comprobación posterior confirma el dominio activo y Email Routing habilitado, sincronizado y listo. Google y Cloudflare resuelven los nuevos servidores; los registros web siguen apuntando a Shopify. Con autorización del usuario, la solicitud configura `CMS_EMAIL_FROM=noreply@customseda.com` y restringe el remitente del binding a esa dirección. No necesita un buzón independiente. La entrega real de la invitación sigue pendiente de comprobar después del despliegue.
+La comprobación posterior confirma el dominio activo y Email Routing habilitado, sincronizado y listo. Google y Cloudflare resuelven los nuevos servidores; los registros web siguen apuntando a Shopify. Con autorización del usuario, la solicitud configura `CMS_EMAIL_FROM=noreply@customseda.com` y restringe el remitente del binding a esa dirección. No necesita un buzón independiente. La comprobación de funcionamiento del correo fue confirmada por el usuario el 31 de octubre; el agente no envió la invitación.
 
 Pendiente:
 
 1. Mantener el plan gratuito y el envío limitado a destinatarios verificados.
-2. Integrar la solicitud 34 y publicar (autorizado por el usuario); comprobar el resultado del despliegue antes de enviar la invitación.
-3. Acceder con un administrador existente de EmDash y enviar la invitación nativa a `info.customseda@gmail.com` con el rol de administrador. La invitación aún no se ha enviado; el cliente completará su registro personalmente. No crear usuarios directamente en la base de datos.
-4. Retomar la comprobación pendiente de publicación desde el CMS y reconstrucción automática: volver a publicar una página ya publicada, sin cambios pendientes y con control de revisión para evitar publicar borradores ajenos. No modificar contenido como prueba desechable.
+2. Registrar por separado la confirmación del registro y acceso con passkey del administrador y las pruebas restantes del CMS. La confirmación del correo no cierra por sí sola todas estas pruebas. No crear usuarios directamente en la base de datos ni reenviar invitaciones sin comprobar el estado actual.
+3. Retomar la comprobación pendiente de publicación desde el CMS y reconstrucción automática: volver a publicar una página ya publicada, sin cambios pendientes y con control de revisión para evitar publicar borradores ajenos. No modificar contenido como prueba desechable.
 
 La copia original de DNS está en `.emdash/dns-backup-shopify-2026-10-30.json`, ignorada por Git. Las credenciales y los archivos `.env` permanecen fuera del historial de GitHub.
