@@ -146,7 +146,7 @@ The user chose to stay local on 2026-10-25, so all remote work moves to phase 7:
 
 - [x] Implement a build-time published-content snapshot/query pipeline against local content without exposing CMS credentials to browsers; verify remote environment selection in phase 7.
 - [x] Connect relevant publish/update/delete/settings changes to an authenticated rebuild trigger; coalesce bursts and retain the last successful site if a build fails.
-- [ ] Verify a publication and media change reaches public pages after a successful rebuild; verify drafts remain private. Tracked in phase 7 (“Verify publish → rebuild on production”): it needs a real CMS publication, and no publish-triggered rebuild had run by 2026-10-30.
+- [x] Verify a publication and media change reaches public pages after a successful rebuild; verify drafts remain private. Completed 2026-10-31 with the authorized TOP BRISA product and photo; see [phase 7 evidence](../../phase-7-verification.md).
 - [x] Generate bounded responsive image derivatives during build/import, with modern formats, dimensions, correct sizes, and lazy loading below the fold.
 - [x] Measure media size and build duration against free quotas; document limits and the fallback for new uploads/failed processing.
 - [x] Add Astro view transitions for matching product photos/titles with stable unique names, browser fallback, and reduced-motion support.
@@ -167,9 +167,11 @@ Complete backups before production write-based acceptance checks. Phase 11 depen
 
 ## 7. GitHub deployment and CMS rebuilds
 
-- [ ] Create `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only), set it on the production Worker and record owner and expiry in `docs/deployment.md`. **Until this exists, a CMS publish does not reach the public pages.**
-- [ ] GitHub deploys, after confirmation: GitHub environments `production` and `staging` with `CLOUDFLARE_API_TOKEN` and `EMDASH_TARGET_FINGERPRINT` (both production's reviewed value), then `PRODUCTION_DEPLOY_ENABLED=true` and `STAGING_DEPLOY_ENABLED=true`. Check that a push to `master` deploys production first, then staging, and that a CMS publish dispatches production only.
-- [ ] Verify publish → rebuild on production: a publication and a media change reach the public pages, and drafts stay off them while staging shows them.
+- [x] Create `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only), set it on the production Worker and record owner and expiry in `docs/deployment.md`. Completed on 2026-10-30 and validated against the GitHub workflow API; owner `infocustomseda-collab`, expiry 2027-01-28 00:00 UTC. See the administrator workstation setup and token renewal record in `docs/deployment.md`.
+- [x] Configure GitHub environments `production` and `staging` with `CLOUDFLARE_API_TOKEN` and `EMDASH_TARGET_FINGERPRINT` (both production's reviewed value), and enable both deployment flags. Verified on 2026-10-31: both flags are `true`; [master deployment 41156877509](https://github.com/infocustomseda-collab/customseda/actions/runs/41156877509) passed verification, then production, then staging. Production completed at 01:48:32 UTC; staging started at 01:48:35 UTC. CMS-triggered production-only dispatch remains part of the acceptance check below.
+- [x] Verify publish → rebuild on production: a publication and a media change reach the public pages, and drafts stay off them while staging shows them. Completed 2026-10-31: TOP BRISA draft was public 404, anonymous staging 401, authenticated staging 200 with its photo. Publishing dispatched [run 41188206725](https://github.com/infocustomseda-collab/customseda/actions/runs/41188206725); production succeeded, staging was skipped, and the public product and all three resized WebP files returned 200. See [verification evidence](../../phase-7-verification.md).
+
+**Acceptance status — 2026-10-31:** phase 7 complete. Token setup, sequential push deployments, CMS-triggered production-only deployment, draft privacy, public content/media and responsive image derivatives are verified. Production was backed up before writes. Phase 8 still owns scheduled backups and recovery rehearsal; phase 9 still owns the editor “View site” draft handoff and broader CMS/Free-tier acceptance.
 
 **Exit condition:** GitHub deploys production before staging, and CMS publication rebuilds public pages without exposing drafts.
 
@@ -192,7 +194,7 @@ Completed environment setup:
 
 Remaining acceptance work:
 
-- [ ] Verify draft visibility on staging: an editor arriving through “View site” and a Basic reviewer both see a known draft. Unverified on 2026-10-30, because production had no drafts. This also closes the open check in the [private staging plan](2026-10-30-private-staging.md).
+- [ ] Verify draft visibility on staging: an editor arriving through “View site” and a Basic reviewer both see a known draft. Basic reviewer visibility passed on 2026-10-31 with TOP BRISA (see phase 7 evidence); the editor “View site” handoff remains unverified. This also closes the open check in the [private staging plan](2026-10-30-private-staging.md).
 - [ ] Delete the leftover bucket `customseda-staging-media`, after confirmation.
 - [x] Configure CMS email through the native `cloudflareEmail()` provider and a restricted `send_email` binding. PR #34 merged on 2026-10-30: sender `noreply@customseda.com`, verified administrator and developer recipients, active domain and ready Email Routing. The user confirmed the email setup works on 2026-10-31. This completes email setup; the broader administrator/passkey and CMS acceptance checks below remain separate.
 - [ ] Register the merchant's administrator/passkey on production and verify login, content creation, image upload, relationship editing, and publication with the catalog model.
