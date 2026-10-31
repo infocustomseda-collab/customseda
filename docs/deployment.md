@@ -46,7 +46,7 @@ Everyone else gets `401` with a Basic challenge and a link to production's CMS l
 Later the same day the user redeployed production; its Worker now runs the hourly cron and staging has none. The user also deleted the duplicate Worker `customseda-staging-staging` and the old D1 `customseda-staging`. Cloudflare now holds two Workers (`customseda`, `customseda-staging`) and one D1 (`customseda-production`).
 
 Still open:
-- draft visibility on staging is unverified, because production had no drafts;
+- draft visibility through editor “View site” remains unverified; Basic reviewer draft visibility passed on 2026-10-31 (see [phase 7 evidence](phase-7-verification.md));
 - the bucket `customseda-staging-media` still exists.
 
 Staging checkout uses Stripe **test** keys. Its webhook verifies events and flags address mismatches in Stripe, but never reads or writes `customseda_payment_events` (see [checkout](checkout.md)).
@@ -176,7 +176,7 @@ pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env production
 
 When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
 
-**Deployment acceptance — 2026-10-31:** both repository deployment flags were verified as `true`. [Master deployment 41156877509](https://github.com/infocustomseda-collab/customseda/actions/runs/41156877509) completed verification, production and staging successfully, with staging starting after production completed. This closes the successful GitHub deployment check left open in the administrator workstation setup note above. CMS publish-to-rebuild acceptance remains pending: verify a real approved content and media change, production-only dispatch, and draft privacy after backups are in place.
+**Deployment acceptance — 2026-10-31:** both repository deployment flags were verified as `true`. [Master deployment 41156877509](https://github.com/infocustomseda-collab/customseda/actions/runs/41156877509) completed verification, production and staging successfully, with staging starting after production completed. This closes the successful GitHub deployment check left open in the administrator workstation setup note above. CMS publish-to-rebuild acceptance passed later the same day: TOP BRISA and its new photo were private as a draft, visible on authenticated staging, then published through [production-only rebuild 41188206725](https://github.com/infocustomseda-collab/customseda/actions/runs/41188206725). The public product and its 480/960/1440 px WebP derivatives were verified after deployment. See [phase 7 evidence](phase-7-verification.md).
 
 ## Images and build budget
 
