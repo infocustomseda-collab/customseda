@@ -167,9 +167,11 @@ Complete backups before production write-based acceptance checks. Phase 11 depen
 
 ## 7. GitHub deployment and CMS rebuilds
 
-- [ ] Create `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only), set it on the production Worker and record owner and expiry in `docs/deployment.md`. **Until this exists, a CMS publish does not reach the public pages.**
-- [ ] GitHub deploys, after confirmation: GitHub environments `production` and `staging` with `CLOUDFLARE_API_TOKEN` and `EMDASH_TARGET_FINGERPRINT` (both production's reviewed value), then `PRODUCTION_DEPLOY_ENABLED=true` and `STAGING_DEPLOY_ENABLED=true`. Check that a push to `master` deploys production first, then staging, and that a CMS publish dispatches production only.
+- [x] Create `GITHUB_REBUILD_TOKEN` (fine-grained PAT, Actions read/write on this repo only), set it on the production Worker and record owner and expiry in `docs/deployment.md`. Completed on 2026-10-30 and validated against the GitHub workflow API; owner `infocustomseda-collab`, expiry 2027-01-28 00:00 UTC. See the administrator workstation setup and token renewal record in `docs/deployment.md`.
+- [x] Configure GitHub environments `production` and `staging` with `CLOUDFLARE_API_TOKEN` and `EMDASH_TARGET_FINGERPRINT` (both production's reviewed value), and enable both deployment flags. Verified on 2026-10-31: both flags are `true`; [master deployment 41156877509](https://github.com/infocustomseda-collab/customseda/actions/runs/41156877509) passed verification, then production, then staging. Production completed at 01:48:32 UTC; staging started at 01:48:35 UTC. CMS-triggered production-only dispatch remains part of the acceptance check below.
 - [ ] Verify publish → rebuild on production: a publication and a media change reach the public pages, and drafts stay off them while staging shows them.
+
+**Acceptance status — 2026-10-31:** deployment configuration is complete. The latest 20 workflow runs contain push and pull-request events, with no CMS workflow dispatch evidence. The developer laptop has no authenticated production EmDash CLI session. Finish backups before production write-based acceptance; use an actual merchant-approved content/image update, never disposable production test records. Verify that its CMS publication dispatches production only, wait for the rebuild, compare public content/media with staging, and retain the workflow URL and before/after evidence. Phase 7 remains open until this check passes.
 
 **Exit condition:** GitHub deploys production before staging, and CMS publication rebuilds public pages without exposing drafts.
 

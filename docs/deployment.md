@@ -176,6 +176,8 @@ pnpm exec wrangler secret put GITHUB_REBUILD_TOKEN --env production
 
 When the token expires, publishes still succeed but nothing rebuilds. The Worker logs show `Rebuild request failed … GitHub 401`. Renew the token before its expiry date.
 
+**Deployment acceptance — 2026-10-31:** both repository deployment flags were verified as `true`. [Master deployment 41156877509](https://github.com/infocustomseda-collab/customseda/actions/runs/41156877509) completed verification, production and staging successfully, with staging starting after production completed. This closes the successful GitHub deployment check left open in the administrator workstation setup note above. CMS publish-to-rebuild acceptance remains pending: verify a real approved content and media change, production-only dispatch, and draft privacy after backups are in place.
+
 ## Images and build budget
 
 Each deploy writes WebP derivatives (480, 960 and 1440 px, never upscaled) for every image the snapshot references. The originals come from that environment's R2 through a binding, not over HTTP. The derivatives go to `public/media/` and the snapshot's image values are annotated, so pages get `srcset` and `sizes`. Results are cached by content hash in `.cache/media` (locally and through `actions/cache` in CI).
