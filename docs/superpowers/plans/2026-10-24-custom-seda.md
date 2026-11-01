@@ -187,7 +187,7 @@ Completed environment setup:
 Remaining acceptance work:
 
 - [x] Verify draft visibility on staging: an editor arriving through “View site” and a Basic reviewer both see a known draft. Basic reviewer visibility passed on 2026-10-31 with TOP BRISA (see phase 7 evidence); the user confirmed the editor “View site” handoff on 2026-11-01. This also closes the open check in the [private staging plan](2026-10-30-private-staging.md).
-- [ ] Delete the leftover bucket `customseda-staging-media`, after confirmation.
+- [x] Delete the leftover bucket `customseda-staging-media`, after confirmation. The user deleted it on 2026-11-01 (131 objects, 211 MB, unused); only `customseda-production-media` remains.
 - [x] Configure CMS email through the native `cloudflareEmail()` provider and a restricted `send_email` binding. PR #34 merged on 2026-10-30: sender `noreply@customseda.com`, verified administrator and developer recipients, active domain and ready Email Routing. The user confirmed the email setup works on 2026-10-31. This completes email setup; the broader administrator/passkey and CMS acceptance checks below remain separate.
 - [x] Register the merchant's administrator/passkey on production and verify login, content creation, image upload, relationship editing, and publication with the catalog model. Confirmed by the user on 2026-11-01.
 - [ ] Test a real admin photo upload (~3 MB) through the deployed production Worker. On 2026-10-27, media uploads through the deployed staging Worker exceeded the Workers Free CPU limit, and the import had to run through a local Worker on remote bindings.
