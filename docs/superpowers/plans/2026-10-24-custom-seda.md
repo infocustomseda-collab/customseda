@@ -56,7 +56,7 @@
 - [x] Establish explicit remote core migrations: build, inspect database target, migrate through the CLI, deploy the same artifact, and check status.
 - [x] Use production runtime migration checking and development automatic migrations; serialize remote migration jobs.
 
-**Progress:** Local runtime and infrastructure tooling are implemented. Earlier remote work provisioned a staging Worker and isolated staging/production D1 + R2; both databases have 90 core migrations applied. Remaining remote acceptance and recovery tasks are tracked in phases 8–9. See [verification evidence](../../phase-1-verification.md).
+**Progress:** Local runtime and infrastructure tooling are implemented. Earlier remote work provisioned a staging Worker and isolated staging/production D1 + R2; both databases have 90 core migrations applied. Remaining remote acceptance tasks are tracked in phase 9. See [verification evidence](../../phase-1-verification.md).
 
 **Local exit condition:** The CMS works locally with the Cloudflare runtime, local D1/R2, and persistence after restart. Remote Workers Free feasibility and persistence across deployment are phase 9 launch gates.
 
@@ -93,7 +93,7 @@
 
 **Local import result:** 11 Products, 5 Conjuntos, 7 Pages, 1 Size Guide, 6 color lookups, and 1 homepage/settings record. The 106 source image URLs deduplicate into 95 local media files (210,164,752 bytes), all verified by SHA-256. All catalog and supporting content remains draft except the color lookup labels. A retry retained all 31 content records without duplicates. The importer and source metadata were retired on 2026-10-27; see [content maintenance](../../content-maintenance.md) for current originals and cleanup behavior. Source gaps are preserved for later publication/checkout work; no staging operation occurred.
 
-**Exit condition:** A verified local catalog and content set can be recreated or updated through a repeatable import. Production now holds the catalog and staging reads it; rehearse any final content transfer in phases 8 and 12 using the current EmDash content and originals; do not restore the retired source importer or copy the whole local database.
+**Exit condition:** A verified local catalog and content set can be recreated or updated through a repeatable import. Production now holds the catalog and staging reads it; rehearse any final content transfer in phase 12 using the current EmDash content and originals; do not restore the retired source importer or copy the whole local database.
 
 ## 4. Build the reusable visual system and public pages
 
@@ -159,11 +159,11 @@ The user chose to stay local on 2026-10-25, so all remote work moves to phase 7:
 
 ## Remaining-phase organization
 
-The former phase 7 is split into phases 7–12 below; the former phase 8 cart is now phase 13. Earlier documents referring to the broad “phase 7” mean these pre-launch workstreams. This is a regrouping of existing scope, not authorization for remote actions.
+The former phase 7 is split into phases 7–12 below; the former phase 8 cart is now phase 13. Earlier documents referring to the broad “phase 7” mean these pre-launch workstreams. This is a regrouping of existing scope, not authorization for remote actions. Phase 8 (backups and recovery) was removed at the user's request on 2026-11-01; later phases keep their numbers.
 
 > **Environment model changed on 2026-10-30** ([shared-staging plan](2026-10-30-shared-production-staging.md), [deployment](../../deployment.md)): production is deployed and is the only CMS and the only data (D1 `customseda-production`, its R2 bucket and SESSION KV). Staging is a private server-rendered draft view that reads production's bindings, with Stripe test keys and no CMS, migrations, cron or payment records. Its own D1 is deleted. Remote work below targets production unless it says otherwise; anything that writes or restores data needs a target other than staging, which shares production's data.
 
-Complete backups before production write-based acceptance checks. Phase 11 depends on the merchant’s Stripe account and the remaining phase 5 work; its live purchase/refund check follows the domain switch in phase 12. Complete all other acceptance gates before switching the domain.
+Phase 11 depends on the merchant’s Stripe account and the remaining phase 5 work; its live purchase/refund check follows the domain switch in phase 12. Complete all other acceptance gates before switching the domain.
 
 ## 7. GitHub deployment and CMS rebuilds
 
@@ -171,17 +171,9 @@ Complete backups before production write-based acceptance checks. Phase 11 depen
 - [x] Configure GitHub environments `production` and `staging` with `CLOUDFLARE_API_TOKEN` and `EMDASH_TARGET_FINGERPRINT` (both production's reviewed value), and enable both deployment flags. Verified on 2026-10-31: both flags are `true`; [master deployment 41156877509](https://github.com/infocustomseda-collab/customseda/actions/runs/41156877509) passed verification, then production, then staging. Production completed at 01:48:32 UTC; staging started at 01:48:35 UTC. CMS-triggered production-only dispatch remains part of the acceptance check below.
 - [x] Verify publish → rebuild on production: a publication and a media change reach the public pages, and drafts stay off them while staging shows them. Completed 2026-10-31: TOP BRISA draft was public 404, anonymous staging 401, authenticated staging 200 with its photo. Publishing dispatched [run 41188206725](https://github.com/infocustomseda-collab/customseda/actions/runs/41188206725); production succeeded, staging was skipped, and the public product and all three resized WebP files returned 200. See [verification evidence](../../phase-7-verification.md).
 
-**Acceptance status — 2026-10-31:** phase 7 complete. Token setup, sequential push deployments, CMS-triggered production-only deployment, draft privacy, public content/media and responsive image derivatives are verified. Production was backed up before writes. Phase 8 still owns scheduled backups and recovery rehearsal; phase 9 still owns the editor “View site” draft handoff and broader CMS/Free-tier acceptance.
+**Acceptance status — 2026-10-31:** phase 7 complete. Token setup, sequential push deployments, CMS-triggered production-only deployment, draft privacy, public content/media and responsive image derivatives are verified. Production was backed up before writes. Phase 9 still owns the editor “View site” draft handoff and broader CMS/Free-tier acceptance.
 
 **Exit condition:** GitHub deploys production before staging, and CMS publication rebuilds public pages without exposing drafts.
-
-## 8. Backups and recovery
-
-- [ ] Set up production backups: a scheduled D1 export (or a documented D1 Time Travel restore) plus an R2 media copy, kept outside Cloudflare. On 2026-10-30 the old staging data was deleted without backup and production became the only copy.
-- [ ] Document backup/restore and failed-migration recovery; verify a restore of database, media, keys, and authentication into an agreed recovery target that is neither production nor staging (staging reads production's data).
-- [ ] Rehearse final import, migration, deployment, restore, and rollback on a disposable target (a temporary D1/R2 pair), not on staging, which shares production's data.
-
-**Exit condition:** Database, media, keys and authentication can be restored on a separate target, and deployment rollback has been rehearsed.
 
 ## 9. CMS access, staging and Cloudflare Free acceptance
 
@@ -194,10 +186,10 @@ Completed environment setup:
 
 Remaining acceptance work:
 
-- [ ] Verify draft visibility on staging: an editor arriving through “View site” and a Basic reviewer both see a known draft. Basic reviewer visibility passed on 2026-10-31 with TOP BRISA (see phase 7 evidence); the editor “View site” handoff remains unverified. This also closes the open check in the [private staging plan](2026-10-30-private-staging.md).
-- [ ] Delete the leftover bucket `customseda-staging-media`, after confirmation.
+- [x] Verify draft visibility on staging: an editor arriving through “View site” and a Basic reviewer both see a known draft. Basic reviewer visibility passed on 2026-10-31 with TOP BRISA (see phase 7 evidence); the user confirmed the editor “View site” handoff on 2026-11-01. This also closes the open check in the [private staging plan](2026-10-30-private-staging.md).
+- [x] Delete the leftover bucket `customseda-staging-media`, after confirmation. The user deleted it on 2026-11-01 (131 objects, 211 MB, unused); only `customseda-production-media` remains.
 - [x] Configure CMS email through the native `cloudflareEmail()` provider and a restricted `send_email` binding. PR #34 merged on 2026-10-30: sender `noreply@customseda.com`, verified administrator and developer recipients, active domain and ready Email Routing. The user confirmed the email setup works on 2026-10-31. This completes email setup; the broader administrator/passkey and CMS acceptance checks below remain separate.
-- [ ] Register the merchant's administrator/passkey on production and verify login, content creation, image upload, relationship editing, and publication with the catalog model.
+- [x] Register the merchant's administrator/passkey on production and verify login, content creation, image upload, relationship editing, and publication with the catalog model. Confirmed by the user on 2026-11-01.
 - [ ] Test a real admin photo upload (~3 MB) through the deployed production Worker. On 2026-10-27, media uploads through the deployed staging Worker exceeded the Workers Free CPU limit, and the import had to run through a local Worker on remote bindings.
 - [ ] Verify restart/redeployment against existing remote data and confirm published content and media persist.
 - [ ] Measure complete authenticated create/save/publish requests, realistic gallery uploads, the hourly cron, Worker CPU/errors, bundle/startup constraints, and account quotas; document whether the essential CMS workflows work on Workers Free.

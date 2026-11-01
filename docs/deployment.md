@@ -45,9 +45,7 @@ Everyone else gets `401` with a Basic challenge and a link to production's CMS l
 
 Later the same day the user redeployed production; its Worker now runs the hourly cron and staging has none. The user also deleted the duplicate Worker `customseda-staging-staging` and the old D1 `customseda-staging`. Cloudflare now holds two Workers (`customseda`, `customseda-staging`) and one D1 (`customseda-production`).
 
-Still open:
-- draft visibility through editor “View site” remains unverified; Basic reviewer draft visibility passed on 2026-10-31 (see [phase 7 evidence](phase-7-verification.md));
-- the bucket `customseda-staging-media` still exists.
+Closed on 2026-11-01: the user confirmed draft visibility through editor “View site” (Basic reviewer visibility passed on 2026-10-31, see [phase 7 evidence](phase-7-verification.md)) and deleted the bucket `customseda-staging-media`; R2 now holds only `customseda-production-media`.
 
 Staging checkout uses Stripe **test** keys. Its webhook verifies events and flags address mismatches in Stripe, but never reads or writes `customseda_payment_events` (see [checkout](checkout.md)).
 
