@@ -42,6 +42,9 @@ const navItems = (menu: Menu, path: string): NavItem[] => {
 
 export const settingsOf = (shop: Pick<ShopContent, "site_settings">): ShopEntry | undefined => shop.site_settings[0];
 
+/** The shop name on every page; the site settings entry title is only its CMS label. */
+export const SITE_NAME = "Seda";
+
 export function siteChrome({ settings, primary, footer, path }: { settings: ShopEntry | undefined; primary: Menu; footer: Menu; path: string }): SiteChrome {
 	const data = settings?.data ?? {};
 	const social: SocialLink[] = [];
@@ -51,7 +54,7 @@ export function siteChrome({ settings, primary, footer, path }: { settings: Shop
 	if (tiktok) social.push({ network: "tiktok", href: tiktok });
 	const text = typeof data.announcement_text === "string" ? data.announcement_text.trim() : "";
 	return {
-		siteName: "Seda",
+		siteName: SITE_NAME,
 		nav: navItems(primary, path),
 		footerLinks: navItems(footer, path),
 		social,
