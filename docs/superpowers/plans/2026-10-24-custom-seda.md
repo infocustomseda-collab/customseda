@@ -203,7 +203,7 @@ If essential CMS workflows exceed Workers Free limits, identify the exact blocke
 
 - [x] Launch switch on production: `FOUNDATION_LOCKED=false` without `assets.run_worker_first` (2026-10-30, at the user's request). Staging stays locked permanently.
 
-- [ ] Decide what production's public workers.dev site is before cutover: currently public (`FOUNDATION_LOCKED=false`) and indexable. Choose between keeping it public with `noindex` until the domain switch and restoring the gate; also decide which Stripe keys it uses before launch.
+- [x] Decide what production's public workers.dev site is before cutover. Decided on 2026-11-02: it stays public until `customseda.com` moves (expected within days), then redirects there (phase 12). Its Stripe keys are part of the cutover list.
 - [ ] Browser pass (Chrome DevTools MCP, isolated profile): product transitions and reduced motion; the update banner against a real production deploy. Popup back/forward, PWA install/offline and mobile image LCP were verified in phase 6 on 2026-10-30.
 - [x] Add canonical URLs, sitemap, robots rules, social metadata, and accurate Product/offer structured data. Staging already sends `X-Robots-Tag: noindex, nofollow`. Implemented on 2026-11-02 (`feature/seo-files`): canonical and `og:url` from `EMDASH_SITE_URL`, absolute `og:image`, Twitter card, `og:type=product` and schema.org Product/Offer (MadeToOrder) on product pages; a snapshot-built `/sitemap.xml` with public paths (replaces EmDash's database sitemap, which listed CMS root slugs) and `/llms.txt`. Verified in production after [run 41367353325](https://github.com/infocustomseda-collab/customseda/actions/runs/41367353325): 30 sitemap URLs all 200, production-host canonical/`og:url`/`og:image`, Product/Offer data, duplicate listings canonical to `bikinis`/`braguitas`.
 - [ ] Verify redirects and internal links for products, collections, the old About/blog route, and policy pages. On 2026-11-02 the old blog route and CMS root slugs (`/seda`) were 200 meta-refresh pages; they are now real 301s through `_redirects`, plus `/collections/all` → `/collections/bikinis` (user decision). Verified 301 in production on 2026-11-02. Duplicate listings point their canonical to the public URL (`mujeres` → `bikinis`, `braguita` → `braguitas`). Still open: the old Shopify URL list.
@@ -226,6 +226,11 @@ The buy-now checkout implementation and its remaining account, tax, test-mode an
 - [ ] Schedule a content freeze or final delta import so Shopify changes/orders are not missed during cutover.
 - [ ] Back up the source and target; retain Shopify records needed for historical orders/refunds.
 - [ ] After explicit launch authorization, switch the domain and verify HTTPS, canonical host, admin authentication, images, checkout, and live webhook delivery.
+- [ ] Prepare one cutover PR, merged on switch day only (merged earlier, it would send visitors to the Shopify site):
+  - 301 every `customseda.customseda.workers.dev` request to `https://customseda.com` with the same path. Only the Worker can do this (workers.dev is Cloudflare's domain: no DNS records, no Redirect Rules), and it needs `assets.run_worker_first` so static pages and media reach the Worker; about 1–2k requests/day against the Free 100,000.
+  - Set production `EMDASH_SITE_URL` to `https://customseda.com` (canonical, `og:url`, sitemap and `llms.txt` follow on the next build) and staging's `CMS_ORIGIN` to the new origin.
+  - Production Stripe keys: none or test keys until the switch, live keys with it.
+- [ ] On switch day: the merchant signs in on `customseda.com` and registers a new passkey (passkeys are bound to the origin); point Stripe webhooks at the new domain; add a Cloudflare Redirect Rule `www.customseda.com` → `customseda.com` (the zone is already in the account).
 - [ ] Retire Shopify only after the live site and historical-record access are confirmed.
 - [ ] Deliver an operations guide covering CMS publication/rebuilds, image uploads, Stripe orders, backups, migrations, and recovery.
 
