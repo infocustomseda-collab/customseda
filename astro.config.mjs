@@ -72,6 +72,8 @@ export default defineConfig({
 			storage: r2({ binding: "MEDIA" }),
 			// Never run remote core migrations during an HTTP request.
 			migrations: { runtime: "check", dev: remoteDev ? "check" : "auto" },
+			// Ship only the admin languages the shop uses; other Spanish variants fall back to es-ES.
+			admin: { locales: ["en", "es-ES"] },
 			plugins: [...(emailSettings ? [cloudflareEmail(emailSettings)] : []), {
 				id: "customseda-catalog", version: "0.1.0", format: "native",
 				entrypoint: new URL("./src/lib/cms/plugin.ts", import.meta.url).pathname,
