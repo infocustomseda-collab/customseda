@@ -5,6 +5,7 @@ import Shop from "../../layouts/Shop.astro";
 import { buildCatalog, catalogView, catalogCategories, facetOptions, sizeGroups } from "../../lib/shop/catalog";
 import { loadShopContent, loadShopPage } from "../../lib/shop/page";
 import { collectionPaths } from "../../lib/shop/paths";
+import { collectionCanonicalPath } from "../../lib/shop/seo";
 
 export const prerender = true;
 export async function getStaticPaths() {
@@ -23,7 +24,7 @@ const facets = facetOptions(items, shop);
 const tabs = [{category:'',label:'Todo'},...catalogCategories(listing, shop.categories).map(term=>({category:term.slug,label:String(term.data.title??term.slug)}))];
 ---
 
-<Shop title={listing.title} description={`${listing.title} de Seda`} site={site}>
+<Shop title={listing.title} description={`${listing.title} de Seda`} canonical={collectionCanonicalPath(shop, listing.handle)} site={site}>
 	<div class="catalog-page wrapper region stack" style="--stack-space: var(--space-m-l)">
 		<header class="catalog-page__header stack" style="--stack-space: var(--space-s)">
 			<h1>{listing.title}</h1>

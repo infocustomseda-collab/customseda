@@ -20,12 +20,16 @@ export const pagePaths = (shop: ShopContent): Paths<"slug"> =>
 export const policyPaths = (shop: ShopContent): Paths<"slug"> =>
 	shop.pages.filter((page) => page.slug.endsWith("-policy")).map((page) => ({ params: { slug: page.slug } }));
 
+/** Public path of a CMS page: policies under /policies/, everything else under /pages/. */
+export const publicPagePath = (slug: string): string => (slug.endsWith("-policy") ? `/policies/${slug}` : `/pages/${slug}`);
+
 /** The CMS still links pages at /<slug>; each redirects to its public path. */
 export const rootRedirectPaths = (shop: ShopContent): Paths<"slug", { target: string }> =>
-	shop.pages.map((page) => ({
-		params: { slug: page.slug },
-		props: { target: page.slug.endsWith("-policy") ? `/policies/${page.slug}` : `/pages/${page.slug}` },
-	}));
+	shop.pages.map((page) => ({ params: { slug: page.slug }, props: { target: publicPagePath(page.slug) } }));
+
+/** The same root redirects as an Astro `redirects` map, which the Cloudflare adapter writes to `_redirects` as real 301s. */
+export const rootRedirects = (shop: ShopContent): Record<string, string> =>
+	Object.fromEntries(rootRedirectPaths(shop).map((path) => [`/${path.params.slug}`, path.props!.target]));
 
 /** Redirect target for one root slug, for preview mode where there are no static props. */
 export const rootRedirectTarget = (shop: ShopContent, slug: string): string | null =>

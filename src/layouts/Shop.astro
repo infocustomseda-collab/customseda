@@ -10,6 +10,7 @@ import SiteHeader from "../components/SiteHeader.astro";
 import SitePopup from "../components/SitePopup.astro";
 import UpdateBanner from "../components/UpdateBanner.astro";
 import { registersServiceWorker, siteMode } from "../lib/site-mode";
+import { publicPath } from "../lib/shop/seo";
 import type { PopupView } from "../lib/shop/site";
 import type { NavItem, SocialLink } from "../lib/shop/view";
 import "../styles/index.css";
@@ -26,14 +27,22 @@ export type SiteChrome = {
 interface Props {
 	title: string;
 	description?: string;
+	/** Defaults to this page's path on the configured site; noindex pages have none. */
 	canonical?: string;
 	image?: string;
 	noindex?: boolean;
+	type?: "website" | "product";
+	/** schema.org JSON-LD for this page. */
+	structuredData?: Record<string, unknown>;
 	site: SiteChrome;
 }
 
-const { title, description, canonical, image, noindex, site } = Astro.props;
+const { title, description, image, noindex, type = "website", structuredData, site } = Astro.props;
 const fullTitle = title === site.siteName ? title : `${title} — ${site.siteName}`;
+// Social previews and search engines need absolute URLs.
+const absolute = (path: string) => (Astro.site ? new URL(path, Astro.site).href : path);
+const canonical = noindex ? undefined : absolute(Astro.props.canonical ?? publicPath(Astro.url.pathname));
+const imageUrl = image && absolute(image);
 const mode = siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE);
 ---
 
@@ -49,11 +58,14 @@ const mode = siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE);
 		<meta name="theme-color" content="#fcfcfc" />
 		<link rel="manifest" href="/manifest.webmanifest" />
 		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-		<meta property="og:type" content="website" />
+		<meta property="og:type" content={type} />
 		<meta property="og:site_name" content={site.siteName} />
 		<meta property="og:title" content={fullTitle} />
+		{canonical && <meta property="og:url" content={canonical} />}
 		{description && <meta property="og:description" content={description} />}
-		{image && <meta property="og:image" content={image} />}
+		{imageUrl && <meta property="og:image" content={imageUrl} />}
+		<meta name="twitter:card" content={imageUrl ? "summary_large_image" : "summary"} />
+		{structuredData && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData).replace(/</g, "\\u003c")} />}
 		<Font cssVariable="--font-cormorant" preload={[{ weight: 500, style: "normal" }]} />
 		<Font cssVariable="--font-montserrat" preload />
 		{/* Install before ClientRouter's module: same-catalog history updates its grid. */}

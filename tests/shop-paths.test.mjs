@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {collectionPaths,pagePaths,policyPaths,productPaths,rootRedirectPaths,rootRedirectTarget,rootRedirect} from '../src/lib/shop/paths.ts';
+import {collectionPaths,pagePaths,policyPaths,productPaths,publicPagePath,rootRedirectPaths,rootRedirectTarget,rootRedirect,rootRedirects} from '../src/lib/shop/paths.ts';
 import {withMaterials} from './helpers/shop.mjs';
 
 const entry=(id,data={},refs={})=>({id,slug:id,status:'published',data:{title:id,price_cents:1000,gallery:[],...data},refs});
@@ -48,4 +48,10 @@ test('root redirect keeps the query and is temporary in preview mode',()=>{
 
 test('root redirect is permanent and drops the query in the public build',()=>{
  assert.deepEqual(rootRedirect('/pages/seda','?_preview=abc','public'),{location:'/pages/seda',status:301});
+});
+
+test('public build redirects every CMS root slug to its public path',()=>{
+ assert.equal(publicPagePath('seda'),'/pages/seda');
+ assert.equal(publicPagePath('privacy-policy'),'/policies/privacy-policy');
+ assert.deepEqual(rootRedirects(shop),{'/margarita':'/pages/margarita','/contact':'/pages/contact','/envios-y-devoluciones':'/pages/envios-y-devoluciones','/seda':'/pages/seda','/privacy-policy':'/policies/privacy-policy'});
 });

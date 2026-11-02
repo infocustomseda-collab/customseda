@@ -13,6 +13,7 @@ import { shippingRules } from "../../lib/commerce/shipping";
 import { productDetail } from "../../lib/shop/detail";
 import { loadShopContent, loadShopPage } from "../../lib/shop/page";
 import { productPaths } from "../../lib/shop/paths";
+import { productStructuredData, publicPath } from "../../lib/shop/seo";
 import { plainText } from "../../lib/shop/site";
 import { transitionNames, uniqueTransitions } from "../../lib/shop/view";
 
@@ -32,9 +33,12 @@ const choices = detail.kind === 'bundle'
  : [{name:'talla',legend:'Talla',sizes:item.sizes}];
 const production = settings?.data.production_text;
 const names = item.card.transitionName ? transitionNames(item.card.transitionName) : null;
+const description = plainText(entry.data.description);
+const absolute = (path: string) => new URL(path, Astro.site ?? Astro.url).href;
+const structuredData = productStructuredData(detail, { url: absolute(publicPath(Astro.url.pathname)), images: item.card.images.map((image) => absolute(image.src)), description, brand: site.siteName });
 ---
 
-<Shop title={item.title} description={plainText(entry.data.description)} image={item.card.images[0]?.src} site={site}>
+<Shop title={item.title} description={description} image={item.card.images[0]?.src} type="product" structuredData={structuredData} site={site}>
 	<div class="wrapper region stack" style="--stack-space: var(--section-gap)">
 		<div class="stack" style="--stack-space: var(--space-s)">
 			<nav class="breadcrumb" aria-label="Ruta de navegación">
