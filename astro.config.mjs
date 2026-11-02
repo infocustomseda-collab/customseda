@@ -8,6 +8,7 @@ import emdash from "emdash/astro";
 import { readFileSync } from "node:fs";
 import { routePrerender } from "./src/lib/build/route-mode.ts";
 import { assertBuildEnvironment, SNAPSHOT_PATH } from "./src/lib/shop/snapshot.ts";
+import { rootRedirects } from "./src/lib/shop/paths.ts";
 
 /** @param {string} family @param {number} weight @param {"normal" | "italic"} style */
 const fontsource = (family, weight, style) => ({
@@ -19,11 +20,17 @@ const fontsource = (family, weight, style) => ({
 // SITE_MODE=preview builds the server-rendered staging Worker; anything else is the static public build.
 const isPreview = process.env.SITE_MODE === "preview";
 const remoteDev = !!process.env.CUSTOMSEDA_REMOTE_DEV;
-const emailSettings = cmsEmailSettings(JSON.parse(readFileSync(new URL('./wrangler.jsonc',import.meta.url),'utf8')),
-    process.env.CUSTOMSEDA_REMOTE_DEV ?? process.env.CLOUDFLARE_ENV);
+const wrangler = JSON.parse(readFileSync(new URL('./wrangler.jsonc',import.meta.url),'utf8'));
+const emailSettings = cmsEmailSettings(wrangler, process.env.CUSTOMSEDA_REMOTE_DEV ?? process.env.CLOUDFLARE_ENV);
+// Absolute canonical, Open Graph, sitemap and llms.txt URLs follow the environment's site URL (the real domain after cutover).
+const environment = process.env.CUSTOMSEDA_REMOTE_DEV ?? process.env.CLOUDFLARE_ENV;
+const siteUrl = (environment && wrangler.env?.[environment]?.vars?.EMDASH_SITE_URL) || wrangler.vars.EMDASH_SITE_URL;
 
 export default defineConfig({
 	output: "server",
+	site: siteUrl,
+	// Old Shopify paths; the Cloudflare adapter writes these to `_redirects` as real 301s.
+	redirects: { "/blogs/noticias": "/pages/seda", "/collections/all": "/collections/bikinis" },
 	outDir: isPreview ? "./dist-preview" : "./dist",
 	vite: { define: { "import.meta.env.SITE_MODE": JSON.stringify(isPreview ? "preview" : "public") } },
 	// Public pages prerender to <path>.html so they keep the existing slash-free public paths.
@@ -93,7 +100,9 @@ export default defineConfig({
                     const prerender = routePrerender(isPreview ? "preview" : "public", route.prerender);
                     if (prerender !== undefined) route.prerender = prerender;
                 },
-                "astro:config:setup"({ injectRoute, injectScript }) {
+                "astro:config:setup"({ command, injectRoute, injectScript, updateConfig }) {
+                    // The public build serves CMS root slugs (/seda) as 301s; dev and preview keep src/pages/[slug].astro.
+                    if (command === "build" && !isPreview) updateConfig({ redirects: rootRedirects(JSON.parse(readFileSync(SNAPSHOT_PATH, "utf8")).shop) });
                     if (process.env.CLOUDFLARE_ENV === 'production') injectScript('page', 'import "/src/scripts/admin-preview.ts";');
                     injectRoute({pattern: "/_emdash/api/customseda/preview", entrypoint: "./src/lib/cms/preview-route.ts", prerender: false});
                     injectRoute({
