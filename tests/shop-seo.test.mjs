@@ -15,7 +15,7 @@ const shop=(settings={})=>withMaterials({
  size_guides:[],
  products:[piece('top-luz','cat-top',['S'],{title:'Top [Luz]',price_cents:3000,description:text('Top de\nlycra <suave> & doble capa.')}),piece('top-agotado','cat-top',[])],
  pages:[entry('seda',{title:'Sobre Seda'}),entry('privacy-policy',{title:'Política de privacidad'})],
- site_settings:[entry('settings',{title:'Seda',hero_text:'Bikinis hechos a mano en Gran Canaria.',contact_email:'hola@seda.example',...settings})],popups:[],shipping_rules:[],
+ site_settings:[entry('settings',{title:'Seda — contenido actual',hero_text:'Bikinis hechos a mano en Gran Canaria.',contact_email:'hola@seda.example',...settings})],popups:[],shipping_rules:[],
 });
 const site=new URL('https://seda.example');
 

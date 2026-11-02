@@ -4,11 +4,10 @@ import { buildCatalog, catalogView, catalogViews, type CatalogView } from "./cat
 import type { ShopContent } from "./content.ts";
 import type { ProductDetail } from "./detail.ts";
 import { productPaths, publicPagePath } from "./paths.ts";
-import { plainText, settingsOf } from "./site.ts";
+import { plainText, settingsOf, SITE_NAME } from "./site.ts";
 import { formatPrice } from "./view.ts";
 
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
-export const siteName = (shop: Pick<ShopContent, "site_settings">) => text(settingsOf(shop)?.data.title) || "Seda";
 
 /** Public path of a rendered page: prerendered pages see their output file (`/products/x.html`, `/index.html`). */
 export const publicPath = (pathname: string) => pathname.replace(/(\/index)?\.html$/, "") || "/";
@@ -72,7 +71,7 @@ export function llmsText(shop: ShopContent, site: URL): string {
 	] as const;
 	const email = text(settings.contact_email);
 	return [
-		`# ${line(siteName(shop))}`,
+		`# ${SITE_NAME}`,
 		...(summary ? [`> ${summary}`] : []),
 		...(email ? [`Contacto: ${email}`] : []),
 		...sections.filter(([, links]) => links.length).map(([title, links]) => `## ${title}\n\n${links.join("\n")}`),
