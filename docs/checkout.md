@@ -115,3 +115,7 @@ Known limits:
 - The thank-you page needs JavaScript-free server rendering. It stays a Worker route when public pages are prerendered in phase 6.
 - Astro's `security.checkOrigin` (on by default) rejects cross-site form posts in deployed builds. The local dev server did not reject them. Sessions created by direct posts expire unpaid after 24 h.
 - Pickup without a Stripe shipping option, and the webhook's API-version fields, still need confirmation in the test-mode run.
+
+## Configuration verified — 2026-11-05
+
+Both Workers now hold their own STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET: sandbox keys on customseda-staging, live keys on customseda. Snapshot webhooks subscribe to the four Checkout events above, using API version 2026-10-28.endive. Staging endpoint: we_1UYVYjAFacR5nQyfTt5AkEEc; production: we_1UYVrRAZJSfcbFofm7xd1QBO. Each endpoint accepted a valid signature (200, ignored event) and rejected an invalid one (400), without recording payments. Full sandbox purchase acceptance remains pending. Live payments remain paused pending merchant identity verification. The current logged-in user enabled successful-payment email notifications for the live account. No live purchase or refund was performed. Secret updates deployed Worker versions; the code guard still requires this PR deployment.
