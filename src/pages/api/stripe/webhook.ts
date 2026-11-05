@@ -4,6 +4,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { getDb } from "emdash/runtime";
 import { stripeSecrets } from "../../../lib/commerce/config";
+import { stripeEventMatchesMode, type StripeBindings } from "../../../lib/commerce/stripe-config";
 import { handleStripeEvent, recordsPayments } from "../../../lib/commerce/payments";
 import { siteMode } from "../../../lib/site-mode";
 import { stripeRequest, verifyWebhook } from "../../../lib/commerce/stripe";
@@ -20,6 +21,9 @@ export const POST: APIRoute = async ({ request }) => {
 		event = await verifyWebhook(await request.text(), request.headers.get("stripe-signature") ?? "", webhookSecret);
 	} catch {
 		return new Response("Invalid signature.", { status: 400 });
+	}
+	if (!stripeEventMatchesMode(env as unknown as StripeBindings, event)) {
+		return new Response("Wrong Stripe environment.", { status: 400 });
 	}
 	const records = recordsPayments(siteMode(import.meta.env.DEV, import.meta.env.SITE_MODE), (env as unknown as { CMS_ORIGIN?: string }).CMS_ORIGIN);
 	const result = await handleStripeEvent(records ? await getDb() : null, event, {

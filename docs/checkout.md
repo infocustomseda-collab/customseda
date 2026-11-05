@@ -56,15 +56,21 @@ If no rule is enabled, the page shows only a disabled buy button and the "muy pr
 
 ## Setup
 
-### Stripe account (pending)
+### Stripe account
 
-The merchant creates the account. Use test mode until phase 7.
+The merchant has created the account. On 2026-11-05, the live Dashboard reported payments and payouts paused pending the account holder's identity verification. The merchant must complete that verification directly in Stripe; account creation alone does not establish readiness for real payments. The existing sandbox is named **Entorno de prueba de Custom Seda**.
+
+The merchant requested Stripe test mode on `customseda-staging` and live mode on `customseda`. Each Worker needs its own API key and webhook signing secret. The integration rejects live API keys on preview/local runtimes and test API keys on the public production runtime; signed webhook events must match the runtime's mode too. Restricted keys (`rk_test_…` / `rk_live_…`) are supported alongside secret keys (`sk_test_…` / `sk_live_…`). This guard is a code change and takes effect after its PR is deployed.
 
 1. Create the account, then complete business details, the payout bank account, branding (logo, colors), and statement descriptor.
 2. Settings → Payment methods: choose the methods to offer (cards, Apple Pay, Google Pay; Bizum/PayPal where available).
 3. Settings → Customer emails: enable successful-payment and refund receipts.
-4. Developers → API keys: copy the **test** secret key (`sk_test_…`). A restricted key also works if it can write Checkout Sessions and read and write PaymentIntents. Without PaymentIntent write access the webhook cannot flag addresses, and Stripe keeps retrying those events.
-5. Developers → Webhooks: add an endpoint `https://<host>/api/stripe/webhook` for these events:
+4. Developers → API keys: create a key specifically for each Worker, preferably restricted to **Checkout Sessions: Write** and **Payment Intents: Write** (which includes reading those resources). The staging key must belong to the sandbox; the production key must belong to the live account. Without PaymentIntent write access the webhook cannot flag addresses, and Stripe keeps retrying those events. Never paste key values into chat or commit them.
+5. Workbench → Webhooks: add a **snapshot** endpoint from **Your account**, with a separate signing secret for each environment:
+   - Sandbox → `https://customseda-staging.customseda.workers.dev/api/stripe/webhook`
+   - Live → `https://customseda.customseda.workers.dev/api/stripe/webhook`
+
+   Subscribe to these events:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
    - `checkout.session.async_payment_failed`
@@ -72,9 +78,11 @@ The merchant creates the account. Use test mode until phase 7.
 
    Copy its signing secret (`whsec_…`).
 
-No Stripe API version is pinned. The code reads shipping from `collected_information.shipping_details` and falls back to the older `shipping_details`. Once the account exists, record the account's API version here.
+No Stripe API version is pinned in requests. The live account's version observed on 2026-11-05 is **2026-10-28.endive**. The code reads shipping from `collected_information.shipping_details` and falls back to the older `shipping_details`. Configure snapshot destinations compatibly and verify real sandbox deliveries; mock tests alone do not establish compatibility with the account's API version.
 
 ### Local
+
+The administrator continues to use only `pnpm dev:production`. Its launcher deliberately excludes Stripe and rebuild secrets, so payment acceptance testing belongs on the deployed staging Worker, using the sandbox. The local-only instructions below are for isolated developer infrastructure and must not be used against production data.
 
 Add to `.env`, which is ignored:
 
@@ -94,6 +102,8 @@ Test with Stripe's test cards. Checks: 4242 4242 4242 4242 (paid), 4000 0000 000
 ### Staging and production (phase 7)
 
 Upload `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` per environment with `wrangler secret put --env staging|production`. Staging uses test keys; only production gets live keys. Each environment gets its own webhook endpoint. `customseda.checkout.v1` is applied with the other model versions by the deployment script. The staging gate exempts `/api/stripe/webhook` (Stripe's signature protects it), so the endpoint URL carries no credentials. Staging uses production's catalog with test keys; test payments land only in Stripe test mode, never in the database.
+
+If keys are retained locally, keep them only in the ignored `.env.cloudflare-staging` and `.env.cloudflare-production` files, with permissions 600, and activate their names with empty values in `.env.example` in the same change. Upload only the intended secret names; never send the entire shared inventory to both Workers. Secret updates create and deploy Worker versions immediately. Check the selected account, Worker and mode first, and verify both bindings and signed webhook delivery afterwards. Real purchases and refunds require merchant participation.
 
 ## Records and limits
 

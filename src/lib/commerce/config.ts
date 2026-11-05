@@ -1,5 +1,6 @@
 // Stripe secrets are Worker secret bindings (.env locally, `wrangler secret put` remotely).
 import { env } from "cloudflare:workers";
+import { configuredStripeSecrets, type StripeBindings } from "./stripe-config";
 
-export type StripeSecrets = { STRIPE_SECRET_KEY?: string; STRIPE_WEBHOOK_SECRET?: string };
-export const stripeSecrets = () => env as unknown as StripeSecrets;
+export type { StripeSecrets } from "./stripe-config";
+export const stripeSecrets = () => configuredStripeSecrets(env as unknown as StripeBindings);
