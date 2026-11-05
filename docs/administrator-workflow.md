@@ -4,6 +4,8 @@ El administrador puede pedir cambios en lenguaje normal y señalar elementos en 
 
 ## Abrir y revisar el sitio
 
+Nada más abrir el proyecto, Codex ejecuta `pnpm env:check`. El script comprueba que todas las claves activas de `.env.example` aparecen en al menos uno de los archivos `.env`, `.env.cloudflare-production` o `.env.cloudflare-staging`, y avisa también si algún archivo tiene claves que faltan en el ejemplo. Solo muestra nombres, nunca valores; comprueba su presencia, no su validez. Las copias de seguridad y las variables de la terminal no cuentan. Si falta una clave, hay que recibir su valor por un canal privado y guardarlo en el archivo correspondiente. No añadir valores vacíos para ocultar el aviso. Cada clave nueva debe añadirse también al ejemplo, sin su valor real; las opcionales comentadas se activan cuando se configuran.
+
 Abre esta carpeta en Codex y pide «Abre el sitio para revisar un cambio». El comando de arranque es siempre:
 
 ```sh
@@ -20,7 +22,7 @@ Los cambios de código se ven localmente antes de publicarlos. Los cambios de co
 
 ## Pedir un cambio
 
-Codex distingue tres casos de código: una función nueva, una corrección y un cambio de texto o fotos definidos en código. Antes de empezar comprueba que parte de la última versión publicada en GitHub y conserva cualquier trabajo pendiente. Cada cambio se prepara por separado y se presenta para revisión.
+Codex distingue tres casos de código: una función nueva, una corrección y un cambio de texto o fotos definidos en código. Al empezar cada tarea consulta GitHub (`git fetch origin master`) y comprueba la sincronización con el `master` actualizado, conservando cualquier trabajo pendiente. Cada cambio se prepara por separado y se presenta para revisión.
 
 Si el dato está en Emdash, Codex indica «Debes realizar este cambio en el CMS» y señala el tipo de contenido y el campo. Productos, textos e imágenes administrados por el CMS no deben copiarse a los archivos del sitio. Las plantillas, componentes y estilos siguen gestionándose en código.
 
