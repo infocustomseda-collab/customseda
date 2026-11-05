@@ -55,11 +55,13 @@ All secret files are ignored by git, have owner-only permissions (`chmod 600`), 
 
 | File | Holds | Used by |
 | --- | --- | --- |
-| `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | `pnpm dev`. Wrangler reads `.env` as the local Worker's secrets; copy `.env.example`. |
+| `.env` | Local Worker secrets (`EMDASH_ENCRYPTION_KEY`, optional Stripe test keys) | Isolated developer infrastructure only. Wrangler reads `.env` as the local Worker's secrets; use only the applicable keys from `.env.example`. The administrator uses `pnpm dev:production`. |
 | `.env.cloudflare-production` | Production's `EMDASH_ENCRYPTION_KEY` | Production, and the same key on staging (it reads production's encrypted settings and sessions). Not loaded automatically. |
 | `.env.cloudflare-staging` | Production's `EMDASH_ENCRYPTION_KEY` (staging and `pnpm dev:staging` read production's data) and `FOUNDATION_ACCESS_TOKEN` (the shared reviewer credential) | Staging Worker and `pnpm dev:staging`. |
 
 Never put a Cloudflare API token in `.env` or the `.env.cloudflare-*` files: those become Worker secrets, and the running site never needs an account token. Never create `.env.production`, `.env.development`, `.env.local` or `.env.staging`. Vite loads the first three into every `astro build`/`astro dev`, and Wrangler loads `.env.<environment>` into builds of that environment.
+
+`.env.example` is the shared inventory, not a file to upload wholesale. Add every new environment-file key there with an empty value, activating any previously commented entry. Run `pnpm env:check` first when opening the local project; remote dev also enforces it before startup. It checks key presence across the three supported files and detects undocumented keys, without printing or validating values. Backups and shell variables do not satisfy it. CI does not require local secret files; this check is for the local workstation.
 
 Manual deploys authenticate like fdag: run `pnpm exec wrangler login` once, then `pnpm deploy:<env>`. EmDash's core migrations run from the deploy, never inside the Worker, so they can't exceed Workers Free CPU limits (the problem fdag hit). `emdash migrate` needs a bearer token, so the runner hands it the token of your Wrangler login (`wrangler auth token`). In CI, `CLOUDFLARE_API_TOKEN` comes from the GitHub environment secret, and Wrangler uses it too. Use a custom token on this account with the "Edit Cloudflare Workers" template plus Account → D1 → Edit (and Workers R2 Storage → Edit if missing). Keep one token for manual use, stored in a password manager, and a second one as the GitHub environment secret, so either can be revoked alone.
 

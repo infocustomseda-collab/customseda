@@ -4,6 +4,7 @@ import {pathToFileURL} from 'node:url';
 import {parseEnv} from 'node:util';
 import {spawn} from 'node:child_process';
 import {cmsEmailSettings,cmsEmailBinding} from '../config/cms-email.mjs';
+import {assertEnvironment} from '../config/check-env.mjs';
 
 export function remoteDevConfig(config,environment,root) {
  if(!['staging','production'].includes(environment))throw new Error('Choose staging or production explicitly.');
@@ -37,6 +38,7 @@ async function main() {
  const [environment,...extra]=process.argv.slice(2);
  if(extra.length)throw new Error('Usage: pnpm dev:staging or pnpm dev:production (stop the other dev server first).');
  const root=process.cwd();
+ await assertEnvironment(root);
  const source=JSON.parse(await readFile(resolve(root,'wrangler.jsonc'),'utf8'));
  const config=remoteDevConfig(source,environment,root);
  const secretPath=resolve(root,`.env.cloudflare-${environment}`);

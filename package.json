@@ -8,6 +8,7 @@
     "seed": "seed/foundation.json"
   },
   "scripts": {
+    "env:check": "node scripts/config/check-env.mjs",
     "dev": "pnpm images:local && astro dev --host 127.0.0.1",
     "dev:staging": "node scripts/dev/remote.mjs staging",
     "dev:production": "node scripts/dev/remote.mjs production",
