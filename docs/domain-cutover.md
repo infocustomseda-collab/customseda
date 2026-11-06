@@ -18,7 +18,7 @@ No integrar esta rama hasta coordinar DNS, Stripe y el despliegue. La redirecci�
 
 El cambio anterior de Checkout Studio permanece separado en `fix/stripe-checkout-studio`; no forma parte de esta rama.
 
-## Comprobaciones posteriores y bloqueo actual
+## Comprobaciones posteriores y evolución
 
 - El administrador ha iniciado sesión en el panel de Cloudflare. Se ha exportado el DNS actual a `.emdash/backups/domain-2026-11-06/dns-before.txt` (ignorado). Hay 12 registros; además del A de Shopify existe un AAAA raíz `2620:127:f00f:6::`, también sin proxy. La copia registra correo y subdominios para preservarlos.
 - D1 rechaza la exportación completa por sus tablas virtuales FTS. Se han exportado las 83 tablas ordinarias a `production-tables-before.sql` en la misma carpeta privada; se excluyen índices virtuales y sus tablas derivadas, que requieren reconstrucción al restaurar. No se ha realizado ninguna restauración.
@@ -30,6 +30,14 @@ El cambio anterior de Checkout Studio permanece separado en `fix/stripe-checkout
 ## Orden del cambio
 
 La corrección del bloqueo de tallas se ha integrado en [PR #51](https://github.com/infocustomseda-collab/customseda/pull/51). La migración conserva las identidades referenciadas y el historial sin reescribirlo, y permite que termine la publicación. La rama del dominio incorpora esa corrección; las comprobaciones de la regresión incluyen restaurar la versión antigua como borrador.
+
+### Conexión aplicada tras la confirmación de los dos registros DNS
+
+El administrador confirmó específicamente la sustitución del A y AAAA de Shopify. Ambos se han retirado y `customseda.com` se ha asociado al Worker `customseda`. HTTPS devuelve 200 con la nueva tienda. `www` conserva su registro CNAME, ahora dirigido a `customseda.com` con proxy: la regla nativa devuelve 301 tanto desde HTTP como desde HTTPS y conserva ruta y consulta. No se han modificado los registros MX/TXT ni `account.customseda.com`.
+
+El endpoint de Stripe `we_1UYVrRAZJSfcbFofm7xd1QBO` se ha actualizado desde el Dashboard a `https://customseda.com/api/stripe/webhook`, conservando sus cuatro eventos, versión y secreto. El plugin entraba en un bucle de autenticación al intentar escribir; el Dashboard confirmó el destino actualizado. No se ha enviado un evento de prueba a producción: la revisión automática rechazó ese POST por la prohibición del proyecto de realizar escrituras de prueba allí. Queda pendiente verificar una entrega real autorizada; una lectura GET no valida el procesamiento de eventos POST.
+
+La integración de esta PR inicia la publicación de los nuevos orígenes y la redirección de Workers. No dar por completada esa publicación hasta una comprobación posterior. Shopify sigue contratado y accesible para el historial; no se ha transferido la renovación del dominio. El administrador debe entrar por correo al CMS del nuevo dominio y registrar una passkey para ese origen.
 
 1. Completar la compra de prueba en staging y confirmar su pago y entrega del webhook en el sandbox, sin registrar datos de prueba en la base de datos de producción. Revisar envío, tallas y devolución a la tienda. La sesión abierta durante la preparación muestra `Entorno de prueba` y usa `cs_test_`; abrirla no equivale a completar el pago.
 2. Con el acceso a Cloudflare recuperado, exportar el DNS actual a un archivo ignorado y guardar una copia de la base de datos y del catálogo de origen. Anotar la revisión de Git y la versión desplegada. Conservar los pedidos históricos de Shopify y confirmar que siguen accesibles. Evitar cambios editoriales y coordinar los pedidos que lleguen durante el traslado.
