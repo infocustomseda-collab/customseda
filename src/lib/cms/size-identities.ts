@@ -31,8 +31,9 @@ export async function applySizeIdentities(db:CatalogDb) {
   candidates.push({...size,originalSlug:slug,originalGroup:original.translationGroup??original.id});
  }
 
- // Preflight every candidate before any write. Even historical reference snapshots
- // must remain restorable; a referenced duplicate requires an explicit merge instead.
+ // Preflight every candidate before any write. Keep referenced identities intact,
+ // including historical snapshots, rather than blocking unrelated deployments.
+ const referenced=new Set<string>();
  if(candidates.length) {
   const ids=[...new Set(candidates.flatMap(size=>[size.id,size.translationGroup??size.id]))];
   // Seeds can also have independent localized category terms. Compare their
@@ -45,16 +46,15 @@ export async function applySizeIdentities(db:CatalogDb) {
   for(const size of candidates) {
    if(assigned(size.originalGroup)!==assigned(size.translationGroup??size.id)) throw new Error(`Size ${size.originalSlug}: category assignments differ; review before cleanup.`);
   }
-  const references=await sql`SELECT 1 FROM _emdash_content_references
-   WHERE child_group IN (${sql.join(ids)}) OR parent_group IN (${sql.join(ids)}) LIMIT 1`.execute(db);
-  const revisions=await sql`SELECT 1 FROM revisions r, json_tree(r.data) j
+  const references=await sql<{id:string}>`SELECT DISTINCT child_group AS id FROM _emdash_content_references
+   WHERE child_group IN (${sql.join(ids)}) UNION SELECT DISTINCT parent_group AS id FROM _emdash_content_references
+   WHERE parent_group IN (${sql.join(ids)})`.execute(db);
+  const revisions=await sql<{id:string}>`SELECT DISTINCT j.value AS id FROM revisions r, json_tree(r.data) j
    WHERE r.entry_id NOT IN (${sql.join(candidates.map(size=>size.id))})
-    AND j.type='text' AND j.value IN (${sql.join(ids)}) LIMIT 1`.execute(db);
-  const menus=await sql`SELECT 1 FROM _emdash_menu_items
-   WHERE reference_collection='sizes' AND reference_id IN (${sql.join(ids)}) LIMIT 1`.execute(db);
-  if(references.rows.length || revisions.rows.length || menus.rows.length) {
-   throw new Error('English size copies are referenced; review and merge their selections before cleanup.');
-  }
+    AND j.type='text' AND j.value IN (${sql.join(ids)})`.execute(db);
+  const menus=await sql<{id:string}>`SELECT DISTINCT reference_id AS id FROM _emdash_menu_items
+   WHERE reference_collection='sizes' AND reference_id IN (${sql.join(ids)})`.execute(db);
+  for(const row of [...references.rows,...revisions.rows,...menus.rows]) referenced.add(row.id);
  }
  // Changing a field to shared requires a manual content migration in EmDash.
  // Existing genuine translations must already agree before changing their metadata.
@@ -67,7 +67,9 @@ export async function applySizeIdentities(db:CatalogDb) {
  }
  const fields=await Promise.all(['title','label','sort_order'].map(field=>schema.getField('sizes',field)));
  if(fields.some(field=>!field)) throw new Error('Size title, label or order field is missing.');
- for(const size of candidates) {
+ const retained=candidates.filter(size=>referenced.has(size.id)||referenced.has(size.translationGroup??size.id));
+ const unused=candidates.filter(size=>!retained.includes(size));
+ for(const size of unused) {
   // Trash reserves slugs in EmDash. Free the English slug for a real translation.
   const archived=retiredSlug(size.originalSlug,size.id);
   if(size.slug!==archived) await repo.update('sizes',size.id,{slug:archived});
@@ -75,6 +77,7 @@ export async function applySizeIdentities(db:CatalogDb) {
  }
  await db.updateTable('_emdash_fields').set({translatable:0}).where('id','in',fields.slice(1).map(field=>field!.id)).execute();
  await schema.updateField('sizes','title',{translatable:true});
- await options.set(sizeIdentitiesVersion,{appliedAt:new Date().toISOString(),trashed:candidates.map(size=>({id:size.id,originalSlug:size.originalSlug}))});
- return {version:sizeIdentitiesVersion,applied:true,trashed:candidates.length};
+ const identity=(size:{id:string;originalSlug:string})=>({id:size.id,originalSlug:size.originalSlug});
+ await options.set(sizeIdentitiesVersion,{appliedAt:new Date().toISOString(),trashed:unused.map(identity),retained:retained.map(identity)});
+ return {version:sizeIdentitiesVersion,applied:true,trashed:unused.length,retained:retained.length};
 }
