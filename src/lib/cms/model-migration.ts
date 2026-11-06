@@ -73,8 +73,21 @@ export async function retireProductAvailability(db:CatalogDb) {
  return {version:productAvailabilityVersion,applied:true};
 }
 
+// Editor layout only: preserve the existing product fields and place the gallery last.
+export const productGalleryOrderVersion='customseda.product-gallery-order.v1';
+export async function applyProductGalleryOrder(db:CatalogDb) {
+ const options=new OptionsRepository(db);
+ if(await options.get(productGalleryOrderVersion)) return {version:productGalleryOrderVersion,applied:false};
+ const registry=new SchemaRegistry(db);
+ const collection=await registry.getCollectionWithFields('products');
+ if(!collection?.fields.some(field=>field.slug==='gallery')) throw new Error('Product gallery field is missing.');
+ await registry.reorderFields('products',[...collection.fields.filter(field=>field.slug!=='gallery').map(field=>field.slug),'gallery']);
+ await options.set(productGalleryOrderVersion,{appliedAt:new Date().toISOString()});
+ return {version:productGalleryOrderVersion,applied:true};
+}
+
 /** Every application model version, in order. Deployment and the local route call this. */
-export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion];
+export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion,productGalleryOrderVersion];
 export async function applyModelMigrations(db:CatalogDb) {
- return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db),await applyMaterials(db),await applyProductMaterials(db),await applyMaterialSizeOrder(db),await retireProductAvailability(db)];
+ return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db),await applyMaterials(db),await applyProductMaterials(db),await applyMaterialSizeOrder(db),await retireProductAvailability(db),await applyProductGalleryOrder(db)];
 }
