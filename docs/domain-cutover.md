@@ -29,6 +29,8 @@ El cambio anterior de Checkout Studio permanece separado en `fix/stripe-checkout
 
 ## Orden del cambio
 
+La corrección del bloqueo de tallas se ha integrado en [PR #51](https://github.com/infocustomseda-collab/customseda/pull/51). La migración conserva las identidades referenciadas y el historial sin reescribirlo, y permite que termine la publicación. La rama del dominio incorpora esa corrección; las comprobaciones de la regresión incluyen restaurar la versión antigua como borrador.
+
 1. Completar la compra de prueba en staging y confirmar su pago y entrega del webhook en el sandbox, sin registrar datos de prueba en la base de datos de producción. Revisar envío, tallas y devolución a la tienda. La sesión abierta durante la preparación muestra `Entorno de prueba` y usa `cs_test_`; abrirla no equivale a completar el pago.
 2. Con el acceso a Cloudflare recuperado, exportar el DNS actual a un archivo ignorado y guardar una copia de la base de datos y del catálogo de origen. Anotar la revisión de Git y la versión desplegada. Conservar los pedidos históricos de Shopify y confirmar que siguen accesibles. Evitar cambios editoriales y coordinar los pedidos que lleguen durante el traslado.
 3. Revisar las comprobaciones de la PR y conectar el dominio raíz al Worker `customseda`, cuenta `9e52d6bc1e5b9be5cd11be4c1030485a`. El registro A actual es de Shopify: revisar la sustitución prevista en Cloudflare. No modificar MX, TXT, correo ni `account.customseda.com`.
