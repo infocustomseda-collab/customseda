@@ -63,6 +63,8 @@ The local Spanish catalog contains 16 Products, including 5 bundles. The 2026-10
 
 ## Per-category sizes
 
+The size-identity cleanup preserves English seed copies that are still referenced by saved selections, drafts, menus or historical revisions. Only unused, unedited duplicates move to native Trash. The migration records both retained and trashed identities in its version option, so references do not prevent unrelated deployments and retries do not alter editorial history. Referenced copies remain available under their original IDs and slugs; a later explicit merge can retire them after reviewing those references. Edited copies and differing category assignments still stop cleanup before writes.
+
 `customseda.size-categories.v1` (`src/lib/cms/size-categories.ts`) adds the Etiqueta field and attaches the native category taxonomy to Tallas. On a database that still has the shared XS–XL records, it converts them in place to the Braguita sizes (same IDs, moved to the configured locale), creates the Top sizes from the seed, and repoints Top products' live and pending-draft size selections to them. It then drops the old size code field (the native slug identifies sizes). Pending size drafts stop it before any change. Fresh databases receive categorized sizes from `seed/seed.json` and the migration only records its version. Applied locally on 2026-10-27 (pre-migration backup in `backups/pre-size-categories-2026-10-27/`).
 
 `customseda.collection-pages.v1` makes Colecciones non-routable (no URL pattern, scheduling or SEO). `/collections/<collection>` listings such as `/collections/margarita` no longer exist; `/collections/<handle>` serves only Bikinis and category listings. The Margarita story stays at `/pages/margarita`.

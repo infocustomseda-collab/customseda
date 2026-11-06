@@ -67,7 +67,7 @@ test('cleanup resumes an interrupted rename without leaving an active duplicate'
  assert.ok((await repo.findByIdIncludingTrashed('sizes',duplicate.id)).deletedAt);
 });
 
-for(const staged of [false,true]) test(`cleanup refuses duplicates referenced by ${staged?'a pending draft':'a saved selection'}`,async t=>{
+for(const staged of [false,true]) test(`cleanup keeps duplicates referenced by ${staged?'a pending draft':'a saved selection'} and retires only unused copies`,async t=>{
  const {db,repo,duplicates}=await oldDuplicates(t);
  const material=await handleContentCreate(db,'materials',{locale:'es',slug:'referencing-material',data:{title:'Referenced'},references:staged?{}:{sizes:[duplicates[0].id]}});
  assert.equal(material.success,true);
@@ -75,8 +75,42 @@ for(const staged of [false,true]) test(`cleanup refuses duplicates referenced by
   const revision=await new RevisionRepository(db).create({collection:'materials',entryId:material.data.item.id,data:{title:'Pending',_references:{sizes:[duplicates[0].id]}}});
   await repo.setDraftRevision('materials',material.data.item.id,revision.id);
  }
- await assert.rejects(()=>applySizeIdentities(db),/are referenced/);
- assert.equal((await repo.findMany('sizes',{limit:100})).items.length,18);
+ const before=await repo.findById('sizes',duplicates[0].id);
+ const references=await db.selectFrom('_emdash_content_references').selectAll().execute();
+ const revisions=await db.selectFrom('revisions').selectAll().where('entry_id','=',material.data.item.id).execute();
+ const result=await applySizeIdentities(db);
+ assert.equal(result.retained,1);
+ assert.equal(result.trashed,8);
+ assert.equal((await repo.findMany('sizes',{limit:100})).items.length,10);
+ assert.deepEqual(await repo.findById('sizes',duplicates[0].id),before);
+ assert.deepEqual(await db.selectFrom('_emdash_content_references').selectAll().execute(),references);
+ assert.deepEqual(await db.selectFrom('revisions').selectAll().where('entry_id','=',material.data.item.id).execute(),revisions);
+});
+
+test('historical material selections keep every referenced size and the original revision unchanged across migration retries',async t=>{
+ const {db,repo,originals,duplicates}=await oldDuplicates(t);
+ const material=await handleContentCreate(db,'materials',{locale:'es',slug:'historical-material',data:{title:'Historical'},references:{sizes:[originals[0].id]}});
+ assert.equal(material.success,true);
+ const saved={title:'Earlier material',_references:{sizes:[...originals,...duplicates].map(size=>size.id)}};
+ const revision=await new RevisionRepository(db).create({collection:'materials',entryId:material.data.item.id,data:saved});
+ const before=await db.selectFrom('revisions').selectAll().where('id','=',revision.id).executeTakeFirstOrThrow();
+ const references=await db.selectFrom('_emdash_content_references').selectAll().execute();
+ const result=await applySizeIdentities(db);
+ assert.equal(result.retained,9);
+ assert.equal(result.trashed,0);
+ assert.deepEqual(await db.selectFrom('revisions').selectAll().where('id','=',revision.id).executeTakeFirstOrThrow(),before);
+ for(const size of [...originals,...duplicates]) assert.deepEqual(await repo.findById('sizes',size.id),size);
+ assert.deepEqual(await db.selectFrom('_emdash_content_references').selectAll().execute(),references);
+ const marker=await new OptionsRepository(db).get(sizeIdentitiesVersion);
+ assert.equal(marker.retained.length,9);
+ assert.deepEqual(marker.trashed,[]);
+ assert.equal((await applySizeIdentities(db)).applied,false);
+ assert.deepEqual(await new OptionsRepository(db).get(sizeIdentitiesVersion),marker);
+ // EmDash can still restore that unchanged historical selection into a new draft.
+ const restored=await repo.restoreRevision('materials',material.data.item.id,saved,'test-editor');
+ const draft=await db.selectFrom('revisions').select('data').where('id','=',restored.revisionId).executeTakeFirstOrThrow();
+ assert.deepEqual(JSON.parse(draft.data)._references,saved._references);
+ for(const id of saved._references.sizes) assert.ok(await repo.findById('sizes',id));
 });
 
 test('genuine translations keep one size identity with a translated title and shared size values',async t=>{
