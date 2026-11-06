@@ -9,11 +9,12 @@ import {runMigrations} from 'emdash/db';
 import {ContentRepository,OptionsRepository,SchemaRegistry} from 'emdash';
 import {CatalogD1Dialect} from '../../scripts/cms/d1-dialect.mjs';
 import {remoteCatalogModel} from '../../scripts/cms/remote-model.mjs';
-import {modelVersion,storefrontVersion,collectionPagesVersion,colorSlugsVersion,productAvailabilityVersion} from '../../src/lib/cms/model-migration.ts';
+import {modelVersion,storefrontVersion,collectionPagesVersion,colorSlugsVersion,productAvailabilityVersion,productGalleryOrderVersion,materialEditorOrderVersion} from '../../src/lib/cms/model-migration.ts';
 import {cleanupVersion} from '../../src/lib/cms/retire-import.ts';
 import {sizeCategoriesVersion} from '../../src/lib/cms/size-categories.ts';
 import {materialSizeOrderVersion,materialsVersion} from '../../src/lib/cms/materials.ts';
 import {productMaterialsVersion} from '../../src/lib/cms/product-materials.ts';
+import {sizeIdentitiesVersion} from '../../src/lib/cms/size-identities.ts';
 import {checkoutVersion} from '../../src/lib/commerce/payments.ts';
 
 test('remote-model orchestration applies and retries against isolated local D1, never a remote binding',async t=>{
@@ -37,12 +38,23 @@ test('remote-model orchestration applies and retries against isolated local D1, 
  await assert.rejects(()=>remoteCatalogModel(target,{check:true,proxyFactory}),/has not been applied/);
  const first=await remoteCatalogModel(target,{proxyFactory});assert.equal(first.applied,true);
  const second=await remoteCatalogModel(target,{proxyFactory});assert.equal(second.applied,false);
- const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,productAvailabilityVersion);
- assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion]);
+ const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,materialEditorOrderVersion);
+ assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion,productGalleryOrderVersion,sizeIdentitiesVersion,materialEditorOrderVersion]);
  assert.equal((await new SchemaRegistry(db).getField('site_settings','highlights')).type,'repeater');
+ assert.equal((await new SchemaRegistry(db).getCollectionWithFields('products')).fields.at(-1).slug,'gallery');
  assert.equal((await db.selectFrom('taxonomies').selectAll().where('name','=','category').execute()).length,6);
  const options=new OptionsRepository(db);
  assert.equal(await options.get('customseda.catalog.migration-lock'),null);
+ // Exercise the production cleanup shape on D1, including JSON reference checks and recoverable trash.
+ const repo=new ContentRepository(db);
+ const spanish=(await repo.findMany('sizes',{limit:1,where:{locale:'es'}})).items[0];
+ const duplicate=await repo.create({type:'sizes',locale:'en',slug:spanish.slug,data:spanish.data});
+ const terms=await db.selectFrom('content_taxonomies').select('taxonomy_id').where('collection','=','sizes').where('entry_id','=',spanish.translationGroup??spanish.id).execute();
+ for(const term of terms) await db.insertInto('content_taxonomies').values({collection:'sizes',entry_id:duplicate.translationGroup??duplicate.id,taxonomy_id:term.taxonomy_id}).execute();
+ await options.delete(sizeIdentitiesVersion);
+ assert.equal((await remoteCatalogModel(target,{proxyFactory})).applied,true);
+ assert.ok((await repo.findByIdIncludingTrashed('sizes',duplicate.id)).deletedAt);
+ assert.equal((await repo.findMany('sizes',{limit:100})).items.length,9);
  await options.set('customseda.catalog.migration-lock',{owner:'other',startedAt:'test'});
  await assert.rejects(()=>remoteCatalogModel(target,{proxyFactory}),/lock is held/);
  assert.equal((await options.get('customseda.catalog.migration-lock')).owner,'other');

@@ -9,6 +9,7 @@ import {applySizeCategories,sizeCategoriesVersion} from './size-categories.ts';
 import {dropField} from './drop-field.ts';
 import {applyMaterials,applyMaterialSizeOrder,materialSizeOrderVersion,materialsVersion} from './materials.ts';
 import {applyProductMaterials,productMaterialsVersion} from './product-materials.ts';
+import {applySizeIdentities,sizeIdentitiesVersion} from './size-identities.ts';
 
 export const modelVersion='customseda.catalog.v1';
 export async function applyCatalogModel(db:CatalogDb) {
@@ -22,7 +23,7 @@ export async function applyCatalogModel(db:CatalogDb) {
  const {content,...schema}=seed;
  await applySeed(db,{...schema,collections:schema.collections?.map(collection=>({...collection,fields:[]}))},{includeContent:false,onConflict:'skip'});
  const result=await applySeed(db,schema,{includeContent:false,onConflict:'update'});
- const lookups=await applySeed(db,{version:'1',content,taxonomies:seed.taxonomies},{includeContent:true,onConflict:'skip'});
+ const lookups=await applySeed(db,{version:'1',defaultLocale:seed.defaultLocale,content,taxonomies:seed.taxonomies},{includeContent:true,onConflict:'skip'});
  const registry=new SchemaRegistry(db);
  if(await registry.getCollection('posts')) await registry.updateCollection('posts',{hidden:true});
  await options.set(modelVersion,{appliedAt:new Date().toISOString()});
@@ -73,8 +74,35 @@ export async function retireProductAvailability(db:CatalogDb) {
  return {version:productAvailabilityVersion,applied:true};
 }
 
+// Editor layout only: preserve the existing product fields and place the gallery last.
+export const productGalleryOrderVersion='customseda.product-gallery-order.v1';
+export async function applyProductGalleryOrder(db:CatalogDb) {
+ const options=new OptionsRepository(db);
+ if(await options.get(productGalleryOrderVersion)) return {version:productGalleryOrderVersion,applied:false};
+ const registry=new SchemaRegistry(db);
+ const collection=await registry.getCollectionWithFields('products');
+ if(!collection?.fields.some(field=>field.slug==='gallery')) throw new Error('Product gallery field is missing.');
+ await registry.reorderFields('products',[...collection.fields.filter(field=>field.slug!=='gallery').map(field=>field.slug),'gallery']);
+ await options.set(productGalleryOrderVersion,{appliedAt:new Date().toISOString()});
+ return {version:productGalleryOrderVersion,applied:true};
+}
+
+export const materialEditorOrderVersion='customseda.material-editor-order.v1';
+export async function applyMaterialEditorOrder(db:CatalogDb) {
+ const options=new OptionsRepository(db);
+ if(await options.get(materialEditorOrderVersion)) return {version:materialEditorOrderVersion,applied:false};
+ const registry=new SchemaRegistry(db);
+ const fields=(await registry.getCollectionWithFields('materials'))?.fields.map(field=>field.slug);
+ if(!fields?.includes('color') || !fields.includes('special_edition')) throw new Error('Material Color or Special edition field is missing.');
+ const order=fields.filter(field=>field!=='special_edition');
+ order.splice(order.indexOf('color')+1,0,'special_edition');
+ await registry.reorderFields('materials',order);
+ await options.set(materialEditorOrderVersion,{appliedAt:new Date().toISOString()});
+ return {version:materialEditorOrderVersion,applied:true};
+}
+
 /** Every application model version, in order. Deployment and the local route call this. */
-export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion];
+export const modelVersions=[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion,productGalleryOrderVersion,sizeIdentitiesVersion,materialEditorOrderVersion];
 export async function applyModelMigrations(db:CatalogDb) {
- return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db),await applyMaterials(db),await applyProductMaterials(db),await applyMaterialSizeOrder(db),await retireProductAvailability(db)];
+ return [await applyCatalogModel(db),await applyStorefrontModel(db),await applyCheckoutModel(db),await retireImport(db),await applySizeCategories(db),await retireCollectionPages(db),await retireColorCodes(db),await applyMaterials(db),await applyProductMaterials(db),await applyMaterialSizeOrder(db),await retireProductAvailability(db),await applyProductGalleryOrder(db),await applySizeIdentities(db),await applyMaterialEditorOrder(db)];
 }

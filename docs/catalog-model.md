@@ -28,6 +28,20 @@ Prices are integer **EUR cents**: enter `5900` for €59. Products have no avail
 
 The gallery uses EmDash's native reorderable repeater. Each row has a media image, required alternative text, and optional horizontal/vertical focal coordinates from 0 to 1. The first row is the main image. Uploads must be ready before publication; at least one image is required to publish. Drafts can have an empty gallery.
 
+The product editor places the gallery after all other product fields. The `customseda.product-gallery-order.v1` schema migration changes only field order, preserving product content and the order of other fields. It does not change other collection editors or the public product layout.
+
+### Size identity and translations
+
+A size is one logical entry identified by its native translation group. EmDash stores a row for each actual translation in that group. The size title is translatable; the shopper-facing size code (`XS`–`XL`) and numeric order are non-translatable shared fields. Products use the same native translation identity model. The production audit on 2026-11-06 found 16 Spanish products without duplicate slugs and 5 Spanish materials; only sizes had nine redundant independent English seed copies alongside the nine Spanish sizes.
+
+Catalog and storefront seeds explicitly declare Spanish as their default locale, including derived catalog/size seed calls executed outside Astro. Without that declaration, CLI application fell back to English and created independent lookup entries instead of translations.
+
+`customseda.size-identities.v1` preserves Spanish size IDs, content, and material selections. It retires only known English seed duplicates with identical field data and taxonomy assignments (matched by stable taxonomy name and term slug across independent seeded locales), no pending draft/schedule, no linked translations, and no saved, revision-snapshot, or menu references. Genuine linked translations remain intact. All candidates are checked before writes; a conflict stops the migration for review. Retired copies receive deterministic archival slugs and move to native recoverable trash, freeing their original English slugs for genuine translations. An interrupted rename can be resumed. The migration also checks that existing translations agree on size code/order before marking those fields non-translatable.
+
+Prepared on `fix/cms-refactor`; production application remains deferred until the CMS refactor is approved for release.
+
+The Materials editor orders its fields as Name, Color, Special edition, and Availability. `customseda.material-editor-order.v1` applies that order to existing installations using native field ordering and preserves any additional fields in their relative order.
+
 Create and publish lookup entries before products, then create bundle products from those products. A bundle's price is independent of the sum of its component prices. An Agotado component makes the bundle Agotado; it does not force deletion or block drafting.
 
 REST saves reject incompatible references, including requests containing only references. Native category assignments may be incomplete while drafting; publication requires one category, and taxonomy edits of published products preserve that rule. Native publish and scheduling policies recheck pending fields and references for all runtime writers, including MCP and plugins. EmDash 1.3.1 does not pass the pending reference payload to its before-save hook: a non-REST writer can stage an invalid selection, but cannot publish it through the runtime. Importers must call `validateCatalogWrite` before saving; do not write catalog SQL directly.
