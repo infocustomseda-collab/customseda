@@ -28,6 +28,8 @@ Prices are integer **EUR cents**: enter `5900` for €59. Products have no avail
 
 The gallery uses EmDash's native reorderable repeater. Each row has a media image, required alternative text, and optional horizontal/vertical focal coordinates from 0 to 1. The first row is the main image. Uploads must be ready before publication; at least one image is required to publish. Drafts can have an empty gallery.
 
+The product editor places the gallery after all other product fields. The `customseda.product-gallery-order.v1` schema migration changes only field order, preserving product content and the order of other fields. It does not change other collection editors or the public product layout.
+
 Create and publish lookup entries before products, then create bundle products from those products. A bundle's price is independent of the sum of its component prices. An Agotado component makes the bundle Agotado; it does not force deletion or block drafting.
 
 REST saves reject incompatible references, including requests containing only references. Native category assignments may be incomplete while drafting; publication requires one category, and taxonomy edits of published products preserve that rule. Native publish and scheduling policies recheck pending fields and references for all runtime writers, including MCP and plugins. EmDash 1.3.1 does not pass the pending reference payload to its before-save hook: a non-REST writer can stage an invalid selection, but cannot publish it through the runtime. Importers must call `validateCatalogWrite` before saving; do not write catalog SQL directly.

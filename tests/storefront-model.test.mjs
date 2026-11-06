@@ -5,7 +5,7 @@ import {createDialect} from 'emdash/db/sqlite';
 import {runMigrations} from 'emdash/db';
 import {ContentRepository,SchemaRegistry,OptionsRepository} from 'emdash';
 import {validateSeed} from 'emdash/seed';
-import {applyCatalogModel,applyModelMigrations,modelVersion,storefrontVersion,collectionPagesVersion,colorSlugsVersion,productAvailabilityVersion} from '../src/lib/cms/model-migration.ts';
+import {applyCatalogModel,applyModelMigrations,modelVersion,storefrontVersion,collectionPagesVersion,colorSlugsVersion,productAvailabilityVersion,productGalleryOrderVersion} from '../src/lib/cms/model-migration.ts';
 import {cleanupVersion} from '../src/lib/cms/retire-import.ts';
 import {checkoutVersion} from '../src/lib/commerce/payments.ts';
 import {sizeCategoriesVersion} from '../src/lib/cms/size-categories.ts';
@@ -45,7 +45,7 @@ test('storefront migration adds homepage fields to an existing catalog database 
  const revision=await db.insertInto('revisions').values({id:'rev-available',collection:'products',entry_id:'p1',data:JSON.stringify({title:'P',available:false})}).returning('id').executeTakeFirstOrThrow();
 
  const first=await applyModelMigrations(db);
- assert.deepEqual(first.map(r=>[r.version,r.applied]),[[modelVersion,false],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true],[productMaterialsVersion,true],[materialSizeOrderVersion,true],[productAvailabilityVersion,true]]);
+ assert.deepEqual(first.map(r=>[r.version,r.applied]),[[modelVersion,false],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true],[productMaterialsVersion,true],[materialSizeOrderVersion,true],[productAvailabilityVersion,true],[productGalleryOrderVersion,true]]);
  const collection=await schema.getCollectionWithFields('site_settings');
  const slugs=collection.fields.map(f=>f.slug);
  for(const slug of [...fields,'hero_title','hero_image','editor_notes']) assert.ok(slugs.includes(slug),slug);
@@ -64,7 +64,7 @@ test('storefront migration adds homepage fields to an existing catalog database 
  assert.deepEqual(JSON.parse((await db.selectFrom('revisions').select('data').where('id','=',revision.id).executeTakeFirstOrThrow()).data),{title:'P'});
 
  const second=await applyModelMigrations(db);
- assert.deepEqual(second.map(r=>r.applied),[false,false,false,false,false,false,false,false,false,false,false]);
+ assert.deepEqual(second.map(r=>r.applied),[false,false,false,false,false,false,false,false,false,false,false,false]);
  assert.ok(await new OptionsRepository(db).get(storefrontVersion));
  assert.equal((await db.selectFrom('_emdash_relations').selectAll().where('parent_collection','=','site_settings').execute()).length,1);
 });
@@ -73,7 +73,7 @@ test('a fresh database receives the catalog, storefront and checkout models in o
  const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
  await runMigrations(db);
  const results=await applyModelMigrations(db);
- assert.deepEqual(results.map(r=>[r.version,r.applied]),[[modelVersion,true],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true],[productMaterialsVersion,true],[materialSizeOrderVersion,true],[productAvailabilityVersion,true]]);
+ assert.deepEqual(results.map(r=>[r.version,r.applied]),[[modelVersion,true],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true],[productMaterialsVersion,true],[materialSizeOrderVersion,true],[productAvailabilityVersion,true],[productGalleryOrderVersion,true]]);
  const repeater=(await new SchemaRegistry(db).getField('site_settings','highlights'));
  assert.equal(repeater.type,'repeater');
  assert.deepEqual(repeater.validation.subFields.map(f=>f.slug),['image','alt','title','text']);
