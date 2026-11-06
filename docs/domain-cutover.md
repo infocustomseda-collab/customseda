@@ -18,6 +18,15 @@ No integrar esta rama hasta coordinar DNS, Stripe y el despliegue. La redirecci�
 
 El cambio anterior de Checkout Studio permanece separado en `fix/stripe-checkout-studio`; no forma parte de esta rama.
 
+## Comprobaciones posteriores y bloqueo actual
+
+- El administrador ha iniciado sesión en el panel de Cloudflare. Se ha exportado el DNS actual a `.emdash/backups/domain-2026-11-06/dns-before.txt` (ignorado). Hay 12 registros; además del A de Shopify existe un AAAA raíz `2620:127:f00f:6::`, también sin proxy. La copia registra correo y subdominios para preservarlos.
+- D1 rechaza la exportación completa por sus tablas virtuales FTS. Se han exportado las 83 tablas ordinarias a `production-tables-before.sql` en la misma carpeta privada; se excluyen índices virtuales y sus tablas derivadas, que requieren reconstrucción al restaurar. No se ha realizado ninguna restauración.
+- Compra de prueba completada con tarjeta de Stripe y datos ficticios: MAREA, tallas M/M, recogida, 50 EUR. Checkout devuelve la página de agradecimiento y la API confirma `status=complete`, `payment_status=paid`, `livemode=false`. La clave restringida no permite leer Events (403), por lo que esta comprobación no confirma la entrega del webhook.
+- Se ha creado la regla nativa de Cloudflare `WWW a customseda.com` (`f6d1c7ade73746dca75379def79cd820`): `http.host eq "www.customseda.com"`, destino dinámico `concat("https://customseda.com", http.request.uri.path)`, 301 y conservación de consulta. Está habilitada, pero `www` sigue sin proxy; aún no desvía tráfico.
+- No se ha asociado el dominio al Worker, modificado A/AAAA/CNAME, actualizado Stripe ni integrado esta PR. La tienda pública continúa en Shopify.
+- Tras incorporar `origin/master` (`efc6c04`), pasan 276 pruebas, tipos y la comprobación de GitHub. Sin embargo, [la última publicación de master](https://github.com/infocustomseda-collab/customseda/actions/runs/42233954530) falla antes de subir el Worker: `English size copies are referenced; review and merge their selections before cleanup.` La migración de tallas introducida por la PR #50 encuentra nueve copias inglesas, todas sin referencias actuales pero con una revisión histórica cada una. No borrar revisiones ni saltarse ese control para publicar el dominio: resolver primero la migración preservando la restauración del historial.
+
 ## Orden del cambio
 
 1. Completar la compra de prueba en staging y confirmar su pago y entrega del webhook en el sandbox, sin registrar datos de prueba en la base de datos de producción. Revisar envío, tallas y devolución a la tienda. La sesión abierta durante la preparación muestra `Entorno de prueba` y usa `cs_test_`; abrirla no equivale a completar el pago.
