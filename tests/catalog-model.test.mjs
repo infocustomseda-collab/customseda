@@ -69,3 +69,11 @@ test('model migration moves the product gallery last without changing other form
  await applyModelMigrations(db);
  assert.equal((await fields('products'))[0].slug,'gallery');
 });
+
+test('material editor places Special edition immediately after Color on existing installations',async t=>{
+ const db=await database();t.after(()=>db.destroy());
+ const registry=new SchemaRegistry(db);
+ await registry.reorderFields('materials',['title','color','sizes','special_edition']);
+ await applyModelMigrations(db);
+ assert.deepEqual((await registry.getCollectionWithFields('materials')).fields.map(field=>field.slug),['title','color','special_edition','sizes']);
+});

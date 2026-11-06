@@ -24,7 +24,7 @@ export async function applySizeCategories(db:CatalogDb) {
  const sizes=seed.collections!.find(collection=>collection.slug==='sizes')!;
  const {terms:_terms,...category}=seed.taxonomies!.find(taxonomy=>taxonomy.name==='category')!;
  // Upserts the Etiqueta field and attaches the native category taxonomy to sizes.
- await applySeed(db,{version:'1',collections:[sizes],taxonomies:[category]},{includeContent:false,onConflict:'update'});
+ await applySeed(db,{version:'1',defaultLocale:seed.defaultLocale,collections:[sizes],taxonomies:[category]},{includeContent:false,onConflict:'update'});
 
  if(legacy.length) {
   const repo=new ContentRepository(db);
@@ -40,7 +40,7 @@ export async function applySizeCategories(db:CatalogDb) {
    kept.add(entry.slug!);
   }
   const created=seeded.filter(entry=>!kept.has(entry.slug!));
-  await applySeed(db,{version:'1',content:{sizes:created},taxonomies:seed.taxonomies},{includeContent:true,onConflict:'skip'});
+  await applySeed(db,{version:'1',defaultLocale:seed.defaultLocale,content:{sizes:created},taxonomies:seed.taxonomies},{includeContent:true,onConflict:'skip'});
   // One locale per collection: legacy rows follow the seeded rows' configured locale.
   const locale=(await sql<{locale:string}>`SELECT locale FROM ec_sizes WHERE slug=${created[0]?.slug ?? ''}`.execute(db)).rows[0]?.locale;
   if(locale) await sql`UPDATE ec_sizes SET locale=${locale} WHERE id IN (${sql.join(legacy.map(size=>size.id))})`.execute(db);
