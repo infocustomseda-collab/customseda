@@ -37,7 +37,7 @@
       "workers_dev": true,
       "vars": {
         "EMDASH_SITE_URL": "https://customseda-staging.customseda.workers.dev",
-        "CMS_ORIGIN": "https://customseda.customseda.workers.dev",
+        "CMS_ORIGIN": "https://customseda.com",
         "FOUNDATION_LOCKED": "true",
         "SITE_ROLE": "preview"
       },
@@ -69,6 +69,8 @@
     },
     "production": {
       "name": "customseda",
+      "routes": [{ "pattern": "customseda.com", "custom_domain": true }],
+      "assets": { "run_worker_first": true },
       "send_email": [
         {
           "name": "EMAIL",
@@ -81,7 +83,7 @@
       ],
       "workers_dev": true,
       "vars": {
-        "EMDASH_SITE_URL": "https://customseda.customseda.workers.dev",
+        "EMDASH_SITE_URL": "https://customseda.com",
         "CMS_EMAIL_FROM": "noreply@customseda.com",
         "FOUNDATION_LOCKED": "false",
         "SITE_ROLE": "public",
