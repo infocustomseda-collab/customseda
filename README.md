@@ -6,6 +6,10 @@ The public Posts/Pages starter remains a deployment test. The local CMS now has 
 
 ## Local development
 
+On opening the project, run `pnpm env:check` first. It checks active key names in `.env.example` against the union of `.env`, `.env.cloudflare-production` and `.env.cloudflare-staging`, and also reports keys missing from the example. It ignores comments, backups and shell variables, never prints values, and does not validate their contents. Obtain missing values privately; never commit them or invent placeholders to pass the check. Whenever adding a key to an environment file, add its name with an empty value to `.env.example` in the same change. Commented optional keys become active when configured. The remote development launcher runs this check before doing any setup or starting Astro.
+
+Before every new task, inspect pending changes, fetch `origin master`, and reconcile with the current `origin/master` without losing work. Start the task branch from that updated reference.
+
 **Administrator workstation:** follow [the administrator workflow](docs/administrator-workflow.md). This machine uses `pnpm dev:production` exclusively, connected to production D1/R2. The local-only examples below describe developer infrastructure and are not the administrator's workflow.
 
 The project pins Node 24.21.0 and pnpm 11.25.0 in `.tool-versions`, matching the package manager declared in `package.json`.
@@ -13,8 +17,9 @@ The project pins Node 24.21.0 and pnpm 11.25.0 in `.tool-versions`, matching the
 ```sh
 mise install
 pnpm install --frozen-lockfile
-# First checkout only: copy .env.example to .env and replace its key.
-# Generate a key with: openssl rand -hex 32
+# For isolated developer infrastructure only: create .env with its own
+# EMDASH_ENCRYPTION_KEY. Do not copy every key in the inventory to every environment.
+# Never replace production's existing encryption key.
 pnpm dev
 ```
 
