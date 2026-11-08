@@ -149,3 +149,105 @@ test('size cleanup preserves Spanish identities and material selections and tras
  assert.equal(translation.success,true,JSON.stringify(translation));
  assert.equal(translation.data.item.translationGroup,originals[0].translationGroup);
 });
+
+test('v2 consolidates retained historical size selections and frees the English locale for a real translation',async t=>{
+ const {db,repo,originals,duplicates}=await oldDuplicates(t);
+ const options=new OptionsRepository(db);
+ const version='customseda.size-identities.v2';
+ await options.delete(version);
+ const bySlug=new Map(originals.map(size=>[size.slug,size]));
+ const [first,second]=duplicates;
+ const [firstOriginal,secondOriginal]=[first,second].map(size=>bySlug.get(size.slug));
+ const material=await handleContentCreate(db,'materials',{locale:'es',slug:'old-material',data:{title:'Material'},references:{sizes:[secondOriginal.id]}});
+ assert.equal(material.success,true);
+ const entry=material.data.item;
+ const revision=await new RevisionRepository(db).create({collection:'materials',entryId:entry.id,data:{
+  title:'Earlier material',special_edition:true,
+  _references:{sizes:[first.id,secondOriginal.id,firstOriginal.id,second.id],color:[]},
+  _referencesBaseline:{sizes:[second.id,firstOriginal.id,secondOriginal.id]},
+ }});
+ const revisionRow=()=>db.selectFrom('revisions').selectAll().where('id','=',revision.id).executeTakeFirstOrThrow();
+ const before=await revisionRow();
+ await applySizeIdentities(db);
+ const marker=await options.get(sizeIdentitiesVersion);
+ assert.equal(marker.retained.length,2);
+ // Resume a partial attempt that renamed one copy and already trashed another.
+ for(const copy of [first,second]) {
+  await repo.update('sizes',copy.id,{slug:`retired-seed-en-${copy.slug}-${copy.id.toLowerCase()}`});
+ }
+ await repo.delete('sizes',second.id);
+ const partial=JSON.parse(before.data);
+ for(const field of ['_references','_referencesBaseline']) {
+  partial[field].sizes=[...new Set(partial[field].sizes.map(id=>id===second.id?secondOriginal.id:id))];
+ }
+ await db.updateTable('revisions').set({data:JSON.stringify(partial)}).where('id','=',revision.id).execute();
+ const results=await applyModelMigrations(db);
+ assert.equal(results.find(result=>result.version===version)?.applied,true);
+ const after=await revisionRow();
+ const expected={title:'Earlier material',special_edition:true,
+  _references:{sizes:[firstOriginal.id,secondOriginal.id],color:[]},
+  _referencesBaseline:{sizes:[secondOriginal.id,firstOriginal.id]},
+ };
+ assert.deepEqual({...after},{...before,data:JSON.stringify(expected)});
+ assert.equal((await repo.findMany('sizes',{limit:100})).items.length,9);
+ for(const copy of duplicates) assert.ok((await repo.findByIdIncludingTrashed('sizes',copy.id)).deletedAt);
+ assert.deepEqual(await repo.findById('sizes',firstOriginal.id),firstOriginal);
+ assert.deepEqual(await options.get(sizeIdentitiesVersion),marker);
+ assert.ok((await applyModelMigrations(db)).every(result=>!result.applied));
+ const restored=await repo.restoreRevision('materials',entry.id,JSON.parse(after.data),'test-editor');
+ const draft=await db.selectFrom('revisions').select('data').where('id','=',restored.revisionId).executeTakeFirstOrThrow();
+ assert.deepEqual(JSON.parse(draft.data)._references.sizes,expected._references.sizes);
+ const translation=await handleContentCreate(db,'sizes',{locale:'en',translationOf:firstOriginal.id,slug:firstOriginal.slug,data:{title:'Translated size'}});
+ assert.equal(translation.success,true);
+ assert.equal(translation.data.item.translationGroup,firstOriginal.translationGroup);
+ assert.equal(translation.data.item.data.label,firstOriginal.data.label);
+});
+
+test('v2 stops before rewriting revisions when a retained copy has an unexpected live link',async t=>{
+ const {db,repo,duplicates}=await oldDuplicates(t);
+ const options=new OptionsRepository(db);
+ await options.delete('customseda.size-identities.v2');
+ const copy=duplicates[0];
+ const material=await handleContentCreate(db,'materials',{locale:'es',slug:'linked-copy',data:{title:'Live link'},references:{sizes:[copy.id]}});
+ assert.equal(material.success,true);
+ await applySizeIdentities(db);
+ await assert.rejects(()=>applyModelMigrations(db),/live relation or menu/);
+ assert.ok(await repo.findById('sizes',copy.id));
+ assert.equal(await options.get('customseda.size-identities.v2'),null);
+});
+
+test('v2 refuses a scheduled draft while it still selects a retained copy',async t=>{
+ const {db,repo,duplicates}=await oldDuplicates(t);
+ const options=new OptionsRepository(db);
+ const version='customseda.size-identities.v2';
+ await options.delete(version);
+ const copy=duplicates[0];
+ const material=await repo.create({type:'materials',locale:'es',slug:'scheduled-material',data:{title:'Scheduled'}});
+ const data={title:'Scheduled',_references:{sizes:[copy.id]}};
+ const revisions=new RevisionRepository(db);
+ const draft=await revisions.create({collection:'materials',entryId:material.id,data});
+ await repo.setDraftRevision('materials',material.id,draft.id);
+ await repo.schedule('materials',material.id,'2099-01-01T00:00:00Z');
+ await applySizeIdentities(db);
+ await assert.rejects(()=>applyModelMigrations(db),/scheduled material draft/);
+ assert.deepEqual((await revisions.findById(draft.id)).data,data);
+ assert.ok(await repo.findById('sizes',copy.id));
+ assert.equal(await options.get(version),null);
+});
+
+test('v2 refuses a revision that uses a retained ID outside a material sizes array',async t=>{
+ const {db,repo,duplicates}=await oldDuplicates(t);
+ const options=new OptionsRepository(db);
+ const version='customseda.size-identities.v2';
+ await options.delete(version);
+ const copy=duplicates[0];
+ const material=await repo.create({type:'materials',locale:'es',slug:'unexpected-reference',data:{title:'Material'}});
+ const data={title:'Earlier material',_references:{sizes:[copy.id]},'_references.sizes':[copy.id]};
+ const revisions=new RevisionRepository(db);
+ const revision=await revisions.create({collection:'materials',entryId:material.id,data});
+ await applySizeIdentities(db);
+ await assert.rejects(()=>applyModelMigrations(db),/Unexpected reference/);
+ assert.deepEqual((await revisions.findById(revision.id)).data,data);
+ assert.ok(await repo.findById('sizes',copy.id));
+ assert.equal(await options.get(version),null);
+});
