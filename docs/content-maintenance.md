@@ -28,7 +28,9 @@ Sources consulted on 2026-10-27: [AEPD information duties](https://www.aepd.es/d
 
 This cleanup is local only. Phase 7 must define and verify transfer of the approved EmDash content and original media to staging. Do not restore the obsolete source importer or copy the entire local database to production.
 
-## Export the catalog to Excel
+## Catalog workbook workflow
+
+### Export to Excel
 
 Set `EMDASH_TOKEN` in your shell to an EmDash token with the `content:read` scope from an account with draft read access. Keep it outside the checkout and workbook. Then run:
 
@@ -40,3 +42,13 @@ pnpm catalog:export --url https://customseda.com --output backups/catalog.xlsx
 The command reads Products and Collections from the specified EmDash site and writes a new workbook. Choose a fresh output filename for each export. Keep the workbook private if it contains drafts. The `Collection` dropdown uses the titles on the Collections sheet. Keep each entry's ID and Revision for matching and conflict detection in a future import.
 
 The `Gallery` column contains JSON with the published and pending draft gallery data where available. Its media IDs reference original images stored in EmDash. Use the media archive to back up the image files.
+
+### Future import requirements
+
+The current command implements read-only export. A future importer should follow these rules:
+
+- Use one local `.xlsx` workbook with a sheet for each Catálogo content type. The current export starts with Products and Collections. The remaining content types are Materials, Colors, and Sizes. Categories belong in a separate sheet as a native taxonomy.
+- Match existing entries by EmDash ID. Use the exported revision token to detect intervening CMS edits. Use an explicit slug and locale to identify new rows on retry. Treat missing workbook rows as outside the import.
+- Display relationships by title or name. For example, `Products.Collection` contains `Margarita` and its Excel Data Validation dropdown uses titles from the Collections sheet. Resolve those values to EmDash IDs before writing. Report unknown or ambiguous names in the preview.
+- Validate the workbook and show creates, updates, unchanged rows, and errors before applying any writes. Use the native EmDash APIs and [catalog validation](catalog-model.md#editing-catalog-entries). Apply supported content changes as drafts. Review taxonomy assignments separately because they use their own API and can affect published entries.
+- Preserve gallery data and existing media on import. `Gallery` is a backup column for raw published and draft gallery JSON. The workbook has no gallery restore or photo upload workflow. Original image files are backed up separately in the [media archive](#original-media).
