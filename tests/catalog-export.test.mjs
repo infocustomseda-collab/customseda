@@ -13,7 +13,8 @@ test('catalog export paginates, preserves gallery versions and links a collectio
  const folder = await mkdtemp(join(tmpdir(), 'seda-export-'));
  t.after(() => rm(folder, { recursive: true, force: true }));
  await writeFile(join(folder, '.env'), 'EMDASH_TOKEN="fixture-token"\n');
- const script = fileURLToPath(new URL('../scripts/cms/export-catalog.mjs', import.meta.url));
+ const exportScript = fileURLToPath(new URL('../scripts/cms/export-catalog.mjs', import.meta.url));
+ const previewScript = fileURLToPath(new URL('../scripts/cms/preview-product-import.mjs', import.meta.url));
  const published = [{ image: { id: 'media-1' }, alt: 'Original' }];
  const draft = [{ image: { id: 'media-2' }, alt: 'Edited', focal_x: 0.4 }];
  const collection = { id: 'col-1', slug: 'margarita', locale: 'es', data: { title: 'Margarita', code: 'MARG' } };
@@ -29,8 +30,8 @@ test('catalog export paginates, preserves gallery versions and links a collectio
    sizes: { children: [{ id: size.id, title: size.data.title }] },
   },
  };
- const component = { id: 'p-2', status: 'draft', data: { title: 'New', gallery: [] } };
- const otherComponent = { id: 'p-3', status: 'draft', data: { title: 'Second' } };
+ const component = { id: 'p-2', slug: 'new', locale: 'es', status: 'draft', data: { title: 'New', gallery: [] } };
+ const otherComponent = { id: 'p-3', slug: 'second', locale: 'es', status: 'draft', data: { title: 'Second' } };
  const product = {
   id: 'p-1', slug: 'tierra', locale: 'es', status: 'published', draftRevisionId: 'revision-1',
   data: { title: 'Tierra', price_cents: 5900, bundle: 1, gallery: draft },
@@ -73,11 +74,11 @@ test('catalog export paginates, preserves gallery versions and links a collectio
    'sizes/size-s-en': { item: otherSize },
    size_guides: { items: [{ id: guide.id }] },
    'size_guides/guide-1': { item: guide },
-   'products/trash': { items: [] },
+   'products/trash': { items: [{ id: 'trashed', slug: 'reserved', locale: 'es' }] },
    products: url.searchParams.has('cursor') ? { items: [{ id: 'p-2' }, { id: 'p-3' }] } : { items: [{ id: 'p-1' }], nextCursor: 'page-2' },
    'products/p-1': { item: product, _rev: 'revision-token' },
-   'products/p-2': { item: component },
-   'products/p-3': { item: otherComponent },
+   'products/p-2': { item: component, _rev: 'rev-2' },
+   'products/p-3': { item: otherComponent, _rev: 'rev-3' },
    collections: { items: [{ id: 'col-1' }] },
    'collections/col-1': { item: collection },
   };
@@ -87,19 +88,21 @@ test('catalog export paginates, preserves gallery versions and links a collectio
  server.listen(0, '127.0.0.1');
  await once(server, 'listening');
  t.after(() => new Promise((resolve) => server.close(resolve)));
- async function runExport(output, ...args) {
+ async function runCommand(script, ...args) {
   const env = { ...process.env };
   delete env.EMDASH_TOKEN;
-  const child = spawn(process.execPath, [script, '--url', `http://127.0.0.1:${server.address().port}`, '--output', output, ...args], {
+  const child = spawn(process.execPath, [script, '--url', `http://127.0.0.1:${server.address().port}`, ...args], {
    cwd: folder,
    env,
-   stdio: ['ignore', 'ignore', 'pipe'],
+   stdio: ['ignore', 'pipe', 'pipe'],
   });
-  let stderr = '';
+  let stdout = '', stderr = '';
+  child.stdout.setEncoding('utf8').on('data', (chunk) => { stdout += chunk; });
   child.stderr.setEncoding('utf8').on('data', (chunk) => { stderr += chunk; });
   const [code] = await once(child, 'close');
-  return { code, stderr };
+  return { code, stdout, stderr };
  }
+ const runExport = (output, ...args) => runCommand(exportScript, '--output', output, ...args);
  const deniedOutput = join(folder, 'denied.xlsx');
  denyDrafts = true;
  const denied = await runExport(deniedOutput);
@@ -188,4 +191,37 @@ test('catalog export paginates, preserves gallery versions and links a collectio
  check('Sizes', 'Reference Name', 'S · Top (es)');
  check('Sizes', 'Reference Name', 'S · Top (en)', null, 3);
  check('Material Sizes', 'Size', 'S · Top (es)', 'CatalogSizeTitles');
+
+ seen.length = 0;
+ const untouched = await runCommand(previewScript, '--input', output);
+ assert.equal(untouched.code, 0, untouched.stderr);
+ assert.match(untouched.stdout, /Creates: 0.*Updates: 0.*Unchanged: 3.*Errors: 0/);
+ assert(seen.length > 0 && seen.every(([method]) => method === 'GET'));
+
+ products.getCell(2, columns['Price (EUR)']).value = 61.25;
+ products.getCell(3, columns.Revision).value = 'old-revision';
+ products.getCell(3, columns.Title).value = 'Would overwrite a newer edit';
+ products.getCell(4, columns.Collection).value = 'Unknown collection';
+ products.getCell(4, columns['Price (EUR)']).value = 21.005;
+ products.getCell(5, columns.Slug).value = 'new-bikini';
+ products.getCell(5, columns.Locale).value = 'es';
+ products.getCell(5, columns.Title).value = 'New Bikini';
+ products.getCell(5, columns['Price (EUR)']).value = 80;
+ products.getCell(5, columns.Collection).value = 'Margarita';
+ products.getCell(6, columns.Slug).value = 'reserved';
+ products.getCell(6, columns.Locale).value = 'es';
+ products.getCell(6, columns.Title).value = 'Reserved';
+ products.getCell(6, columns['Price (EUR)']).value = 80;
+ const edited = join(folder, 'edited.xlsx');
+ await workbook.xlsx.writeFile(edited);
+ seen.length = 0;
+ const preview = await runCommand(previewScript, '--input', edited);
+ assert.equal(preview.code, 1, preview.stderr);
+ assert.match(preview.stdout, /Creates: 1.*Updates: 1.*Unchanged: 0.*Errors: 3/);
+ assert.match(preview.stdout, /Row 2.*Price \(EUR\).*59.*61\.25/);
+ assert.match(preview.stdout, /Row 3.*[Rr]evision/);
+ assert.match(preview.stdout, /Row 4.*Price.*Collection/);
+ assert.match(preview.stdout, /Row 5.*new-bikini/);
+ assert.match(preview.stdout, /Row 6.*Trash/);
+ assert(seen.length > 0 && seen.every(([method]) => method === 'GET'));
 });

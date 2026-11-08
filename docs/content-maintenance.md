@@ -47,9 +47,23 @@ Pass `--overwrite` to replace an existing workbook after the new export is ready
 
 The `Gallery` column contains JSON with the published and pending draft gallery data where available. Its media IDs reference original images stored in EmDash. Use the media archive to back up the image files.
 
+### Preview product imports
+
+After editing a copy of the workbook, close it in Excel and run:
+
+```sh
+pnpm catalog:import:preview --url https://customseda.com --input backups/catalog.xlsx
+```
+
+The preview reads the Products sheet and the current EmDash catalog. It checks Title, Summary, Price (EUR), Collection, Material, and Size Guide. It reports which fields would change and counts creates, updates, unchanged rows, and errors. A row error exits with code 1. Use plain text and numeric prices in the checked columns.
+
+For updates, keep the exported ID, slug, locale, and Revision. A blank editable cell leaves the current value in place. For new rows, leave ID and Revision blank and enter a lowercase slug, locale `es`, a title, and a price. The preview checks for products with the same slug and locale, including entries in Trash. Use a fresh export to resolve stale revision errors.
+
+The preview is read-only. Gallery, Description, Category, Bundle, and the relationship sheets are outside this first preview.
+
 ### Future import requirements
 
-The current command implements read-only export. A future importer should follow these rules:
+A future apply command should follow these rules:
 
 - Use the exported sheet layout. Resolve multi-value relationships from the ordered rows on Bundle Components and Material Sizes. Treat Size Guides as a reference list.
 - Match existing entries by EmDash ID. Use the exported revision token to detect intervening CMS edits. Use an explicit slug and locale to identify new rows on retry. Treat missing workbook rows as outside the import.

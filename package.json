@@ -33,7 +33,8 @@
     "snapshot": "node scripts/build/snapshot.mjs",
     "design:open-props": "node scripts/design/open-props.mjs",
     "media:originals": "node scripts/media/export-originals.mjs",
-    "catalog:export": "node scripts/cms/export-catalog.mjs"
+    "catalog:export": "node scripts/cms/export-catalog.mjs",
+    "catalog:import:preview": "node scripts/cms/preview-product-import.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.4.2",

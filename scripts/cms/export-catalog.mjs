@@ -1,32 +1,19 @@
-import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { parseArgs, parseEnv } from 'node:util';
-import { EmDashClient } from 'emdash/client';
+import { parseArgs } from 'node:util';
+import { connectCatalog, readCatalogToken } from './catalog-api.mjs';
 import { makeCatalogWorkbook } from './catalog-workbook.mjs';
 
 const usage = 'Usage: pnpm catalog:export --url <EmDash origin> --output <file.xlsx> [--overwrite] (EMDASH_TOKEN in .env)';
-let token = process.env.EMDASH_TOKEN;
+let token;
 
-async function readApi(origin, path) {
- const response = await fetch(new URL(`/_emdash/api/${path}`, origin), {
-  headers: { Authorization: `Bearer ${token}` },
-  redirect: 'error',
- });
- if (!response.ok) {
-  await response.body?.cancel();
-  throw new Error(`Could not read EmDash ${path.split('?')[0]} (HTTP ${response.status}).`);
- }
- const { data } = await response.json();
- return data;
-}
-
-async function readEntries(client, origin, collection) {
+async function readEntries(client, read, collection) {
  const entries = [];
  for await (const { id } of client.listAll(collection, { limit: 100 })) {
   const entry = await client.get(collection, id, { raw: true });
   const path = `content/${collection}/${encodeURIComponent(id)}`;
   if (collection === 'products' || collection === 'sizes') {
-   const { terms, unresolved } = await readApi(origin, `${path}/terms/category`);
+   const { terms, unresolved } = await read(`${path}/terms/category`);
    if (terms.length > 1 || unresolved?.length) throw new Error(`Cannot resolve a single category for ${collection}/${id}.`);
    entry.categoryId = terms[0]?.id;
   }
@@ -37,7 +24,7 @@ async function readEntries(client, origin, collection) {
     if (cursors.has(cursor)) throw new Error(`Repeated ${field} cursor for ${collection}/${id}.`);
     cursors.add(cursor);
     const query = new URLSearchParams({ cursor });
-    const next = await readApi(origin, `${path}/references/${collection}_${field}/children?${query}`);
+    const next = await read(`${path}/references/${collection}_${field}/children?${query}`);
     page.children.push(...next.children);
     page.nextCursor = next.nextCursor;
    }
@@ -80,32 +67,11 @@ async function main() {
   return;
  }
  if (!values.url || !values.output?.toLowerCase().endsWith('.xlsx')) throw new Error(usage);
- if (!token) {
-  const source = await readFile('.env', 'utf8').catch((error) => {
-   if (error.code !== 'ENOENT') throw error;
-   return '';
-  });
-  token = parseEnv(source).EMDASH_TOKEN;
- }
- if (!token) throw new Error('Add EMDASH_TOKEN to .env with content and draft read access.');
- const url = new URL(values.url);
- const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
- if ((url.protocol !== 'https:' && !(loopback && url.protocol === 'http:'))
-     || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
-  throw new Error('Use an HTTPS EmDash origin, or HTTP on loopback.');
- }
- // Regular list requests can silently filter out drafts. This GET requires draft access.
- const draftAccess = await fetch(new URL('/_emdash/api/content/products/trash?limit=1', url), {
-  headers: { Authorization: `Bearer ${token}` },
-  redirect: 'error',
- });
- await draftAccess.body?.cancel();
- if (!draftAccess.ok) throw new Error(`Could not verify EmDash draft read access (HTTP ${draftAccess.status}).`);
-
- const client = new EmDashClient({ baseUrl: url.origin, token });
+ token = await readCatalogToken();
+ const { client, read } = await connectCatalog(values.url, token);
  const catalog = {};
  for (const collection of ['products', 'collections', 'materials', 'colors', 'sizes', 'size_guides']) {
-  catalog[collection] = await readEntries(client, url.origin, collection);
+  catalog[collection] = await readEntries(client, read, collection);
  }
  catalog.categories = (await client.terms('category', { includeCounts: false })).items;
  await saveWorkbook(makeCatalogWorkbook(catalog), values.output, values.overwrite);
