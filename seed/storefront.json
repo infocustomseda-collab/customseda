@@ -1,6 +1,7 @@
 {
     "$schema": "https://emdashcms.com/seed.schema.json",
     "version": "1",
+    "defaultLocale": "es",
     "meta": {
         "name": "Custom Seda storefront",
         "description": "Homepage sections added by customseda.storefront.v1; extends site settings only."

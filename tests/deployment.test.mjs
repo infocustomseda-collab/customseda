@@ -144,7 +144,10 @@ test('the checked-in config deploys a static production with its CMS and a live 
   assert.equal(production.previewOrigin, staging.origin);
   assert.equal(wrangler.env.production.name, 'customseda');
   assert.equal(wrangler.env.production.vars.FOUNDATION_LOCKED, 'false');
-  assert.notEqual(wrangler.env.production.assets?.run_worker_first, true);
+  // The old workers.dev hostname must redirect even for otherwise static pages/assets.
+  assert.equal(wrangler.env.production.assets?.run_worker_first, true);
+  assert.equal(production.origin, 'https://customseda.com');
+  assert.deepEqual(wrangler.env.production.routes, [{pattern:'customseda.com',custom_domain:true}]);
   assert.deepEqual(deploymentCommands(production).filter(c => c[0] === 'wrangler'), [['wrangler', 'deploy', '-c', 'dist/server/wrangler.json']]);
 });
 

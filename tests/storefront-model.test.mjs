@@ -5,8 +5,9 @@ import {createDialect} from 'emdash/db/sqlite';
 import {runMigrations} from 'emdash/db';
 import {ContentRepository,SchemaRegistry,OptionsRepository} from 'emdash';
 import {validateSeed} from 'emdash/seed';
-import {applyCatalogModel,applyModelMigrations,modelVersion,storefrontVersion,collectionPagesVersion,colorSlugsVersion,productAvailabilityVersion} from '../src/lib/cms/model-migration.ts';
+import {applyCatalogModel,applyModelMigrations,modelVersion,storefrontVersion,collectionPagesVersion,colorSlugsVersion,productAvailabilityVersion,productGalleryOrderVersion,materialEditorOrderVersion} from '../src/lib/cms/model-migration.ts';
 import {cleanupVersion} from '../src/lib/cms/retire-import.ts';
+import {sizeIdentitiesVersion} from '../src/lib/cms/size-identities.ts';
 import {checkoutVersion} from '../src/lib/commerce/payments.ts';
 import {sizeCategoriesVersion} from '../src/lib/cms/size-categories.ts';
 import {materialSizeOrderVersion,materialsVersion} from '../src/lib/cms/materials.ts';
@@ -45,7 +46,7 @@ test('storefront migration adds homepage fields to an existing catalog database 
  const revision=await db.insertInto('revisions').values({id:'rev-available',collection:'products',entry_id:'p1',data:JSON.stringify({title:'P',available:false})}).returning('id').executeTakeFirstOrThrow();
 
  const first=await applyModelMigrations(db);
- assert.deepEqual(first.map(r=>[r.version,r.applied]),[[modelVersion,false],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true],[productMaterialsVersion,true],[materialSizeOrderVersion,true],[productAvailabilityVersion,true]]);
+ assert.deepEqual(first.map(r=>[r.version,r.applied]),[[modelVersion,false],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true],[productMaterialsVersion,true],[materialSizeOrderVersion,true],[productAvailabilityVersion,true],[productGalleryOrderVersion,true],[sizeIdentitiesVersion,true],[materialEditorOrderVersion,true]]);
  const collection=await schema.getCollectionWithFields('site_settings');
  const slugs=collection.fields.map(f=>f.slug);
  for(const slug of [...fields,'hero_title','hero_image','editor_notes']) assert.ok(slugs.includes(slug),slug);
@@ -57,14 +58,14 @@ test('storefront migration adds homepage fields to an existing catalog database 
  assert.equal(collections.routable,false);assert.equal(collections.urlPattern??null,null);
  assert.deepEqual(collections.supports,['drafts','revisions']);
  assert.equal(await schema.getField('colors','code'),null);
- assert.deepEqual((await schema.getCollectionWithFields('materials')).fields.map(f=>f.slug),['title','color','sizes','special_edition']);
+ assert.deepEqual((await schema.getCollectionWithFields('materials')).fields.map(f=>f.slug),['title','color','special_edition','sizes']);
  const color=await repo.findById('colors',rosa.id);assert.equal(color.slug,'rosa');assert.equal(color.data.code,undefined);
  assert.equal(await schema.getField('products','available'),null);
  assert.ok(!(await sql`PRAGMA table_info(ec_products)`.execute(db)).rows.some(column=>column.name==='available'));
  assert.deepEqual(JSON.parse((await db.selectFrom('revisions').select('data').where('id','=',revision.id).executeTakeFirstOrThrow()).data),{title:'P'});
 
  const second=await applyModelMigrations(db);
- assert.deepEqual(second.map(r=>r.applied),[false,false,false,false,false,false,false,false,false,false,false]);
+ assert.deepEqual(second.map(r=>r.applied),[false,false,false,false,false,false,false,false,false,false,false,false,false,false]);
  assert.ok(await new OptionsRepository(db).get(storefrontVersion));
  assert.equal((await db.selectFrom('_emdash_relations').selectAll().where('parent_collection','=','site_settings').execute()).length,1);
 });
@@ -73,7 +74,7 @@ test('a fresh database receives the catalog, storefront and checkout models in o
  const db=new Kysely({dialect:createDialect({url:':memory:'})});t.after(()=>db.destroy());
  await runMigrations(db);
  const results=await applyModelMigrations(db);
- assert.deepEqual(results.map(r=>[r.version,r.applied]),[[modelVersion,true],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true],[productMaterialsVersion,true],[materialSizeOrderVersion,true],[productAvailabilityVersion,true]]);
+ assert.deepEqual(results.map(r=>[r.version,r.applied]),[[modelVersion,true],[storefrontVersion,true],[checkoutVersion,true],[cleanupVersion,true],[sizeCategoriesVersion,true],[collectionPagesVersion,true],[colorSlugsVersion,true],[materialsVersion,true],[productMaterialsVersion,true],[materialSizeOrderVersion,true],[productAvailabilityVersion,true],[productGalleryOrderVersion,true],[sizeIdentitiesVersion,true],[materialEditorOrderVersion,true]]);
  const repeater=(await new SchemaRegistry(db).getField('site_settings','highlights'));
  assert.equal(repeater.type,'repeater');
  assert.deepEqual(repeater.validation.subFields.map(f=>f.slug),['image','alt','title','text']);

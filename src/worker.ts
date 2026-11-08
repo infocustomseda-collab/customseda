@@ -2,6 +2,7 @@ import handler, { createScheduledHandler, PluginBridge } from "@emdash-cms/cloud
 import { foundationAccess } from "./lib/foundation-access";
 import { stagingCmsOrigin } from "./lib/staging-access";
 import { rebuildConfig, requestRebuild, scheduledRebuildReasons } from "./lib/publish/rebuild";
+import { domainRedirect } from "./lib/domain-redirect";
 
 export { PluginBridge };
 
@@ -11,6 +12,8 @@ export default {
 	...handler,
 	async fetch(request, env, ctx) {
 		const vars = env as unknown as Record<string, unknown>;
+		const moved = domainRedirect(request, vars);
+		if (moved) return moved;
 		// Staging applies its own gate in the middleware, where the editor session is known.
 		const denied = stagingCmsOrigin(vars) ? null : foundationAccess(request, env);
 		if (denied) return denied;

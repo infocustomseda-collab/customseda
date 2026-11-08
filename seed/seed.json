@@ -1,6 +1,7 @@
 {
   "$schema": "https://emdashcms.com/seed.schema.json",
   "version": "1",
+  "defaultLocale": "es",
   "meta": {
     "name": "Custom Seda catalog v1",
     "description": "Made-to-order products, optional bundles, and native hierarchical categories. No inventory."
@@ -38,46 +39,6 @@
           "slug": "summary",
           "label": "Descripción breve",
           "type": "text"
-        },
-        {
-          "slug": "gallery",
-          "label": "Imágenes — arrastra para ordenar; la primera es la principal",
-          "type": "repeater",
-          "validation": {
-            "maxItems": 24,
-            "subFields": [
-              {
-                "slug": "image",
-                "label": "Imagen",
-                "type": "image",
-                "required": true
-              },
-              {
-                "slug": "alt",
-                "label": "Texto alternativo",
-                "type": "string",
-                "required": true
-              },
-              {
-                "slug": "focal_x",
-                "label": "Punto focal horizontal (0–1)",
-                "type": "number",
-                "validation": {
-                  "min": 0,
-                  "max": 1
-                }
-              },
-              {
-                "slug": "focal_y",
-                "label": "Punto focal vertical (0–1)",
-                "type": "number",
-                "validation": {
-                  "min": 0,
-                  "max": 1
-                }
-              }
-            ]
-          }
         },
         {
           "slug": "price_cents",
@@ -132,6 +93,46 @@
           "validation": {
             "targetCollection": "products",
             "multiple": true
+          }
+        },
+        {
+          "slug": "gallery",
+          "label": "Imágenes — arrastra para ordenar; la primera es la principal",
+          "type": "repeater",
+          "validation": {
+            "maxItems": 24,
+            "subFields": [
+              {
+                "slug": "image",
+                "label": "Imagen",
+                "type": "image",
+                "required": true
+              },
+              {
+                "slug": "alt",
+                "label": "Texto alternativo",
+                "type": "string",
+                "required": true
+              },
+              {
+                "slug": "focal_x",
+                "label": "Punto focal horizontal (0–1)",
+                "type": "number",
+                "validation": {
+                  "min": 0,
+                  "max": 1
+                }
+              },
+              {
+                "slug": "focal_y",
+                "label": "Punto focal vertical (0–1)",
+                "type": "number",
+                "validation": {
+                  "min": 0,
+                  "max": 1
+                }
+              }
+            ]
           }
         }
       ]
@@ -191,6 +192,7 @@
           "slug": "title",
           "label": "Título (talla · categoría)",
           "type": "string",
+          "translatable": true,
           "required": true,
           "searchable": true
         },
@@ -198,12 +200,14 @@
           "slug": "label",
           "label": "Etiqueta (talla visible en la tienda)",
           "type": "string",
+          "translatable": false,
           "required": true
         },
         {
           "slug": "sort_order",
           "label": "Orden",
-          "type": "integer"
+          "type": "integer",
+          "translatable": false
         }
       ]
     },
@@ -266,6 +270,12 @@
           }
         },
         {
+          "slug": "special_edition",
+          "label": "Edición especial",
+          "type": "boolean",
+          "defaultValue": false
+        },
+        {
           "slug": "sizes",
           "label": "Disponibilidad",
           "type": "reference",
@@ -274,12 +284,6 @@
             "targetCollection": "sizes",
             "multiple": true
           }
-        },
-        {
-          "slug": "special_edition",
-          "label": "Edición especial",
-          "type": "boolean",
-          "defaultValue": false
         }
       ]
     },
