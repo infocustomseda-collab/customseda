@@ -27,3 +27,16 @@ Sources consulted on 2026-10-27: [AEPD information duties](https://www.aepd.es/d
 ## Staging and launch
 
 This cleanup is local only. Phase 7 must define and verify transfer of the approved EmDash content and original media to staging. Do not restore the obsolete source importer or copy the entire local database to production.
+
+## Export the catalog to Excel
+
+Set `EMDASH_TOKEN` in your shell to an EmDash token with the `content:read` scope from an account with draft read access. Keep it outside the checkout and workbook. Then run:
+
+```sh
+mkdir -p backups
+pnpm catalog:export --url https://customseda.com --output backups/catalog.xlsx
+```
+
+The command reads Products and Collections from the specified EmDash site and writes a new workbook. Choose a fresh output filename for each export. Keep the workbook private if it contains drafts. The `Collection` dropdown uses the titles on the Collections sheet. Keep each entry's ID and Revision for matching and conflict detection in a future import.
+
+The `Gallery` column contains JSON with the published and pending draft gallery data where available. Its media IDs reference original images stored in EmDash. Use the media archive to back up the image files.
