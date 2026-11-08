@@ -39,7 +39,7 @@ mkdir -p backups
 pnpm catalog:export --url https://customseda.com --output backups/catalog.xlsx
 ```
 
-The command reads Products and Collections from the specified EmDash site and writes a new workbook. Choose a fresh output filename for each export. Keep the workbook private if it contains drafts. The `Collection` dropdown uses the titles on the Collections sheet. Keep each entry's ID and Revision for matching and conflict detection in a future import.
+The command reads Products and Collections from the specified EmDash site and writes a new workbook. Choose a fresh output filename for each export. Keep the workbook private if it contains drafts. Select a data cell under `Products → Collection` to open its dropdown. Its named range points to the exported titles on the Collections sheet. Re-export to pick up collections added in EmDash. Keep each entry's ID and Revision for matching and conflict detection in a future import.
 
 The `Gallery` column contains JSON with the published and pending draft gallery data where available. Its media IDs reference original images stored in EmDash. Use the media archive to back up the image files.
 

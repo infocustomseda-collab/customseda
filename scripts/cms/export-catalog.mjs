@@ -97,6 +97,10 @@ function makeWorkbook(products, collections) {
  });
  collectionColumns.forEach(({ width }, i) => { collectionSheet.getColumn(i + 1).width = width; });
 
+ const titleColumn = collectionSheet.getColumn(collectionColumns.findIndex(({ header }) => header === 'Title') + 1).letter;
+ const lastTitleRow = Math.max(2, collections.length + 1);
+ workbook.definedNames.add(`Collections!$${titleColumn}$2:$${titleColumn}$${lastTitleRow}`, 'CatalogCollectionTitles');
+
  const letter = productSheet.getColumn('collection').letter;
  productSheet.dataValidations.add(`${letter}2:${letter}${Math.max(1000, products.length + 1)}`, {
   type: 'list',
@@ -105,7 +109,7 @@ function makeWorkbook(products, collections) {
   errorStyle: 'stop',
   errorTitle: 'Unknown collection',
   error: 'Choose a collection title from the list.',
-  formulae: ['INDIRECT("CatalogCollections[Title]")'],
+  formulae: ['CatalogCollectionTitles'],
  });
  return workbook;
 }

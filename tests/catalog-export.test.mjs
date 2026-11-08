@@ -88,7 +88,9 @@ test('catalog export paginates, preserves gallery versions and links a collectio
  const relation = products.getCell(2, columns.Collection);
  assert.equal(relation.value, 'Margarita');
  assert.equal(relation.dataValidation.type, 'list');
- assert.deepEqual(relation.dataValidation.formulae, ['INDIRECT("CatalogCollections[Title]")']);
+ assert.deepEqual(relation.dataValidation.formulae, ['CatalogCollectionTitles']);
+ assert.deepEqual(workbook.definedNames.getRanges('CatalogCollectionTitles').ranges, ['Collections!$F$2']);
+ assert.equal(workbook.getWorksheet('Collections').getCell('F2').value, 'Margarita');
  assert.deepEqual(JSON.parse(products.getCell(2, columns.Gallery).value), { published, draft });
  assert.deepEqual(JSON.parse(products.getCell(3, columns.Gallery).value), { draft: [] });
  assert.equal(workbook.getWorksheet('Collections').getCell('A2').value, 'col-1');
