@@ -6,7 +6,7 @@ import {join} from 'node:path';
 import {Kysely} from 'kysely';
 import {getPlatformProxy} from 'wrangler';
 import {runMigrations} from 'emdash/db';
-import {ContentRepository,OptionsRepository,SchemaRegistry} from 'emdash';
+import {ContentRepository,OptionsRepository,RevisionRepository,SchemaRegistry} from 'emdash';
 import {CatalogD1Dialect} from '../../scripts/cms/d1-dialect.mjs';
 import {remoteCatalogModel} from '../../scripts/cms/remote-model.mjs';
 import {modelVersion,storefrontVersion,collectionPagesVersion,colorSlugsVersion,productAvailabilityVersion,productGalleryOrderVersion,materialEditorOrderVersion} from '../../src/lib/cms/model-migration.ts';
@@ -14,7 +14,7 @@ import {cleanupVersion} from '../../src/lib/cms/retire-import.ts';
 import {sizeCategoriesVersion} from '../../src/lib/cms/size-categories.ts';
 import {materialSizeOrderVersion,materialsVersion} from '../../src/lib/cms/materials.ts';
 import {productMaterialsVersion} from '../../src/lib/cms/product-materials.ts';
-import {sizeIdentitiesVersion} from '../../src/lib/cms/size-identities.ts';
+import {sizeIdentitiesVersion,sizeIdentityMergeVersion} from '../../src/lib/cms/size-identities.ts';
 import {checkoutVersion} from '../../src/lib/commerce/payments.ts';
 
 test('remote-model orchestration applies and retries against isolated local D1, never a remote binding',async t=>{
@@ -38,8 +38,8 @@ test('remote-model orchestration applies and retries against isolated local D1, 
  await assert.rejects(()=>remoteCatalogModel(target,{check:true,proxyFactory}),/has not been applied/);
  const first=await remoteCatalogModel(target,{proxyFactory});assert.equal(first.applied,true);
  const second=await remoteCatalogModel(target,{proxyFactory});assert.equal(second.applied,false);
- const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,materialEditorOrderVersion);
- assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion,productGalleryOrderVersion,sizeIdentitiesVersion,materialEditorOrderVersion]);
+ const check=await remoteCatalogModel(target,{check:true,proxyFactory});assert.equal(check.version,sizeIdentityMergeVersion);
+ assert.deepEqual(first.results.map(r=>r.version),[modelVersion,storefrontVersion,checkoutVersion,cleanupVersion,sizeCategoriesVersion,collectionPagesVersion,colorSlugsVersion,materialsVersion,productMaterialsVersion,materialSizeOrderVersion,productAvailabilityVersion,productGalleryOrderVersion,sizeIdentitiesVersion,materialEditorOrderVersion,sizeIdentityMergeVersion]);
  assert.equal((await new SchemaRegistry(db).getField('site_settings','highlights')).type,'repeater');
  assert.equal((await new SchemaRegistry(db).getCollectionWithFields('products')).fields.at(-1).slug,'gallery');
  assert.equal((await db.selectFrom('taxonomies').selectAll().where('name','=','category').execute()).length,6);
@@ -51,8 +51,15 @@ test('remote-model orchestration applies and retries against isolated local D1, 
  const duplicate=await repo.create({type:'sizes',locale:'en',slug:spanish.slug,data:spanish.data});
  const terms=await db.selectFrom('content_taxonomies').select('taxonomy_id').where('collection','=','sizes').where('entry_id','=',spanish.translationGroup??spanish.id).execute();
  for(const term of terms) await db.insertInto('content_taxonomies').values({collection:'sizes',entry_id:duplicate.translationGroup??duplicate.id,taxonomy_id:term.taxonomy_id}).execute();
+ const material=await repo.create({type:'materials',locale:'es',slug:'historical',data:{title:'Historical'}});
+ const history=new RevisionRepository(db);
+ const revision=await history.create({collection:'materials',entryId:material.id,data:{title:'Earlier title',_references:{sizes:[duplicate.id,spanish.id]}}});
  await options.delete(sizeIdentitiesVersion);
- assert.equal((await remoteCatalogModel(target,{proxyFactory})).applied,true);
+ await options.delete(sizeIdentityMergeVersion);
+ const upgrade=await remoteCatalogModel(target,{proxyFactory});
+ assert.equal(upgrade.results.find(result=>result.version===sizeIdentityMergeVersion).rewritten,1);
+ assert.deepEqual((await history.findById(revision.id)).data,{title:'Earlier title',_references:{sizes:[spanish.translationGroup??spanish.id]}});
+ assert.equal((await remoteCatalogModel(target,{proxyFactory})).applied,false);
  assert.ok((await repo.findByIdIncludingTrashed('sizes',duplicate.id)).deletedAt);
  assert.equal((await repo.findMany('sizes',{limit:100})).items.length,9);
  await options.set('customseda.catalog.migration-lock',{owner:'other',startedAt:'test'});

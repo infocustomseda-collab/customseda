@@ -4,7 +4,15 @@ import seed from '../../../seed/seed.json' with {type:'json'};
 import type {CatalogDb} from './catalog-store.ts';
 
 export const sizeIdentitiesVersion='customseda.size-identities.v1';
+export const sizeIdentityMergeVersion='customseda.size-identities.v2';
 const retiredSlug=(slug:string,id:string)=>`retired-seed-en-${slug}-${id.toLowerCase()}`;
+
+async function categorySignatures(db:CatalogDb,groups:string[]) {
+ const assignments=await sql<{entry_id:string;name:string;slug:string}>`SELECT ct.entry_id,t.name,t.slug
+   FROM content_taxonomies ct INNER JOIN taxonomies t ON COALESCE(t.translation_group,t.id)=ct.taxonomy_id
+   WHERE ct.collection='sizes' AND ct.entry_id IN (${sql.join(groups)})`.execute(db);
+ return (group:string)=>JSON.stringify([...new Set(assignments.rows.filter(row=>row.entry_id===group).map(row=>JSON.stringify([row.name,row.slug])))].sort());
+}
 
 /** Keep Spanish size identities; retire only unused, unedited English seed duplicates. */
 export async function applySizeIdentities(db:CatalogDb) {
@@ -39,10 +47,7 @@ export async function applySizeIdentities(db:CatalogDb) {
   // Seeds can also have independent localized category terms. Compare their
   // stable taxonomy name/slug, rather than treating translated term IDs as edits.
   const groups=[...new Set(candidates.flatMap(size=>[size.originalGroup,size.translationGroup??size.id]))];
-  const assignments=await sql<{entry_id:string;name:string;slug:string}>`SELECT ct.entry_id,t.name,t.slug
-   FROM content_taxonomies ct INNER JOIN taxonomies t ON COALESCE(t.translation_group,t.id)=ct.taxonomy_id
-   WHERE ct.collection='sizes' AND ct.entry_id IN (${sql.join(groups)})`.execute(db);
-  const assigned=(group:string)=>JSON.stringify([...new Set(assignments.rows.filter(row=>row.entry_id===group).map(row=>JSON.stringify([row.name,row.slug])))].sort());
+  const assigned=await categorySignatures(db,groups);
   for(const size of candidates) {
    if(assigned(size.originalGroup)!==assigned(size.translationGroup??size.id)) throw new Error(`Size ${size.originalSlug}: category assignments differ; review before cleanup.`);
   }
@@ -80,4 +85,101 @@ export async function applySizeIdentities(db:CatalogDb) {
  const identity=(size:{id:string;originalSlug:string})=>({id:size.id,originalSlug:size.originalSlug});
  await options.set(sizeIdentitiesVersion,{appliedAt:new Date().toISOString(),trashed:unused.map(identity),retained:retained.map(identity)});
  return {version:sizeIdentitiesVersion,applied:true,trashed:unused.length,retained:retained.length};
+}
+
+const selectionFields=['_references','_referencesBaseline'] as const;
+
+async function historicalSizeReferences(db:CatalogDb,ids:string[]) {
+ const blocked=await sql<{id:string}>`SELECT id FROM _emdash_content_references
+  WHERE child_group IN (${sql.join(ids)}) OR parent_group IN (${sql.join(ids)})
+  UNION ALL SELECT id FROM _emdash_menu_items
+  WHERE reference_collection='sizes' AND reference_id IN (${sql.join(ids)}) LIMIT 1`.execute(db);
+ if(blocked.rows.length) throw new Error('Retained size has a live relation or menu reference. Review it before merging sizes.');
+ return (await sql<{id:string;collection:string;data:string;path:string;arrayIndex:number;scheduled:string|null}>`
+  SELECT DISTINCT r.id,r.collection,r.data,j.path,typeof(j.key)='integer' AS arrayIndex,m.id AS scheduled
+  FROM revisions r
+  LEFT JOIN ec_materials m ON r.collection='materials' AND m.draft_revision_id=r.id
+   AND m.deleted_at IS NULL AND m.scheduled_at IS NOT NULL
+  CROSS JOIN json_tree(r.data) j
+  WHERE j.type='text' AND j.value IN (${sql.join(ids)})`.execute(db)).rows;
+}
+
+/** Consolidate the historical material selections that kept v1's seed copies active. */
+export async function applySizeIdentityMerge(db:CatalogDb) {
+ const options=new OptionsRepository(db);
+ const version=sizeIdentityMergeVersion;
+ if(await options.get(version)) return {version,applied:false};
+ const prior=await options.get(sizeIdentitiesVersion) as {retained?:{id:string;originalSlug:string}[]}|null;
+ if(!prior) throw new Error('Size identity v1 must be applied before merging retained copies.');
+ const retained=prior.retained??[];
+ const repo=new ContentRepository(db);
+ const moves=new Map<string,string>();
+ const copies=[];
+ for(const {id,originalSlug} of retained) {
+  const copy=await repo.findByIdIncludingTrashed('sizes',id);
+  const original=await repo.findByIdOrSlug('sizes',originalSlug,'es');
+  const archived=retiredSlug(originalSlug,id);
+  if(!copy || !original || original.locale!=='es' || original.slug!==originalSlug || copy.locale!=='en'
+   || (copy.slug!==originalSlug && copy.slug!==archived) || (copy.deletedAt && copy.slug!==archived)
+   || copy.draftRevisionId || copy.scheduledAt || JSON.stringify(copy.data)!==JSON.stringify(original.data)) {
+   throw new Error(`Size ${originalSlug}: the retained copy or its Spanish match changed. Review before merging sizes.`);
+  }
+  const from=copy.translationGroup??id,to=original.translationGroup??original.id;
+  if(from===to) throw new Error(`Size ${originalSlug}: retained copy is already a translation. Review before merging sizes.`);
+  moves.set(id,to);
+  moves.set(from,to);
+  copies.push({copy,from,to,archived});
+ }
+
+ let rewritten=0;
+ if(copies.length) {
+  const groups=[...new Set(copies.flatMap(({from,to})=>[from,to]))];
+  const assigned=await categorySignatures(db,groups);
+  const siblings=(await sql<{id:string;grp:string}>`SELECT id,COALESCE(translation_group,id) AS grp
+   FROM ec_sizes WHERE deleted_at IS NULL AND COALESCE(translation_group,id) IN (${sql.join([...moves.keys()])})`.execute(db)).rows;
+  for(const {copy,from,to} of copies) {
+   if(assigned(from)!==assigned(to) || siblings.some(row=>row.grp===from && row.id!==copy.id)) {
+    throw new Error(`Size ${copy.slug}: category or translation group changed. Review before merging sizes.`);
+   }
+  }
+  const ids=[...moves.keys()];
+  const references=await historicalSizeReferences(db,ids);
+  const revisions=new Map<string,{before:string;data:Record<string,{sizes?:string[]}>}>();
+  for(const row of references) {
+   if(row.scheduled) throw new Error(`Retained size is selected by a scheduled material draft ${row.id}. Review it before merging sizes.`);
+   const field=selectionFields.find(field=>row.path===`$.${field}.sizes` || row.path===`$."${field}".sizes`);
+   const revision=revisions.get(row.id)??{before:row.data,data:JSON.parse(row.data)};
+   const selection=field && revision.data[field]?.sizes;
+   if(row.collection!=='materials' || !row.arrayIndex || !Array.isArray(selection)
+    || !selection.every(value=>typeof value==='string')) {
+    throw new Error(`Unexpected reference to a retained size in revision ${row.id}. Review before merging sizes.`);
+   }
+   revisions.set(row.id,revision);
+  }
+  for(const {data} of revisions.values()) {
+   for(const field of selectionFields) {
+    const selected=data[field]?.sizes;
+    if(selected?.some(id=>moves.has(id))) data[field].sizes=[...new Set(selected.map(id=>moves.get(id)??id))];
+   }
+  }
+  // Keep revision IDs, timestamps and all unrelated content. Compare the source
+  // before writing so a concurrent edit cannot be overwritten. Each write can be retried.
+  for(const [id,{before,data}] of revisions) {
+   const result=await sql`UPDATE revisions SET data=${JSON.stringify(data)} WHERE id=${id} AND data=${before}`.execute(db);
+   if(result.numAffectedRows!==1n) throw new Error(`Revision ${id} changed during the size merge. Retry after reviewing it.`);
+   rewritten++;
+  }
+  const assertNoReferences=async()=>{
+   if((await historicalSizeReferences(db,ids)).length) throw new Error('Retained size references changed during the merge. Retry after reviewing them.');
+  };
+  await assertNoReferences();
+  for(const {copy,archived} of copies) {
+   if(copy.deletedAt) continue;
+   if(copy.slug!==archived) await repo.update('sizes',copy.id,{slug:archived});
+   if(!await repo.delete('sizes',copy.id)) throw new Error(`Could not retire size ${copy.slug}.`);
+  }
+  await assertNoReferences();
+ }
+ await options.set(version,{appliedAt:new Date().toISOString(),merged:copies.length,rewritten});
+ return {version,applied:true,merged:copies.length,rewritten};
 }
