@@ -1,9 +1,10 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { parseArgs, parseEnv } from 'node:util';
 import { EmDashClient } from 'emdash/client';
 import ExcelJS from 'exceljs';
 
-const usage = 'Usage: pnpm catalog:export --url <EmDash origin> --output <file.xlsx> (EMDASH_TOKEN in .env)';
+const usage = 'Usage: pnpm catalog:export --url <EmDash origin> --output <file.xlsx> [--overwrite] (EMDASH_TOKEN in .env)';
 let token = process.env.EMDASH_TOKEN;
 
 async function readEntries(client, collection) {
@@ -114,9 +115,33 @@ function makeWorkbook(products, collections) {
  return workbook;
 }
 
+async function saveWorkbook(workbook, output, overwrite) {
+ const buffer = await workbook.xlsx.writeBuffer();
+ if (!overwrite) {
+  try {
+   await writeFile(output, buffer, { flag: 'wx', mode: 0o600 });
+  } catch (error) {
+   if (error.code !== 'EEXIST') throw error;
+   throw new Error(`${output} already exists. Pass --overwrite to replace it.`);
+  }
+  return;
+ }
+
+ // Stage the replacement on the same filesystem before swapping it into place.
+ const directory = await mkdtemp(join(dirname(output), '.catalog-export-'));
+ try {
+  const replacement = join(directory, 'catalog.xlsx');
+  await writeFile(replacement, buffer, { mode: 0o600 });
+  await rename(replacement, output);
+ } finally {
+  await rm(directory, { recursive: true, force: true });
+ }
+}
+
 async function main() {
  const { values } = parseArgs({ options: {
-  url: { type: 'string' }, output: { type: 'string' }, help: { type: 'boolean' },
+  url: { type: 'string' }, output: { type: 'string' },
+  overwrite: { type: 'boolean' }, help: { type: 'boolean' },
  } });
  if (values.help) {
   console.log(usage);
@@ -149,7 +174,7 @@ async function main() {
  const collections = await readEntries(client, 'collections');
  const products = await readEntries(client, 'products');
  const workbook = makeWorkbook(products, collections);
- await writeFile(values.output, await workbook.xlsx.writeBuffer(), { flag: 'wx', mode: 0o600 });
+ await saveWorkbook(workbook, values.output, values.overwrite);
  console.log(`Exported ${products.length} products and ${collections.length} collections to ${values.output}.`);
 }
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -48,10 +48,10 @@ test('catalog export paginates, preserves gallery versions and links a collectio
  server.listen(0, '127.0.0.1');
  await once(server, 'listening');
  t.after(() => new Promise((resolve) => server.close(resolve)));
- async function runExport(output) {
+ async function runExport(output, ...args) {
   const env = { ...process.env };
   delete env.EMDASH_TOKEN;
-  const child = spawn(process.execPath, [script, '--url', `http://127.0.0.1:${server.address().port}`, '--output', output], {
+  const child = spawn(process.execPath, [script, '--url', `http://127.0.0.1:${server.address().port}`, '--output', output, ...args], {
    cwd: folder,
    env,
    stdio: ['ignore', 'ignore', 'pipe'],
@@ -76,6 +76,22 @@ test('catalog export paginates, preserves gallery versions and links a collectio
  assert.equal(seen.length, 7);
  assert(seen.every(([method, , , auth]) => method === 'GET' && auth === 'Bearer fixture-token'));
  assert(seen.some(([, path, cursor]) => path.endsWith('/products') && cursor === 'page-2'));
+
+ await writeFile(output, 'existing workbook');
+ const existing = await runExport(output);
+ assert.equal(existing.code, 1);
+ assert.match(existing.stderr, /--overwrite/);
+ assert.equal(await readFile(output, 'utf8'), 'existing workbook');
+
+ denyDrafts = true;
+ const failedOverwrite = await runExport(output, '--overwrite');
+ assert.equal(failedOverwrite.code, 1);
+ assert.match(failedOverwrite.stderr, /draft read access/);
+ assert.equal(await readFile(output, 'utf8'), 'existing workbook');
+
+ denyDrafts = false;
+ const overwrite = await runExport(output, '--overwrite');
+ assert.equal(overwrite.code, 0, overwrite.stderr);
 
  const workbook = new ExcelJS.Workbook();
  await workbook.xlsx.readFile(output);
