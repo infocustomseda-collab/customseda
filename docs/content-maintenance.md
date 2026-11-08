@@ -57,7 +57,7 @@ pnpm catalog:import:preview --url https://customseda.com --input backups/catalog
 
 The preview reads the Products sheet and the current EmDash catalog. It checks Title, Summary, Price (EUR), Collection, Material, and Size Guide. It reports which fields would change and counts creates, updates, unchanged rows, and errors. A row error exits with code 1. Use plain text and numeric prices in the checked columns.
 
-For updates, keep the exported ID, slug, locale, and Revision. A blank editable cell leaves the current value in place. For new rows, leave ID and Revision blank and enter a lowercase slug, locale `es`, a title, and a price. The preview checks for products with the same slug and locale, including entries in Trash. Use a fresh export to resolve stale revision errors.
+For updates, keep the exported ID, slug, locale, and Revision. A blank editable cell leaves the current value in place. For new individual products, leave ID and Revision blank and enter a lowercase slug, locale `es`, a title, a price, and a collection. The preview checks for products with the same slug and locale, including entries in Trash. Use a fresh export to resolve stale revision errors.
 
 The preview is read-only. Gallery, Description, Category, Bundle, and the relationship sheets are outside this first preview.
 

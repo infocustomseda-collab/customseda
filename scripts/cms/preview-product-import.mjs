@@ -152,6 +152,11 @@ async function preview(client, read, rows) {
   }
   const fields = checkFields(row, current, lookups);
   errors.push(...fields.errors);
+  const isBundle = current?.data.bundle === true || current?.data.bundle === 1;
+  const hasCollection = current?.references?.collection?.children?.length || !blank(row.Collection);
+  if ((!existing || fields.changes.length) && !isBundle && !hasCollection) {
+   errors.push('Collection is required for individual products.');
+  }
   if (errors.length) {
    totals.Errors++;
    console.log(`Row ${row.index} [error] ${errors.join(' ')}`);
