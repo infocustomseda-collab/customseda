@@ -1,16 +1,19 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { access, mkdtemp, rm } from 'node:fs/promises';
+import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
 
 test('catalog export paginates, preserves gallery versions and links a collection dropdown', async (t) => {
  const folder = await mkdtemp(join(tmpdir(), 'seda-export-'));
  t.after(() => rm(folder, { recursive: true, force: true }));
+ await writeFile(join(folder, '.env'), 'EMDASH_TOKEN="fixture-token"\n');
+ const script = fileURLToPath(new URL('../scripts/cms/export-catalog.mjs', import.meta.url));
  const published = [{ image: { id: 'media-1' }, alt: 'Original' }];
  const draft = [{ image: { id: 'media-2' }, alt: 'Edited', focal_x: 0.4 }];
  const collection = { id: 'col-1', slug: 'margarita', locale: 'es', data: { title: 'Margarita', code: 'MARG' } };
@@ -46,8 +49,11 @@ test('catalog export paginates, preserves gallery versions and links a collectio
  await once(server, 'listening');
  t.after(() => new Promise((resolve) => server.close(resolve)));
  async function runExport(output) {
-  const child = spawn(process.execPath, ['scripts/cms/export-catalog.mjs', '--url', `http://127.0.0.1:${server.address().port}`, '--output', output], {
-   env: { ...process.env, EMDASH_TOKEN: 'fixture-token' },
+  const env = { ...process.env };
+  delete env.EMDASH_TOKEN;
+  const child = spawn(process.execPath, [script, '--url', `http://127.0.0.1:${server.address().port}`, '--output', output], {
+   cwd: folder,
+   env,
    stdio: ['ignore', 'ignore', 'pipe'],
   });
   let stderr = '';

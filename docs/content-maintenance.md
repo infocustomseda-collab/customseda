@@ -32,7 +32,7 @@ This cleanup is local only. Phase 7 must define and verify transfer of the appro
 
 ### Export to Excel
 
-Set `EMDASH_TOKEN` in your shell to an EmDash token with the `content:read` scope from an account with draft read access. Keep it outside the checkout and workbook. Then run:
+Save `EMDASH_TOKEN` in the existing ignored `.env` file. Use an EmDash token with the `content:read` scope from an account with draft read access. Reserve the remote environment files for Worker secrets. When configuring the token, uncomment the empty `EMDASH_TOKEN=` line in `.env.example` so the inventory check recognizes the key. The export command reads the token directly from `.env`.
 
 ```sh
 mkdir -p backups

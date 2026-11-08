@@ -1,9 +1,10 @@
-import { writeFile } from 'node:fs/promises';
-import { parseArgs } from 'node:util';
+import { readFile, writeFile } from 'node:fs/promises';
+import { parseArgs, parseEnv } from 'node:util';
 import { EmDashClient } from 'emdash/client';
 import ExcelJS from 'exceljs';
 
-const usage = 'Usage: pnpm catalog:export --url <EmDash origin> --output <file.xlsx> (set EMDASH_TOKEN)';
+const usage = 'Usage: pnpm catalog:export --url <EmDash origin> --output <file.xlsx> (EMDASH_TOKEN in .env)';
+let token = process.env.EMDASH_TOKEN;
 
 async function readEntries(client, collection) {
  const entries = [];
@@ -118,8 +119,14 @@ async function main() {
   return;
  }
  if (!values.url || !values.output?.toLowerCase().endsWith('.xlsx')) throw new Error(usage);
- const token = process.env.EMDASH_TOKEN;
- if (!token) throw new Error('Set EMDASH_TOKEN to an EmDash token with content and draft read access.');
+ if (!token) {
+  const source = await readFile('.env', 'utf8').catch((error) => {
+   if (error.code !== 'ENOENT') throw error;
+   return '';
+  });
+  token = parseEnv(source).EMDASH_TOKEN;
+ }
+ if (!token) throw new Error('Add EMDASH_TOKEN to .env with content and draft read access.');
  const url = new URL(values.url);
  const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
  if ((url.protocol !== 'https:' && !(loopback && url.protocol === 'http:'))
@@ -143,7 +150,6 @@ async function main() {
 }
 
 main().catch((error) => {
- const token = process.env.EMDASH_TOKEN;
  console.error(token ? error.message.replaceAll(token, '[redacted]') : error.message);
  process.exitCode = 1;
 });
