@@ -2,117 +2,49 @@ import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { parseArgs, parseEnv } from 'node:util';
 import { EmDashClient } from 'emdash/client';
-import ExcelJS from 'exceljs';
+import { makeCatalogWorkbook } from './catalog-workbook.mjs';
 
 const usage = 'Usage: pnpm catalog:export --url <EmDash origin> --output <file.xlsx> [--overwrite] (EMDASH_TOKEN in .env)';
 let token = process.env.EMDASH_TOKEN;
 
-async function readEntries(client, collection) {
+async function readApi(origin, path) {
+ const response = await fetch(new URL(`/_emdash/api/${path}`, origin), {
+  headers: { Authorization: `Bearer ${token}` },
+  redirect: 'error',
+ });
+ if (!response.ok) {
+  await response.body?.cancel();
+  throw new Error(`Could not read EmDash ${path.split('?')[0]} (HTTP ${response.status}).`);
+ }
+ const { data } = await response.json();
+ return data;
+}
+
+async function readEntries(client, origin, collection) {
  const entries = [];
  for await (const { id } of client.listAll(collection, { limit: 100 })) {
-  entries.push(await client.get(collection, id, { raw: true }));
+  const entry = await client.get(collection, id, { raw: true });
+  const path = `content/${collection}/${encodeURIComponent(id)}`;
+  if (collection === 'products' || collection === 'sizes') {
+   const { terms, unresolved } = await readApi(origin, `${path}/terms/category`);
+   if (terms.length > 1 || unresolved?.length) throw new Error(`Cannot resolve a single category for ${collection}/${id}.`);
+   entry.categoryId = terms[0]?.id;
+  }
+  for (const [field, page] of Object.entries(entry.references ?? {})) {
+   const cursors = new Set();
+   while (page.nextCursor) {
+    const cursor = page.nextCursor;
+    if (cursors.has(cursor)) throw new Error(`Repeated ${field} cursor for ${collection}/${id}.`);
+    cursors.add(cursor);
+    const query = new URLSearchParams({ cursor });
+    const next = await readApi(origin, `${path}/references/${collection}_${field}/children?${query}`);
+    page.children.push(...next.children);
+    page.nextCursor = next.nextCursor;
+   }
+  }
+  entries.push(entry);
  }
  return entries;
-}
-
-function jsonCell(value, field, id) {
- if (value === undefined) return null;
- const json = JSON.stringify(value);
- if (json.length > 32_767) throw new Error(`${field} on entry ${id} exceeds Excel's cell limit.`);
- return json;
-}
-
-function galleryBackup(entry) {
- const { id, status, data, draftRevisionId, liveRevisionId, liveData } = entry;
- if (draftRevisionId && !liveData) throw new Error(`Could not read both gallery versions for ${id}.`);
- const hasPublishedVersion = status === 'published' || Boolean(liveRevisionId);
- return jsonCell({
-  published: hasPublishedVersion ? (liveData ?? data).gallery : undefined,
-  draft: draftRevisionId || !hasPublishedVersion ? data.gallery : undefined,
- }, 'Gallery', id);
-}
-
-function baseRow(entry) {
- return [entry.id, entry.slug, entry.locale, entry.status, entry._rev, entry.data.title];
-}
-
-function references(entry, field) {
- const page = entry.references?.[field];
- if (page?.nextCursor) throw new Error(`Cannot export all ${field} references for entry ${entry.id} in this version.`);
- return page?.children ?? [];
-}
-
-function titles(entry, field) {
- return references(entry, field).map(({ title }) => title);
-}
-
-function makeWorkbook(products, collections) {
- const workbook = new ExcelJS.Workbook();
- const collectionsById = new Map(collections.map(({ id, data }) => [id, data.title]));
- const productSheet = workbook.addWorksheet('Products', { views: [{ state: 'frozen', ySplit: 1 }] });
- const collectionSheet = workbook.addWorksheet('Collections', { views: [{ state: 'frozen', ySplit: 1 }] });
- const baseColumns = [
-  { header: 'ID', width: 30 },
-  { header: 'Slug', width: 26 },
-  { header: 'Locale', width: 11 },
-  { header: 'Status', width: 14 },
-  { header: 'Revision', width: 30 },
-  { header: 'Title', width: 28 },
- ];
- productSheet.columns = [...baseColumns,
-  { header: 'Summary', width: 36 },
-  { header: 'Price (EUR)', width: 15 },
-  { header: 'Collection', key: 'collection', width: 26 },
-  { header: 'Material', width: 26 },
-  { header: 'Size Guide', width: 26 },
-  { header: 'Bundle', width: 12 },
-  { header: 'Components', width: 28 },
-  { header: 'Description', width: 38 },
-  { header: 'Gallery', width: 38 },
- ];
- for (const entry of products) {
-  const { id, data } = entry;
-  const [collection] = references(entry, 'collection');
-  const collectionTitle = collection && (collectionsById.get(collection.id) ?? collection.title);
-  productSheet.addRow([...baseRow(entry), data.summary,
-   data.price_cents == null ? null : data.price_cents / 100,
-   collectionTitle, titles(entry, 'material')[0], titles(entry, 'size_guide')[0],
-   data.bundle, jsonCell(titles(entry, 'components'), 'Components', id),
-   jsonCell(data.description, 'Description', id), galleryBackup(entry),
-  ]);
- }
- productSheet.getRow(1).font = { bold: true };
- productSheet.getColumn(8).numFmt = '0.00';
- productSheet.autoFilter = 'A1:O1';
-
- const collectionColumns = [...baseColumns, { header: 'Code', width: 18 },
-  { header: 'Description', width: 38 }, { header: 'Image', width: 38 }];
- collectionSheet.addTable({
-  name: 'CatalogCollections',
-  ref: 'A1',
-  columns: collectionColumns.map(({ header }) => ({ name: header, filterButton: true })),
-  rows: collections.length ? collections.map((entry) => [
-   ...baseRow(entry), entry.data.code, jsonCell(entry.data.description, 'Description', entry.id),
-   jsonCell(entry.data.image, 'Image', entry.id),
-  ]) : [[]],
- });
- collectionColumns.forEach(({ width }, i) => { collectionSheet.getColumn(i + 1).width = width; });
-
- const titleColumn = collectionSheet.getColumn(collectionColumns.findIndex(({ header }) => header === 'Title') + 1).letter;
- const lastTitleRow = Math.max(2, collections.length + 1);
- workbook.definedNames.add(`Collections!$${titleColumn}$2:$${titleColumn}$${lastTitleRow}`, 'CatalogCollectionTitles');
-
- const letter = productSheet.getColumn('collection').letter;
- productSheet.dataValidations.add(`${letter}2:${letter}${Math.max(1000, products.length + 1)}`, {
-  type: 'list',
-  allowBlank: true,
-  showErrorMessage: true,
-  errorStyle: 'stop',
-  errorTitle: 'Unknown collection',
-  error: 'Choose a collection title from the list.',
-  formulae: ['CatalogCollectionTitles'],
- });
- return workbook;
 }
 
 async function saveWorkbook(workbook, output, overwrite) {
@@ -171,11 +103,13 @@ async function main() {
  if (!draftAccess.ok) throw new Error(`Could not verify EmDash draft read access (HTTP ${draftAccess.status}).`);
 
  const client = new EmDashClient({ baseUrl: url.origin, token });
- const collections = await readEntries(client, 'collections');
- const products = await readEntries(client, 'products');
- const workbook = makeWorkbook(products, collections);
- await saveWorkbook(workbook, values.output, values.overwrite);
- console.log(`Exported ${products.length} products and ${collections.length} collections to ${values.output}.`);
+ const catalog = {};
+ for (const collection of ['products', 'collections', 'materials', 'colors', 'sizes', 'size_guides']) {
+  catalog[collection] = await readEntries(client, url.origin, collection);
+ }
+ catalog.categories = (await client.terms('category', { includeCounts: false })).items;
+ await saveWorkbook(makeCatalogWorkbook(catalog), values.output, values.overwrite);
+ console.log(`Exported ${catalog.products.length} products and their catalog lookups to ${values.output}.`);
 }
 
 main().catch((error) => {

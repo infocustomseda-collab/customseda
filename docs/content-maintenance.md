@@ -32,14 +32,18 @@ This cleanup is local only. Phase 7 must define and verify transfer of the appro
 
 ### Export to Excel
 
-Save `EMDASH_TOKEN` in the existing ignored `.env` file. Use an EmDash token with the `content:read` scope from an account with draft read access. Reserve the remote environment files for Worker secrets. When configuring the token, uncomment the empty `EMDASH_TOKEN=` line in `.env.example` so the inventory check recognizes the key. The export command reads the token directly from `.env`.
+Save `EMDASH_TOKEN` in the existing ignored `.env` file. Use an EmDash token with the `content:read` scope from an account that can read drafts and taxonomy terms. Reserve the remote environment files for Worker secrets. When configuring the token, uncomment the empty `EMDASH_TOKEN=` line in `.env.example` so the inventory check recognizes the key. The export command reads the token directly from `.env`.
 
 ```sh
 mkdir -p backups
 pnpm catalog:export --url https://customseda.com --output backups/catalog.xlsx
 ```
 
-The command reads Products and Collections from the specified EmDash site and writes a new workbook. Pass `--overwrite` to replace an existing workbook after the new export is ready. Keep the workbook private if it contains drafts. Select a data cell under `Products → Collection` to open its dropdown. Its named range points to the exported titles on the Collections sheet. Re-export to pick up collections added in EmDash. Keep each entry's ID and Revision for matching and conflict detection in a future import.
+The command reads the five Catálogo content types and writes `Products`, `Collections`, `Materials`, `Colors`, and `Sizes`. The `Categories` sheet holds native taxonomy terms with paths such as `Mujeres → Top`. The `Size Guides` sheet is a reference list for the product dropdown.
+
+Relationship columns use Excel Data Validation dropdowns backed by the exported titles and category paths. Select a data cell such as `Products → Collection` to see the dropdown. The `Bundle Components` and `Material Sizes` sheets use one row per link, with a position to preserve order. Size dropdowns use the `Reference Name` column, which adds locale information when titles repeat. Re-export to refresh the lists from EmDash. Keep each entry's ID and Revision for matching and conflict detection in a future import.
+
+Pass `--overwrite` to replace an existing workbook after the new export is ready. Keep the workbook private if it contains drafts.
 
 The `Gallery` column contains JSON with the published and pending draft gallery data where available. Its media IDs reference original images stored in EmDash. Use the media archive to back up the image files.
 
@@ -47,7 +51,7 @@ The `Gallery` column contains JSON with the published and pending draft gallery 
 
 The current command implements read-only export. A future importer should follow these rules:
 
-- Use one local `.xlsx` workbook with a sheet for each Catálogo content type. The current export starts with Products and Collections. The remaining content types are Materials, Colors, and Sizes. Categories belong in a separate sheet as a native taxonomy.
+- Use the exported sheet layout. Resolve multi-value relationships from the ordered rows on Bundle Components and Material Sizes. Treat Size Guides as a reference list.
 - Match existing entries by EmDash ID. Use the exported revision token to detect intervening CMS edits. Use an explicit slug and locale to identify new rows on retry. Treat missing workbook rows as outside the import.
 - Display relationships by title or name. For example, `Products.Collection` contains `Margarita` and its Excel Data Validation dropdown uses titles from the Collections sheet. Resolve those values to EmDash IDs before writing. Report unknown or ambiguous names in the preview.
 - Validate the workbook and show creates, updates, unchanged rows, and errors before applying any writes. Use the native EmDash APIs and [catalog validation](catalog-model.md#editing-catalog-entries). Apply supported content changes as drafts. Review taxonomy assignments separately because they use their own API and can affect published entries.
