@@ -1,4 +1,9 @@
+import { createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
+
+const revision = (values) => createHash('sha256').update(JSON.stringify(values)).digest('hex');
+export const categoryRevision = (term) => revision([term.id, term.label, term.parentId ?? null, term.description ?? null]);
+export const categoryAssignmentRevision = (entry) => revision([entry.id, entry.categoryId ?? null]);
 
 function jsonCell(value, field, id) {
  if (value === undefined) return null;
@@ -77,10 +82,10 @@ function dropdown(sheet, header, source) {
  });
 }
 
-function flattenCategories(terms, parent = '') {
+export function flattenCategories(terms, parent = '', parentKey = null) {
  return terms.flatMap((term) => {
   const path = parent ? `${parent} → ${term.label}` : term.label;
-  return [{ ...term, path, parent }, ...flattenCategories(term.children ?? [], path)];
+  return [{ ...term, path, parent, parentKey }, ...flattenCategories(term.children ?? [], path, term.id)];
  });
 }
 
@@ -88,7 +93,7 @@ function titlesById(entries) {
  return new Map(entries.map(({ id, data }) => [id, data.title]));
 }
 
-function sizeReferenceNames(sizes) {
+export function sizeReferenceNames(sizes) {
  const byTitle = Map.groupBy(sizes, ({ data }) => data.title);
  return new Map(sizes.map(({ id, slug, locale, data: { title } }) => {
   const matches = byTitle.get(title);
@@ -126,15 +131,18 @@ export function makeCatalogWorkbook({ products, collections, materials, colors, 
   { header: 'Summary', width: 36 }, { header: 'Price (EUR)', width: 15 }, { header: 'Collection', width: 26 },
   { header: 'Material', width: 26 }, { header: 'Size Guide', width: 26 }, { header: 'Bundle', width: 12 },
   { header: 'Description', width: 38 }, { header: 'Gallery', width: 38 }, { header: 'Category', width: 28 },
+  { header: 'Category Revision', width: 26 },
  ], products.map((entry) => {
   const { id, data } = entry;
   return [...baseRow(entry), data.summary, data.price_cents == null ? null : data.price_cents / 100,
    referenceTitles(entry, 'collection', collectionTitles)[0],
    referenceTitles(entry, 'material', materialTitles)[0],
    referenceTitles(entry, 'size_guide', guideTitles)[0],
-   booleanCell(data.bundle), jsonCell(data.description, 'Description', id), galleryBackup(entry), categoryPath(entry)];
+   booleanCell(data.bundle), jsonCell(data.description, 'Description', id), galleryBackup(entry), categoryPath(entry),
+   categoryAssignmentRevision(entry)];
  }));
  productSheet.getColumn('Price (EUR)').numFmt = '0.00';
+ productSheet.getColumn('Category Revision').hidden = true;
 
  addSheet(workbook, 'Collections', [...baseColumns, { header: 'Code', width: 18 },
   { header: 'Description', width: 38 }, { header: 'Image', width: 38 }],
@@ -151,16 +159,21 @@ export function makeCatalogWorkbook({ products, collections, materials, colors, 
  colors.map((entry) => [...baseRow(entry), entry.data.hex]));
 
  const sizeSheet = addSheet(workbook, 'Sizes', [...baseColumns, { header: 'Label', width: 12 },
-  { header: 'Order', width: 12 }, { header: 'Category', width: 28 }, { header: 'Reference Name', width: 30 }],
- sizes.map((entry) => [...baseRow(entry), entry.data.label, entry.data.sort_order, categoryPath(entry), sizeTitles.get(entry.id)]),
+  { header: 'Order', width: 12 }, { header: 'Category', width: 28 }, { header: 'Reference Name', width: 30 },
+  { header: 'Category Revision', width: 26 }],
+ sizes.map((entry) => [...baseRow(entry), entry.data.label, entry.data.sort_order, categoryPath(entry), sizeTitles.get(entry.id),
+  categoryAssignmentRevision(entry)]),
  { source: 'Reference Name' });
+ sizeSheet.getColumn('Category Revision').hidden = true;
 
  const categorySheet = addSheet(workbook, 'Categories', [
   { header: 'ID', width: 30 }, { header: 'Slug', width: 26 }, { header: 'Locale', width: 11 },
   { header: 'Name', width: 24 }, { header: 'Path', width: 32 }, { header: 'Parent', width: 28 },
-  { header: 'Description', width: 38 },
- ], categoryRows.map(({ id, slug, locale, label, path, parent, description }) =>
-  [id, slug, locale, label, path, parent || null, description]), { source: 'Path' });
+  { header: 'Description', width: 38 }, { header: 'Revision', width: 26 },
+ ], categoryRows.map((term) =>
+  [term.id, term.slug, term.locale, term.label, term.path, term.parent || null, term.description, categoryRevision(term)]),
+ { source: 'Path' });
+ categorySheet.getColumn('Revision').hidden = true;
 
  const componentSheet = addSheet(workbook, 'Bundle Components', [
   { header: 'Bundle', width: 30 }, { header: 'Component', width: 30 }, { header: 'Position', width: 12 },

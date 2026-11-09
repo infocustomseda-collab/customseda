@@ -47,26 +47,32 @@ Pass `--overwrite` to replace an existing workbook after the new export is ready
 
 The `Gallery` column contains JSON with the published and pending draft gallery data where available. Its media IDs reference original images stored in EmDash. Use the media archive to back up the image files.
 
-### Preview product imports
+### Preview catalog imports
 
-After editing a copy of the workbook, close it in Excel and run:
+Edit a copy of a fresh export, close it in Excel, and run:
 
 ```sh
 pnpm catalog:import:preview --url https://customseda.com --input backups/catalog.xlsx
 ```
 
-The preview reads the Products sheet and the current EmDash catalog. It checks Title, Summary, Price (EUR), Collection, Material, and Size Guide. It reports which fields would change and counts creates, updates, unchanged rows, and errors. A row error exits with code 1. Use plain text and numeric prices in the checked columns.
+The preview reads the five Catálogo sheets, native Categories, and the ordered Bundle Components and Material Sizes sheets. It compares workbook values with EmDash and reports proposed creates, updates, unchanged entries, and row errors. Use plain text, numeric euro prices, Excel booleans for switches, and Portable Text JSON arrays for Description. Size Guides serves as a reference list. Product Gallery and Collection Image are backup columns.
 
-For updates, keep the exported ID, slug, locale, and Revision. A blank editable cell leaves the current value in place. For new individual products, leave ID and Revision blank and enter a lowercase slug, locale `es`, a title, a price, and a collection. The preview checks for products with the same slug and locale, including entries in Trash. Use a fresh export to resolve stale revision errors.
+- Keep the exported ID, slug, locale, and revision metadata on existing entries. The hidden category revision columns protect changes to category terms and assignments. Use a fresh export when editing either.
+- For new entries, leave IDs and revisions blank. Use a lowercase slug, locale `es`, and a title or category name. Products need a price, individual products need a collection, and bundles need at least two individual components. Collections need a code and sizes need a label.
+- Blank content cells preserve existing values. A missing entry row leaves that entry alone. Relationship cells use the titles, size reference names, or category paths shown in the export. An unknown or ambiguous choice is a row error.
+- For Bundle Components and Material Sizes, include the matching owner row with its revision. A supplied set replaces that owner's selection in Position order. To clear a selection, leave one row with the owner filled in and both the target and Position blank. Omitting all the link rows for an owner preserves its current selection.
+- Treat Categories.Path and Sizes.Reference Name as derived labels. Use Parent to select a category's parent and Category to assign an existing or newly listed category. A blank Parent on a new category creates a top-level term. Blank category cells on existing entries preserve the assignment.
 
-The preview is read-only. Gallery, Description, Category, Bundle, and the relationship sheets are outside this first preview.
+### Apply a reviewed plan
 
-### Future import requirements
+The preview uses GET requests and prints a `Plan: sha256:…` value when the workbook has changes and zero errors. Check the proposed changes and pass that exact value to apply:
 
-A future apply command should follow these rules:
+```sh
+pnpm catalog:import:apply --url https://customseda.com --input backups/catalog.xlsx --confirm 'sha256:<plan-from-preview>'
+```
 
-- Use the exported sheet layout. Resolve multi-value relationships from the ordered rows on Bundle Components and Material Sizes. Treat Size Guides as a reference list.
-- Match existing entries by EmDash ID. Use the exported revision token to detect intervening CMS edits. Use an explicit slug and locale to identify new rows on retry. Treat missing workbook rows as outside the import.
-- Display relationships by title or name. For example, `Products.Collection` contains `Margarita` and its Excel Data Validation dropdown uses titles from the Collections sheet. Resolve those values to EmDash IDs before writing. Report unknown or ambiguous names in the preview.
-- Validate the workbook and show creates, updates, unchanged rows, and errors before applying any writes. Use the native EmDash APIs and [catalog validation](catalog-model.md#editing-catalog-entries). Apply supported content changes as drafts. Review taxonomy assignments separately because they use their own API and can affect published entries.
-- Preserve gallery data and existing media on import. `Gallery` is a backup column for raw published and draft gallery JSON. The workbook has no gallery restore or photo upload workflow. Original image files are backed up separately in the [media archive](#original-media).
+Use an EmDash token with content write access for apply. The command recomputes the plan against current EmDash data and stops if it differs. Content creates and updates use the native draft workflow. Gallery, Collection Image, and publication state stay under CMS control.
+
+Category definitions and assignments take effect immediately through EmDash's taxonomy API. Apply those plans only with the additional `--allow-taxonomy` flag and taxonomy permissions. Pause concurrent taxonomy editing while applying because these API operations have a read-before-write check. Published category assignments must also satisfy the catalog's publication rules.
+
+The API handles one entry at a time. If a request fails, apply stops and reports completed writes and IDs. Review those entries in EmDash, export a fresh workbook, and reapply only the remaining edits before generating a new plan. This also lets you recover the assigned IDs for any rows already created.

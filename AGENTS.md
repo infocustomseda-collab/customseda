@@ -49,7 +49,7 @@
 
 ## Agent documentation and performance tools
 
-- For catalog Excel exports and future imports, follow [Catalog workbook workflow](docs/content-maintenance.md#catalog-workbook-workflow). The local exporter uses the EmDash API. Keep EmDash IDs for upserts, use titles or names in relationship cells, and treat the `Gallery` column as backup metadata only.
+- For catalog Excel exports and imports, follow [Catalog workbook workflow](docs/content-maintenance.md#catalog-workbook-workflow). Use the EmDash API and review the workbook preview before applying its confirmed plan. Keep EmDash IDs and revisions for upserts, use titles or names in relationship cells, and treat `Gallery` as backup metadata.
 - Official project skills are installed in `.agents/skills/`; pins and setup are in `docs/agent-tools.md`. Load only the skills and reference sections needed for the current task.
 - Use `astro-docs`, `emdash-docs`, and `cloudflare-docs` for focused API/documentation questions before broad source searches. Verify answers against the installed package versions when APIs differ. Keep retrieved output small; request few matches where supported and print only relevant excerpts from composed tool results.
 - Repository constraints above override skill defaults, especially native-only plugins and the separate public snapshot. Never enable sandboxed plugins because a vendor skill recommends them by default.
